@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, Check, AlertCircle } from 'lucide-react'
+import { saveRegistro } from '@/lib/saveRegistro'
 
 const ACCENT = '#FF6B35'
 const ACCENT_TEXT = '#0A0A0F'
@@ -267,6 +268,7 @@ export function FormProductor({ onSuccess }: { onSuccess: () => void }) {
           'suuplai_registros',
           JSON.stringify([...existing, { tipo: 'productor', timestamp: Date.now(), ...form }])
         )
+        await saveRegistro({ tipo: 'productor', ...form })
         setSubmitState('success')
         setSubmitted(true)
         onSuccess()

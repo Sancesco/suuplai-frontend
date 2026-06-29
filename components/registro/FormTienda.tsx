@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Loader2, Check, AlertCircle } from 'lucide-react'
+import { saveRegistro } from '@/lib/saveRegistro'
 
 const ACCENT = '#E8FF47'
 const ACCENT_TEXT = '#0A0A0F'
@@ -429,7 +430,7 @@ export function FormTienda({ onSuccess }: { onSuccess: () => void }) {
           'suuplai_registros',
           JSON.stringify([...existing, { tipo: 'tienda', timestamp: Date.now(), ...form }])
         )
-        await Promise.all([generatePDF(form), minLoadingDelay])
+        await Promise.all([saveRegistro({ tipo: 'tienda', ...form }), generatePDF(form), minLoadingDelay])
         setSubmitState('success')
         setSubmitted(true)
         onSuccess()
