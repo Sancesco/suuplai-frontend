@@ -76,8 +76,11 @@ async function sendNotification(tipo: string, body: RegistroPayload) {
       )
       .join('')
 
+    // Remitente configurable. Antes de verificar el dominio usa onboarding@resend.dev.
+    // Después de verificar suups.com.mx, pon MAIL_FROM="Suuplai <hola@suups.com.mx>".
+    const from = process.env.MAIL_FROM || 'Suuplai <onboarding@resend.dev>'
     await resend.emails.send({
-      from: 'Suuplai <onboarding@resend.dev>', // cambia a hola@suups.com.mx al verificar tu dominio
+      from,
       to,
       subject: `🆕 Nuevo registro ${tipo === 'tienda' ? '🏪 Tienda' : '📦 Marca'}: ${negocio || nombre}`,
       html: `
