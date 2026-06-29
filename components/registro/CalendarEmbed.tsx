@@ -6,7 +6,7 @@ interface CalendarEmbedProps {
   tipo: 'tienda' | 'productor'
 }
 
-const CALENDAR_URL =
+export const CALENDAR_URL =
   'https://calendar.google.com/calendar/appointments/schedules/AcZssZ3Kssu9keF31IHgk6oomsxJQ7H2gCEBrcClTD2wOfjupMHlBCZ26iXOjYnlFffsFxw0zsX6RHdV?gv=true'
 
 export function CalendarEmbed({ tipo }: CalendarEmbedProps) {

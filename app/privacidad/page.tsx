@@ -30,7 +30,7 @@ export default function PrivacidadPage() {
         className="sticky top-0 z-50 px-6 py-4 flex items-center justify-between"
         style={{ background: '#0A0A0F', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
       >
-        <Logo size="sm" />
+        <Logo variant="dark" className="h-7" />
         <Link
           href="/"
           className="font-dm text-suu-muted hover:text-suu-text transition-colors duration-200"

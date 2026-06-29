@@ -6,7 +6,7 @@ import { NavRegistro } from '@/components/registro/NavRegistro'
 import { HeroStripProductor } from '@/components/registro/HeroStripProductor'
 import { FormProductor } from '@/components/registro/FormProductor'
 import { InfoSideProductor } from '@/components/registro/InfoSideProductor'
-import { CalendarEmbed } from '@/components/registro/CalendarEmbed'
+import { CalendarEmbed, CALENDAR_URL } from '@/components/registro/CalendarEmbed'
 
 const ACCENT = '#FF6B35'
 
@@ -64,8 +64,19 @@ export default function RegistroProductorPage() {
         style={{ borderTop: '1px solid rgba(240,239,232,0.06)' }}
       >
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-10 items-start">
-          <div className="lg:sticky lg:top-6">
+          <div className="lg:sticky lg:top-6 flex flex-col gap-4">
             <FormProductor onSuccess={() => setShowCalendar(true)} />
+            <a
+              href={CALENDAR_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-4 rounded-pill font-syne font-bold text-base text-center transition-all duration-200"
+              style={{ border: '1.5px solid #FF6B35', color: '#0A0A0F', background: '#FF6B35' }}
+              onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.9' }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}
+            >
+              📅 Agendar una cita →
+            </a>
           </div>
           <InfoSideProductor />
         </div>

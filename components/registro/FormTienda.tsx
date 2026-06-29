@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Loader2, Check, AlertCircle } from 'lucide-react'
 
 const ACCENT = '#E8FF47'
 const ACCENT_TEXT = '#0A0A0F'
@@ -140,19 +141,39 @@ async function generatePDF(form: FormData): Promise<void> {
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const today = new Date().toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' })
 
+  // Header band
   doc.setFillColor(10, 10, 15)
   doc.rect(0, 0, 210, 32, 'F')
+
+  // Slot mark isotipo (outline rect + white bar + gold bar)
+  // mm units — origin at left margin 20mm, vertical-centered in 32mm band
+  const isoX = 20
+  const isoY = 9
+  const isoSize = 14
+  doc.setDrawColor(240, 239, 232)
+  doc.setLineWidth(0.5)
+  doc.roundedRect(isoX, isoY, isoSize, isoSize, 2.5, 2.5, 'S')
+  // White bar (tienda)
+  doc.setFillColor(240, 239, 232)
+  doc.rect(isoX + 3, isoY + 3.5, 3, 7, 'F')
+  // Gold bar (marca)
+  doc.setFillColor(245, 197, 24)
+  doc.rect(isoX + 8, isoY + 3.5, 3, 7, 'F')
+
+  // Wordmark: "suupl" white + "ai" gold
+  const wordX = isoX + isoSize + 5
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(20)
-  doc.setTextColor(245, 197, 24)
-  doc.text('suupl', 20, 21)
-  const suuplW = doc.getTextWidth('suupl')
   doc.setTextColor(240, 239, 232)
-  doc.text('ai', 20 + suuplW, 21)
+  doc.text('suupl', wordX, 21)
+  const suuplW = doc.getTextWidth('suupl')
+  doc.setTextColor(245, 197, 24)
+  doc.text('ai', wordX + suuplW, 21)
+
   doc.setFontSize(9)
   doc.setFont('helvetica', 'normal')
   doc.setTextColor(160, 160, 160)
-  doc.text('Carta de Intención — Espacio en Anaquel', 190, 21, { align: 'right' })
+  doc.text('Carta de Intención — Espacio en tienda', 190, 21, { align: 'right' })
 
   doc.setTextColor(100, 100, 100)
   doc.setFontSize(9)
@@ -165,7 +186,7 @@ async function generatePDF(form: FormData): Promise<void> {
   doc.setFont('helvetica', 'normal')
   doc.setFontSize(9)
   doc.setTextColor(100, 100, 100)
-  doc.text('Programa de Monetización de Espacio en Anaquel — Suuplai', 20, 61)
+  doc.text('Programa de Monetización de Espacio en Tienda — Suuplai', 20, 61)
 
   doc.setDrawColor(232, 255, 71)
   doc.setLineWidth(0.6)
@@ -266,46 +287,102 @@ async function generatePDF(form: FormData): Promise<void> {
 // Shared input styles
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Campos claros (fondo blanco, texto oscuro) — invitan a llenarse, no se ven como huecos negros.
 const inputBase: React.CSSProperties = {
   width: '100%',
-  background: '#0A0A0F',
-  border: '1px solid rgba(240,239,232,0.12)',
+  background: '#FFFFFF',
+  border: '1px solid rgba(0,0,0,0.12)',
   borderRadius: '8px',
   padding: '12px 16px',
   fontFamily: 'var(--font-dm-sans)',
-  fontWeight: 300,
+  fontWeight: 400,
   fontSize: '14px',
-  color: '#F0EFE8',
+  color: '#1a1a1a',
   outline: 'none',
-  transition: 'border-color 0.2s ease',
+  transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
 }
-
-const placeholderColor = 'rgba(240,239,232,0.28)'
 
 function onFocusYellow(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
   e.currentTarget.style.borderColor = ACCENT
+  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(232,255,71,0.30)'
 }
 function onBlurReset(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
-  e.currentTarget.style.borderColor = 'rgba(240,239,232,0.12)'
+  e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)'
+  e.currentTarget.style.boxShadow = 'none'
+}
+
+// Selector de botones (chips) — más rápido y visual que un menú desplegable.
+function ChoiceGroup({
+  options,
+  value,
+  onChange,
+}: {
+  options: string[]
+  value: string
+  onChange: (v: string) => void
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((opt) => {
+        const selected = value === opt
+        return (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => onChange(opt)}
+            className="font-dm transition-all duration-150"
+            style={{
+              fontSize: '13px',
+              fontWeight: selected ? 600 : 400,
+              padding: '9px 15px',
+              borderRadius: '999px',
+              cursor: 'pointer',
+              background: selected ? ACCENT : '#FFFFFF',
+              color: selected ? ACCENT_TEXT : '#3a3a3a',
+              border: selected ? `1.5px solid ${ACCENT}` : '1.5px solid rgba(0,0,0,0.14)',
+            }}
+            onMouseEnter={(e) => {
+              if (!selected) e.currentTarget.style.borderColor = 'rgba(0,0,0,0.35)'
+            }}
+            onMouseLeave={(e) => {
+              if (!selected) e.currentTarget.style.borderColor = 'rgba(0,0,0,0.14)'
+            }}
+          >
+            {opt}
+          </button>
+        )
+      })}
+    </div>
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
 
+type SubmitState = 'idle' | 'loading' | 'success' | 'error'
+
 export function FormTienda({ onSuccess }: { onSuccess: () => void }) {
   const [form, setForm] = useState<FormData>(INITIAL)
   const [step, setStep] = useState<1 | 2 | 3>(1)
-  const [loading, setLoading] = useState(false)
+  const [submitState, setSubmitState] = useState<SubmitState>('idle')
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [otpGenerated, setOtpGenerated] = useState('')
   const [otpInput, setOtpInput] = useState('')
   const [otpError, setOtpError] = useState(false)
 
+  const loading = submitState === 'loading'
+
   const update =
     (key: keyof FormData) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setForm((f) => ({ ...f, [key]: e.target.value }))
+
+  const setField =
+    (key: keyof FormData) =>
+    (value: string) =>
+      setForm((f) => ({ ...f, [key]: value }))
 
   const updateCheck =
     (key: 'aceptaTerminos' | 'aceptaComision') =>
@@ -342,17 +419,29 @@ export function FormTienda({ onSuccess }: { onSuccess: () => void }) {
   }
 
   const submit = () => {
-    setLoading(true)
+    setSubmitState('loading')
+    setErrorMsg(null)
     void (async () => {
-      const existing = JSON.parse(localStorage.getItem('suuplai_registros') || '[]') as unknown[]
-      localStorage.setItem(
-        'suuplai_registros',
-        JSON.stringify([...existing, { tipo: 'tienda', timestamp: Date.now(), ...form }])
-      )
-      await generatePDF(form)
-      setLoading(false)
-      setSubmitted(true)
-      onSuccess()
+      const minLoadingDelay = new Promise<void>((r) => setTimeout(r, 800))
+      try {
+        const existing = JSON.parse(localStorage.getItem('suuplai_registros') || '[]') as unknown[]
+        localStorage.setItem(
+          'suuplai_registros',
+          JSON.stringify([...existing, { tipo: 'tienda', timestamp: Date.now(), ...form }])
+        )
+        await Promise.all([generatePDF(form), minLoadingDelay])
+        setSubmitState('success')
+        setSubmitted(true)
+        onSuccess()
+      } catch (err) {
+        await minLoadingDelay
+        setSubmitState('error')
+        setErrorMsg(
+          err instanceof Error
+            ? err.message
+            : 'No pudimos generar tu carta. Intenta de nuevo en unos segundos.'
+        )
+      }
     })()
   }
 
@@ -453,21 +542,22 @@ export function FormTienda({ onSuccess }: { onSuccess: () => void }) {
                 </Field>
 
                 <Field label="Tipo de tienda" required>
-                  <select value={form.tipoTienda} onChange={update('tipoTienda')} required
-                    style={{ ...inputBase, appearance: 'none', cursor: 'pointer', color: form.tipoTienda ? '#F0EFE8' : placeholderColor }}
-                    onFocus={onFocusYellow} onBlur={onBlurReset}>
-                    <option value="" style={{ color: '#555' }}>Selecciona una opción</option>
-                    <option style={{ color: '#111' }}>Gimnasio/estudio fitness</option>
-                    <option style={{ color: '#111' }}>Café/cafetería</option>
-                    <option style={{ color: '#111' }}>Tienda naturista/orgánica</option>
-                    <option style={{ color: '#111' }}>Boutique de ropa</option>
-                    <option style={{ color: '#111' }}>Librería/papelería</option>
-                    <option style={{ color: '#111' }}>Farmacia independiente</option>
-                    <option style={{ color: '#111' }}>Minisuper/abarrotes</option>
-                    <option style={{ color: '#111' }}>Salón de belleza/spa</option>
-                    <option style={{ color: '#111' }}>Coworking/oficina</option>
-                    <option style={{ color: '#111' }}>Otro</option>
-                  </select>
+                  <ChoiceGroup
+                    value={form.tipoTienda}
+                    onChange={setField('tipoTienda')}
+                    options={[
+                      'Gimnasio/estudio fitness',
+                      'Café/cafetería',
+                      'Tienda naturista/orgánica',
+                      'Boutique de ropa',
+                      'Librería/papelería',
+                      'Farmacia independiente',
+                      'Minisuper/abarrotes',
+                      'Salón de belleza/spa',
+                      'Coworking/oficina',
+                      'Otro',
+                    ]}
+                  />
                 </Field>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -487,54 +577,47 @@ export function FormTienda({ onSuccess }: { onSuccess: () => void }) {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Field label="Metros lineales aprox.">
-                    <select value={form.metrosLineales} onChange={update('metrosLineales')}
-                      style={{ ...inputBase, appearance: 'none', cursor: 'pointer', color: form.metrosLineales ? '#F0EFE8' : placeholderColor }}
-                      onFocus={onFocusYellow} onBlur={onBlurReset}>
-                      <option value="" style={{ color: '#555' }}>Selecciona</option>
-                      <option style={{ color: '#111' }}>Menos de 1m</option>
-                      <option style={{ color: '#111' }}>1–2m</option>
-                      <option style={{ color: '#111' }}>2–5m</option>
-                      <option style={{ color: '#111' }}>5–10m</option>
-                      <option style={{ color: '#111' }}>Más de 10m</option>
-                    </select>
+                    <ChoiceGroup
+                      value={form.metrosLineales}
+                      onChange={setField('metrosLineales')}
+                      options={['Menos de 1m', '1–2m', '2–5m', '5–10m', 'Más de 10m']}
+                    />
                   </Field>
                   <Field label="Tráfico diario aprox.">
-                    <select value={form.trafico} onChange={update('trafico')}
-                      style={{ ...inputBase, appearance: 'none', cursor: 'pointer', color: form.trafico ? '#F0EFE8' : placeholderColor }}
-                      onFocus={onFocusYellow} onBlur={onBlurReset}>
-                      <option value="" style={{ color: '#555' }}>Selecciona</option>
-                      <option style={{ color: '#111' }}>Menos de 50</option>
-                      <option style={{ color: '#111' }}>50–150</option>
-                      <option style={{ color: '#111' }}>150–500</option>
-                      <option style={{ color: '#111' }}>Más de 500</option>
-                    </select>
+                    <ChoiceGroup
+                      value={form.trafico}
+                      onChange={setField('trafico')}
+                      options={['Menos de 50', '50–150', '150–500', 'Más de 500']}
+                    />
                   </Field>
                 </div>
 
                 <Field label="Tipo de espacio">
-                  <select value={form.tipoEspacio} onChange={update('tipoEspacio')}
-                    style={{ ...inputBase, appearance: 'none', cursor: 'pointer', color: form.tipoEspacio ? '#F0EFE8' : placeholderColor }}
-                    onFocus={onFocusYellow} onBlur={onBlurReset}>
-                    <option value="" style={{ color: '#555' }}>Selecciona</option>
-                    <option style={{ color: '#111' }}>Anaquel/estante</option>
-                    <option style={{ color: '#111' }}>Refrigerador/refri</option>
-                    <option style={{ color: '#111' }}>Mesa de exhibición</option>
-                    <option style={{ color: '#111' }}>Espacio en mostrador</option>
-                    <option style={{ color: '#111' }}>Varios tipos</option>
-                  </select>
+                  <ChoiceGroup
+                    value={form.tipoEspacio}
+                    onChange={setField('tipoEspacio')}
+                    options={[
+                      'Anaquel/estante',
+                      'Refrigerador/refri',
+                      'Mesa de exhibición',
+                      'Espacio en mostrador',
+                      'Varios tipos',
+                    ]}
+                  />
                 </Field>
 
                 <Field label="Categorías de interés">
-                  <select value={form.categorias} onChange={update('categorias')}
-                    style={{ ...inputBase, appearance: 'none', cursor: 'pointer', color: form.categorias ? '#F0EFE8' : placeholderColor }}
-                    onFocus={onFocusYellow} onBlur={onBlurReset}>
-                    <option value="" style={{ color: '#555' }}>Selecciona</option>
-                    <option style={{ color: '#111' }}>Alimentos y bebidas</option>
-                    <option style={{ color: '#111' }}>Cosméticos y skincare</option>
-                    <option style={{ color: '#111' }}>Wellness y suplementos</option>
-                    <option style={{ color: '#111' }}>Moda y accesorios</option>
-                    <option style={{ color: '#111' }}>Cualquier categoría</option>
-                  </select>
+                  <ChoiceGroup
+                    value={form.categorias}
+                    onChange={setField('categorias')}
+                    options={[
+                      'Alimentos y bebidas',
+                      'Cosméticos y skincare',
+                      'Wellness y suplementos',
+                      'Moda y accesorios',
+                      'Cualquier categoría',
+                    ]}
+                  />
                 </Field>
 
                 <Field label="¿Algo que quieras contarnos?">
@@ -579,13 +662,11 @@ export function FormTienda({ onSuccess }: { onSuccess: () => void }) {
                 <Divider label="DATOS FISCALES" />
 
                 <Field label="Tipo de persona" required>
-                  <select value={form.tipoPersona} onChange={update('tipoPersona')} required
-                    style={{ ...inputBase, appearance: 'none', cursor: 'pointer', color: form.tipoPersona ? '#F0EFE8' : placeholderColor }}
-                    onFocus={onFocusYellow} onBlur={onBlurReset}>
-                    <option value="" style={{ color: '#555' }}>Selecciona</option>
-                    <option style={{ color: '#111' }}>Persona física</option>
-                    <option style={{ color: '#111' }}>Persona moral</option>
-                  </select>
+                  <ChoiceGroup
+                    value={form.tipoPersona}
+                    onChange={setField('tipoPersona')}
+                    options={['Persona física', 'Persona moral']}
+                  />
                 </Field>
 
                 <Field label="Razón social / Nombre legal" required>
@@ -759,12 +840,69 @@ export function FormTienda({ onSuccess }: { onSuccess: () => void }) {
                     type="button"
                     onClick={verifyOTP}
                     disabled={loading || otpInput.length < 6}
-                    className="flex-1 py-4 rounded-pill font-syne font-bold text-base transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
-                    style={{ background: loading ? 'rgba(232,255,71,0.7)' : ACCENT, color: ACCENT_TEXT, border: 'none' }}
+                    aria-busy={loading}
+                    className="flex-1 py-4 rounded-pill font-syne font-bold text-base transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                    style={{
+                      background: submitState === 'success' ? '#4CAF50' : loading ? 'rgba(232,255,71,0.7)' : ACCENT,
+                      color: submitState === 'success' ? '#fff' : ACCENT_TEXT,
+                      border: 'none',
+                    }}
                   >
-                    {loading ? 'Generando tu carta...' : 'Confirmar y descargar carta →'}
+                    {submitState === 'loading' && (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        Generando tu carta...
+                      </>
+                    )}
+                    {submitState === 'success' && (
+                      <>
+                        <Check size={18} strokeWidth={3} />
+                        ¡Listo!
+                      </>
+                    )}
+                    {(submitState === 'idle' || submitState === 'error') && (
+                      <>Confirmar y descargar carta →</>
+                    )}
                   </button>
                 </div>
+
+                {/* Error banner */}
+                {submitState === 'error' && errorMsg && (
+                  <div
+                    role="alert"
+                    aria-live="polite"
+                    className="flex items-start gap-3 px-4 py-3 rounded-card mt-1"
+                    style={{
+                      background: 'rgba(220,53,69,0.12)',
+                      border: '1px solid rgba(220,53,69,0.4)',
+                      color: '#F0EFE8',
+                    }}
+                  >
+                    <AlertCircle size={18} style={{ color: '#FF6B35', flexShrink: 0, marginTop: '2px' }} />
+                    <div className="flex-1">
+                      <p className="font-dm font-medium" style={{ fontSize: '13px' }}>
+                        {errorMsg}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSubmitState('idle')
+                          setErrorMsg(null)
+                        }}
+                        className="font-dm underline cursor-pointer mt-1"
+                        style={{
+                          fontSize: '12px',
+                          color: '#E8FF47',
+                          background: 'none',
+                          border: 'none',
+                          padding: 0,
+                        }}
+                      >
+                        Reintentar
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 <p className="font-dm text-center" style={{ fontSize: '13px', color: 'rgba(240,239,232,0.35)' }}>
                   ¿No recibiste el código?{' '}

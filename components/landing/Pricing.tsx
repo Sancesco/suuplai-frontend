@@ -15,7 +15,7 @@ const staggerContainer = {
 const rows = [
   {
     label: 'Costo de entrada',
-    traditional: { value: '$50K–$200K MXN', note: 'Slotting fee · no reembolsable' },
+    traditional: { value: '$50K–$200K MXN', note: 'Costo de entrada · no reembolsable' },
     suuplai: { value: '$0', note: 'Sin cobro para entrar', good: true },
   },
   {
@@ -90,9 +90,9 @@ export function Pricing() {
           className="rounded-card overflow-hidden"
           style={{ border: '1px solid rgba(255,255,255,0.08)' }}
         >
-          {/* Table header */}
+          {/* Table header — desktop only */}
           <div
-            className="grid grid-cols-3 px-5 py-3 gap-4"
+            className="hidden md:grid grid-cols-3 px-5 py-3 gap-4"
             style={{ background: '#0A0A0F', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
           >
             <span
@@ -120,7 +120,7 @@ export function Pricing() {
             <motion.div
               key={row.label}
               variants={fadeUp}
-              className="grid grid-cols-3 px-5 py-5 gap-4 items-start"
+              className="flex flex-col gap-4 md:grid md:grid-cols-3 md:gap-4 md:items-start px-5 py-5"
               style={{
                 borderBottom: i < rows.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
                 background: i % 2 === 0 ? 'rgba(255,255,255,0.01)' : 'transparent',
@@ -129,7 +129,7 @@ export function Pricing() {
               {/* Label */}
               <span
                 className="font-dm font-medium text-suu-text"
-                style={{ fontSize: '14px', paddingTop: '2px' }}
+                style={{ fontSize: '15px', paddingTop: '2px' }}
               >
                 {row.label}
               </span>
@@ -137,9 +137,15 @@ export function Pricing() {
               {/* Traditional — struck through */}
               <div className="flex flex-col gap-0.5">
                 <span
+                  className="md:hidden font-dm font-medium"
+                  style={{ fontSize: '10px', letterSpacing: '2px', color: 'rgba(255,255,255,0.3)', marginBottom: '2px' }}
+                >
+                  CADENA GRANDE
+                </span>
+                <span
                   className="font-syne font-bold"
                   style={{
-                    fontSize: '14px',
+                    fontSize: '15px',
                     color: 'rgba(255,255,255,0.35)',
                     textDecoration: 'line-through',
                     textDecorationColor: 'rgba(255,100,100,0.4)',
@@ -149,7 +155,7 @@ export function Pricing() {
                 </span>
                 <span
                   className="font-dm text-suu-muted"
-                  style={{ fontSize: '11px', lineHeight: 1.4 }}
+                  style={{ fontSize: '12px', lineHeight: 1.4 }}
                 >
                   {row.traditional.note}
                 </span>
@@ -157,10 +163,16 @@ export function Pricing() {
 
               {/* Suuplai */}
               <div className="flex flex-col gap-0.5">
+                <span
+                  className="md:hidden font-dm font-medium"
+                  style={{ fontSize: '10px', letterSpacing: '2px', color: '#FF6B35', marginBottom: '2px' }}
+                >
+                  SUUPLAI
+                </span>
                 <div className="flex items-center gap-1.5">
                   <span
                     className="font-syne font-bold"
-                    style={{ fontSize: '14px', color: '#FF6B35' }}
+                    style={{ fontSize: '15px', color: '#FF6B35' }}
                   >
                     {row.suuplai.value}
                   </span>
@@ -185,7 +197,7 @@ export function Pricing() {
                 </div>
                 <span
                   className="font-dm text-suu-muted"
-                  style={{ fontSize: '11px', lineHeight: 1.4 }}
+                  style={{ fontSize: '12px', lineHeight: 1.4 }}
                 >
                   {row.suuplai.note}
                 </span>
@@ -204,7 +216,7 @@ export function Pricing() {
           style={{ fontSize: '13px', lineHeight: 1.6 }}
         >
           Suuplai cobra una comisión de plataforma sobre el valor generado. Sin costos ocultos.
-          Los precios de slot se acuerdan directamente entre marca y tienda.
+          Los precios de cada espacio se acuerdan directamente entre marca y tienda.
         </motion.p>
       </div>
     </section>

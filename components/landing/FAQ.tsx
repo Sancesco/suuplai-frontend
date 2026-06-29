@@ -16,11 +16,11 @@ const faqs = [
   },
   {
     q: '¿Quién responde si algo se daña?',
-    a: 'El productor es responsable del producto hasta que está en el anaquel. La tienda es responsable de la conservación mientras está en exhibición. Los términos exactos quedan en el contrato digital que ambas partes firman en la plataforma.',
+    a: 'El productor es responsable del producto hasta que está en la tienda. La tienda es responsable de la conservación mientras está en exhibición. Los términos exactos quedan en el contrato digital que ambas partes firman en la plataforma.',
   },
   {
     q: '¿Cómo se cobran las comisiones?',
-    a: 'Suuplai cobra una comisión sobre el ingreso generado por cada slot activo. Para tiendas, la plataforma procesa el pago del productor y lo deposita mensualmente. Para productores, el costo del slot se cobra al inicio de cada período activo.',
+    a: 'Suuplai cobra una comisión sobre el ingreso generado por cada espacio activo. Para tiendas, la plataforma procesa el pago del productor y lo deposita mensualmente. Para productores, el costo del espacio se cobra al inicio de cada período activo.',
   },
   {
     q: '¿Puedo sacar una marca si no funciona?',
@@ -31,8 +31,8 @@ const faqs = [
     a: 'No para el registro inicial. Puedes explorar la plataforma y recibir tu primer match sin tener que facturar nada. Para activar pagos formales sí necesitarás datos fiscales, pero eso viene después de tu primer acuerdo.',
   },
   {
-    q: '¿Cuánto tarda en activarse mi primer slot?',
-    a: 'Una vez que tienes un acuerdo con una tienda, el slot se activa en 48–72 horas. El proceso incluye: confirmar términos en la plataforma, coordinar entrega del producto a la tienda y encender el tracking de ventas.',
+    q: '¿Cuánto tarda en activarse mi primer espacio?',
+    a: 'Una vez que tienes un acuerdo con una tienda, el espacio se activa en 48–72 horas. El proceso incluye: confirmar términos en la plataforma, coordinar entrega del producto a la tienda y encender el tracking de ventas.',
   },
   {
     q: '¿Hay contrato mínimo?',

@@ -70,7 +70,7 @@ function SliderInput({
 
 const MODAL_LABELS = ['Tarifa fija', 'Mixta', 'Comisión']
 const MODAL_MULTIPLIERS = [1.0, 1.25, 1.5]
-const BASE_RATE = 800
+const BASE_RATE = 600
 
 function TabTienda() {
   const [metros, setMetros] = useState(3)
@@ -181,20 +181,20 @@ function TabTienda() {
           </div>
 
           {/* Breakdown */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {[
               { value: formatMXN(annual), label: 'al año', color: '#E8FF47' },
               { value: formatMXN(perMeter), label: 'por metro/mes', color: '#F0EFE8' },
               { value: formatMXN(perBrand), label: 'por marca/mes', color: '#F0EFE8' },
             ].map((item) => (
-              <div key={item.label} className="flex flex-col gap-1">
+              <div key={item.label} className="flex sm:flex-col items-baseline sm:items-start justify-between sm:justify-start gap-2 sm:gap-1">
                 <span
                   className="font-syne font-bold"
-                  style={{ fontSize: '14px', color: item.color }}
+                  style={{ fontSize: '15px', color: item.color }}
                 >
                   {item.value}
                 </span>
-                <span className="font-dm text-suu-muted" style={{ fontSize: '11px' }}>
+                <span className="font-dm text-suu-muted" style={{ fontSize: '12px' }}>
                   {item.label}
                 </span>
               </div>
@@ -239,7 +239,7 @@ const RETAILER_BENCHMARK = 50000
 
 function TabProductor() {
   const [tiendas, setTiendas] = useState(5)
-  const [precioSlot, setPrecioSlot] = useState(1000)
+  const [precioSlot, setPrecioSlot] = useState(700)
   const [ventasTienda, setVentasTienda] = useState(20000)
 
   const monthlyCost = tiendas * precioSlot
@@ -271,10 +271,10 @@ function TabProductor() {
             sliderClass="slider-productor w-full"
           />
           <SliderInput
-            label="Precio promedio por slot/mes"
+            label="Precio promedio por espacio/mes"
             value={precioSlot}
-            min={500}
-            max={3000}
+            min={300}
+            max={2000}
             step={100}
             formatValue={(v) => `$${v.toLocaleString()} MXN`}
             onChange={setPrecioSlot}
@@ -393,7 +393,7 @@ function TabProductor() {
           </div>
 
           <p className="font-dm text-suu-muted" style={{ fontSize: '12px', lineHeight: 1.5 }}>
-            El benchmark de cadena grande incluye slotting fee, factoraje y logística CEDIS
+            El benchmark de cadena grande incluye costo de entrada, factoraje y logística CEDIS
           </p>
         </div>
       </div>

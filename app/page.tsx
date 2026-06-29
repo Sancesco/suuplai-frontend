@@ -1,17 +1,20 @@
 import { Nav } from '@/components/landing/Nav'
 import { Hero } from '@/components/landing/Hero'
+import { CarruselTiendas } from '@/components/landing/CarruselTiendas'
+import { MarcasSocias } from '@/components/landing/MarcasSocias'
+import { MapaCDMX } from '@/components/landing/MapaCDMX'
 import { MarqueeBanner } from '@/components/landing/MarqueeBanner'
 import { PainPoints } from '@/components/landing/PainPoints'
 import { AudienceSplit } from '@/components/landing/AudienceSplit'
 import { SlotVisual } from '@/components/landing/SlotVisual'
-import { ComandoCase } from '@/components/landing/ComandoCase'
+import { OnboardingRapido } from '@/components/landing/OnboardingRapido'
 import { Calculator } from '@/components/landing/Calculator'
 import { Pricing } from '@/components/landing/Pricing'
 import { HowItWorks } from '@/components/landing/HowItWorks'
-import { MapaCDMX } from '@/components/landing/MapaCDMX'
 import { FAQ } from '@/components/landing/FAQ'
-import { ManifestoCTA } from '@/components/landing/ManifestoCTA'
 import { Footer } from '@/components/landing/Footer'
+import { WhatsAppFloat } from '@/components/landing/WhatsAppFloat'
+import { StickyMobileCTA } from '@/components/landing/StickyMobileCTA'
 
 export default function Home() {
   return (
@@ -19,19 +22,24 @@ export default function Home() {
       <Nav />
       <main>
         <Hero />
+        <CarruselTiendas />
+        <MarcasSocias />
+        <MapaCDMX />
         <MarqueeBanner />
         <PainPoints />
         <AudienceSplit />
         <SlotVisual />
-        <ComandoCase />
+        <OnboardingRapido />
         <Calculator id="calculadora" />
         <Pricing />
         <HowItWorks id="como-funciona" />
-        <MapaCDMX />
         <FAQ />
-        <ManifestoCTA />
       </main>
       <Footer />
+      {/* Mobile-only bottom padding so the sticky CTA never tapes el footer */}
+      <div className="md:hidden" style={{ height: '80px' }} aria-hidden="true" />
+      <WhatsAppFloat />
+      <StickyMobileCTA />
     </>
   )
 }

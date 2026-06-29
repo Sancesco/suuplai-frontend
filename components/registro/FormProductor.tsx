@@ -2,8 +2,10 @@
 
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Loader2, Check, AlertCircle } from 'lucide-react'
 
 const ACCENT = '#FF6B35'
+const ACCENT_TEXT = '#0A0A0F'
 
 interface FormData {
   nombre: string
@@ -40,6 +42,28 @@ const CANALES = [
   'Mercados / bazares',
 ]
 
+const CATEGORIAS = [
+  'Alimentos y bebidas',
+  'Salsas/condimentos',
+  'Snacks/botanas',
+  'Bebidas funcionales',
+  'Cosméticos y skincare',
+  'Wellness y suplementos',
+  'Moda y accesorios',
+  'Libros y papelería',
+  'Arte y diseño',
+  'Otro',
+]
+
+const FRUSTRACIONES = [
+  'Slotting fees y barreras de entrada altísimas',
+  'No tengo datos de quién me compra ni dónde roto mejor',
+  'Mi margen se destruye con logística y penalizaciones',
+  'Tardo meses en entrar y años en ver resultados',
+  'Me pierdo entre cientos de productos similares',
+  'No puedo testear SKUs nuevos sin arriesgar mucho',
+]
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-components
 // ─────────────────────────────────────────────────────────────────────────────
@@ -47,10 +71,7 @@ const CANALES = [
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label
-        className="font-dm font-medium"
-        style={{ fontSize: '13px', color: '#F0EFE8' }}
-      >
+      <label className="font-dm font-medium" style={{ fontSize: '13px', color: '#F0EFE8' }}>
         {label}{required && <span style={{ color: ACCENT }}> *</span>}
       </label>
       {children}
@@ -73,45 +94,156 @@ function Divider({ label }: { label: string }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Shared input styles
+// Shared input styles — campos claros (fondo blanco), igual que el form de tienda.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const inputBase: React.CSSProperties = {
   width: '100%',
-  background: '#0A0A0F',
-  border: '1px solid rgba(240,239,232,0.15)',
+  background: '#FFFFFF',
+  border: '1px solid rgba(0,0,0,0.12)',
   borderRadius: '8px',
   padding: '12px 16px',
   fontFamily: 'var(--font-dm-sans)',
-  fontWeight: 300,
+  fontWeight: 400,
   fontSize: '14px',
-  color: '#F0EFE8',
+  color: '#1a1a1a',
   outline: 'none',
-  transition: 'border-color 0.2s ease',
+  transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
 }
-
-const placeholderColor = 'rgba(240,239,232,0.3)'
 
 function onFocusOrange(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
   e.currentTarget.style.borderColor = ACCENT
+  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(255,107,53,0.25)'
 }
 function onBlurReset(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
-  e.currentTarget.style.borderColor = 'rgba(240,239,232,0.15)'
+  e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)'
+  e.currentTarget.style.boxShadow = 'none'
+}
+
+// Selector de botones (chips) — más rápido y visual que un menú desplegable.
+function ChoiceGroup({
+  options,
+  value,
+  onChange,
+}: {
+  options: string[]
+  value: string
+  onChange: (v: string) => void
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((opt) => {
+        const selected = value === opt
+        return (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => onChange(opt)}
+            className="font-dm transition-all duration-150"
+            style={{
+              fontSize: '13px',
+              fontWeight: selected ? 600 : 400,
+              padding: '9px 15px',
+              borderRadius: '999px',
+              cursor: 'pointer',
+              background: selected ? ACCENT : '#FFFFFF',
+              color: selected ? ACCENT_TEXT : '#3a3a3a',
+              border: selected ? `1.5px solid ${ACCENT}` : '1.5px solid rgba(0,0,0,0.14)',
+            }}
+            onMouseEnter={(e) => {
+              if (!selected) e.currentTarget.style.borderColor = 'rgba(0,0,0,0.35)'
+            }}
+            onMouseLeave={(e) => {
+              if (!selected) e.currentTarget.style.borderColor = 'rgba(0,0,0,0.14)'
+            }}
+          >
+            {opt}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// Lista vertical de opciones largas (frases) — botones full-width, fáciles de tocar.
+function ChoiceList({
+  options,
+  value,
+  onChange,
+}: {
+  options: string[]
+  value: string
+  onChange: (v: string) => void
+}) {
+  return (
+    <div className="flex flex-col gap-2">
+      {options.map((opt) => {
+        const selected = value === opt
+        return (
+          <button
+            key={opt}
+            type="button"
+            onClick={() => onChange(opt)}
+            className="flex items-center gap-3 px-4 py-3 text-left font-dm transition-all duration-150"
+            style={{
+              fontSize: '13px',
+              lineHeight: 1.4,
+              fontWeight: selected ? 500 : 400,
+              borderRadius: '10px',
+              cursor: 'pointer',
+              background: selected ? 'rgba(255,107,53,0.12)' : '#FFFFFF',
+              color: selected ? '#1a1a1a' : '#3a3a3a',
+              border: selected ? `1.5px solid ${ACCENT}` : '1.5px solid rgba(0,0,0,0.12)',
+            }}
+            onMouseEnter={(e) => {
+              if (!selected) e.currentTarget.style.borderColor = 'rgba(0,0,0,0.3)'
+            }}
+            onMouseLeave={(e) => {
+              if (!selected) e.currentTarget.style.borderColor = 'rgba(0,0,0,0.12)'
+            }}
+          >
+            <span
+              className="w-4 h-4 rounded-full shrink-0 flex items-center justify-center transition-all"
+              style={{
+                background: selected ? ACCENT : 'transparent',
+                border: `1.5px solid ${selected ? ACCENT : 'rgba(0,0,0,0.25)'}`,
+              }}
+            >
+              {selected && (
+                <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#fff' }} />
+              )}
+            </span>
+            {opt}
+          </button>
+        )
+      })}
+    </div>
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
 
+type SubmitState = 'idle' | 'loading' | 'success' | 'error'
+
 export function FormProductor({ onSuccess }: { onSuccess: () => void }) {
   const [form, setForm] = useState<FormData>(INITIAL)
-  const [loading, setLoading] = useState(false)
+  const [submitState, setSubmitState] = useState<SubmitState>('idle')
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
+
+  const loading = submitState === 'loading'
 
   const update =
     (key: keyof FormData) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) =>
       setForm((f) => ({ ...f, [key]: e.target.value }))
+
+  const setField =
+    (key: keyof FormData) =>
+    (value: string) =>
+      setForm((f) => ({ ...f, [key]: value }))
 
   const toggleCanal = (canal: string) => {
     setForm((f) => ({
@@ -124,17 +256,29 @@ export function FormProductor({ onSuccess }: { onSuccess: () => void }) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
-    setTimeout(() => {
-      const existing = JSON.parse(localStorage.getItem('suuplai_registros') || '[]') as unknown[]
-      localStorage.setItem(
-        'suuplai_registros',
-        JSON.stringify([...existing, { tipo: 'productor', timestamp: Date.now(), ...form }])
-      )
-      setLoading(false)
-      setSubmitted(true)
-      onSuccess()
-    }, 800)
+    setSubmitState('loading')
+    setErrorMsg(null)
+    void (async () => {
+      const minLoadingDelay = new Promise<void>((r) => setTimeout(r, 800))
+      try {
+        await minLoadingDelay
+        const existing = JSON.parse(localStorage.getItem('suuplai_registros') || '[]') as unknown[]
+        localStorage.setItem(
+          'suuplai_registros',
+          JSON.stringify([...existing, { tipo: 'productor', timestamp: Date.now(), ...form }])
+        )
+        setSubmitState('success')
+        setSubmitted(true)
+        onSuccess()
+      } catch (err) {
+        setSubmitState('error')
+        setErrorMsg(
+          err instanceof Error
+            ? err.message
+            : 'No pudimos enviar tu registro. Intenta de nuevo en unos segundos.'
+        )
+      }
+    })()
   }
 
   return (
@@ -193,8 +337,8 @@ export function FormProductor({ onSuccess }: { onSuccess: () => void }) {
             className="font-dm mb-8"
             style={{ fontSize: '15px', fontWeight: 300, color: 'rgba(240,239,232,0.55)' }}
           >
-            Cuéntanos sobre tu marca. Revisamos cada solicitud personalmente — confirmamos tu lugar
-            en menos de 48h.
+            Cuéntanos sobre tu marca. La mayoría son toques rápidos — confirmamos tu lugar en menos
+            de 48h.
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -211,7 +355,6 @@ export function FormProductor({ onSuccess }: { onSuccess: () => void }) {
                   style={inputBase}
                   onFocus={onFocusOrange}
                   onBlur={onBlurReset}
-                  className="placeholder-shown:[color:rgba(240,239,232,0.3)]"
                 />
               </Field>
               <Field label="Apellido" required>
@@ -270,65 +413,33 @@ export function FormProductor({ onSuccess }: { onSuccess: () => void }) {
             </Field>
 
             <Field label="Categoría principal" required>
-              <select
+              <ChoiceGroup
                 value={form.categoria}
-                onChange={update('categoria')}
-                required
-                style={{ ...inputBase, appearance: 'none', cursor: 'pointer', color: form.categoria ? '#F0EFE8' : placeholderColor }}
-                onFocus={onFocusOrange}
-                onBlur={onBlurReset}
-              >
-                <option value="" style={{ color: '#555' }}>Selecciona una opción</option>
-                <option style={{ color: '#111' }}>Alimentos y bebidas</option>
-                <option style={{ color: '#111' }}>Salsas/condimentos</option>
-                <option style={{ color: '#111' }}>Snacks/botanas</option>
-                <option style={{ color: '#111' }}>Bebidas funcionales</option>
-                <option style={{ color: '#111' }}>Cosméticos y skincare</option>
-                <option style={{ color: '#111' }}>Wellness y suplementos</option>
-                <option style={{ color: '#111' }}>Moda y accesorios</option>
-                <option style={{ color: '#111' }}>Libros y papelería</option>
-                <option style={{ color: '#111' }}>Arte y diseño</option>
-                <option style={{ color: '#111' }}>Otro</option>
-              </select>
+                onChange={setField('categoria')}
+                options={CATEGORIAS}
+              />
             </Field>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="¿Cuántos SKUs tienes activos?">
-                <select
+                <ChoiceGroup
                   value={form.skus}
-                  onChange={update('skus')}
-                  style={{ ...inputBase, appearance: 'none', cursor: 'pointer', color: form.skus ? '#F0EFE8' : placeholderColor }}
-                  onFocus={onFocusOrange}
-                  onBlur={onBlurReset}
-                >
-                  <option value="" style={{ color: '#555' }}>Selecciona</option>
-                  <option style={{ color: '#111' }}>1–3</option>
-                  <option style={{ color: '#111' }}>4–10</option>
-                  <option style={{ color: '#111' }}>11–20</option>
-                  <option style={{ color: '#111' }}>Más de 20</option>
-                </select>
+                  onChange={setField('skus')}
+                  options={['1–3', '4–10', '11–20', 'Más de 20']}
+                />
               </Field>
               <Field label="Precio / ticket promedio">
-                <select
+                <ChoiceGroup
                   value={form.ticket}
-                  onChange={update('ticket')}
-                  style={{ ...inputBase, appearance: 'none', cursor: 'pointer', color: form.ticket ? '#F0EFE8' : placeholderColor }}
-                  onFocus={onFocusOrange}
-                  onBlur={onBlurReset}
-                >
-                  <option value="" style={{ color: '#555' }}>Selecciona</option>
-                  <option style={{ color: '#111' }}>Menos de $50</option>
-                  <option style={{ color: '#111' }}>$50–$150</option>
-                  <option style={{ color: '#111' }}>$150–$350</option>
-                  <option style={{ color: '#111' }}>$350–$800</option>
-                  <option style={{ color: '#111' }}>Más de $800</option>
-                </select>
+                  onChange={setField('ticket')}
+                  options={['Menos de $50', '$50–$150', '$150–$350', '$350–$800', 'Más de $800']}
+                />
               </Field>
             </div>
 
             <Divider label="TU SITUACIÓN ACTUAL" />
 
-            {/* Canales de venta — checkbox grid */}
+            {/* Canales de venta — multi-selección con chips claros */}
             <Field label="¿Dónde vendes actualmente?">
               <div className="grid grid-cols-2 gap-2 mt-1">
                 {CANALES.map((canal) => {
@@ -340,16 +451,16 @@ export function FormProductor({ onSuccess }: { onSuccess: () => void }) {
                       onClick={() => toggleCanal(canal)}
                       className="flex items-center gap-2 px-3 py-2.5 rounded-card text-left transition-all duration-150"
                       style={{
-                        background: checked ? 'rgba(255,107,53,0.1)' : '#0A0A0F',
-                        border: `1px solid ${checked ? ACCENT : 'rgba(240,239,232,0.12)'}`,
-                        color: checked ? '#F0EFE8' : 'rgba(240,239,232,0.55)',
+                        background: checked ? 'rgba(255,107,53,0.12)' : '#FFFFFF',
+                        border: `1.5px solid ${checked ? ACCENT : 'rgba(0,0,0,0.12)'}`,
+                        color: checked ? '#1a1a1a' : '#3a3a3a',
                       }}
                     >
                       <span
                         className="w-4 h-4 rounded shrink-0 flex items-center justify-center transition-all"
                         style={{
                           background: checked ? ACCENT : 'transparent',
-                          border: `1.5px solid ${checked ? ACCENT : 'rgba(240,239,232,0.3)'}`,
+                          border: `1.5px solid ${checked ? ACCENT : 'rgba(0,0,0,0.25)'}`,
                         }}
                       >
                         {checked && (
@@ -366,55 +477,34 @@ export function FormProductor({ onSuccess }: { onSuccess: () => void }) {
             </Field>
 
             <Field label="¿Cuál es tu principal frustración con el retail actual?">
-              <select
+              <ChoiceList
                 value={form.frustracion}
-                onChange={update('frustracion')}
-                style={{ ...inputBase, appearance: 'none', cursor: 'pointer', color: form.frustracion ? '#F0EFE8' : placeholderColor }}
-                onFocus={onFocusOrange}
-                onBlur={onBlurReset}
-              >
-                <option value="" style={{ color: '#555' }}>Selecciona</option>
-                <option style={{ color: '#111' }}>Slotting fees y barreras de entrada altísimas</option>
-                <option style={{ color: '#111' }}>No tengo datos de quién me compra ni dónde roto mejor</option>
-                <option style={{ color: '#111' }}>Mi margen se destruye con logística y penalizaciones</option>
-                <option style={{ color: '#111' }}>Tardo meses en entrar y años en ver resultados</option>
-                <option style={{ color: '#111' }}>Me pierdo entre cientos de productos similares</option>
-                <option style={{ color: '#111' }}>No puedo testear SKUs nuevos sin arriesgar mucho</option>
-              </select>
+                onChange={setField('frustracion')}
+                options={FRUSTRACIONES}
+              />
             </Field>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Field label="¿En cuántas tiendas quieres entrar?">
-                <select
+                <ChoiceGroup
                   value={form.numTiendas}
-                  onChange={update('numTiendas')}
-                  style={{ ...inputBase, appearance: 'none', cursor: 'pointer', color: form.numTiendas ? '#F0EFE8' : placeholderColor }}
-                  onFocus={onFocusOrange}
-                  onBlur={onBlurReset}
-                >
-                  <option value="" style={{ color: '#555' }}>Selecciona</option>
-                  <option style={{ color: '#111' }}>1–3 (prueba)</option>
-                  <option style={{ color: '#111' }}>4–10</option>
-                  <option style={{ color: '#111' }}>11–20</option>
-                  <option style={{ color: '#111' }}>20+</option>
-                </select>
+                  onChange={setField('numTiendas')}
+                  options={['1–3 (prueba)', '4–10', '11–20', '20+']}
+                />
               </Field>
               <Field label="¿En qué zona de CDMX?">
-                <select
+                <ChoiceGroup
                   value={form.zona}
-                  onChange={update('zona')}
-                  style={{ ...inputBase, appearance: 'none', cursor: 'pointer', color: form.zona ? '#F0EFE8' : placeholderColor }}
-                  onFocus={onFocusOrange}
-                  onBlur={onBlurReset}
-                >
-                  <option value="" style={{ color: '#555' }}>Selecciona</option>
-                  <option style={{ color: '#111' }}>Roma/Condesa</option>
-                  <option style={{ color: '#111' }}>Polanco/Lomas</option>
-                  <option style={{ color: '#111' }}>Coyoacán/Del Valle</option>
-                  <option style={{ color: '#111' }}>Santa Fe/Interlomas</option>
-                  <option style={{ color: '#111' }}>Narvarte/Doctores</option>
-                  <option style={{ color: '#111' }}>Toda la ciudad</option>
-                </select>
+                  onChange={setField('zona')}
+                  options={[
+                    'Roma/Condesa',
+                    'Polanco/Lomas',
+                    'Coyoacán/Del Valle',
+                    'Santa Fe/Interlomas',
+                    'Narvarte/Doctores',
+                    'Toda la ciudad',
+                  ]}
+                />
               </Field>
             </div>
 
@@ -443,17 +533,74 @@ export function FormProductor({ onSuccess }: { onSuccess: () => void }) {
               />
             </Field>
 
+            {/* Error banner */}
+            {submitState === 'error' && errorMsg && (
+              <div
+                role="alert"
+                aria-live="polite"
+                className="flex items-start gap-3 px-4 py-3 rounded-card"
+                style={{
+                  background: 'rgba(220,53,69,0.12)',
+                  border: '1px solid rgba(220,53,69,0.4)',
+                  color: '#F0EFE8',
+                }}
+              >
+                <AlertCircle size={18} style={{ color: '#FF6B35', flexShrink: 0, marginTop: '2px' }} />
+                <div className="flex-1">
+                  <p className="font-dm font-medium" style={{ fontSize: '13px' }}>
+                    {errorMsg}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSubmitState('idle')
+                      setErrorMsg(null)
+                    }}
+                    className="font-dm underline cursor-pointer mt-1"
+                    style={{
+                      fontSize: '12px',
+                      color: ACCENT,
+                      background: 'none',
+                      border: 'none',
+                      padding: 0,
+                    }}
+                  >
+                    Reintentar
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Submit */}
             <div className="flex flex-col gap-3 mt-2">
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-4 rounded-pill font-syne font-bold text-base transition-all duration-200 disabled:opacity-60"
-                style={{ background: ACCENT, color: '#0A0A0F', border: 'none' }}
-                onMouseEnter={(e) => { if (!loading) e.currentTarget.style.opacity = '0.9' }}
+                aria-busy={loading}
+                className="w-full py-4 rounded-pill font-syne font-bold text-base transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                style={{
+                  background: submitState === 'success' ? '#4CAF50' : ACCENT,
+                  color: submitState === 'success' ? '#fff' : '#0A0A0F',
+                  border: 'none',
+                }}
+                onMouseEnter={(e) => { if (!loading && submitState === 'idle') e.currentTarget.style.opacity = '0.9' }}
                 onMouseLeave={(e) => { e.currentTarget.style.opacity = '1' }}
               >
-                {loading ? 'Guardando tu lugar...' : 'Asegurar mi lugar en la waitlist →'}
+                {submitState === 'loading' && (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Guardando tu lugar...
+                  </>
+                )}
+                {submitState === 'success' && (
+                  <>
+                    <Check size={18} strokeWidth={3} />
+                    ¡Listo!
+                  </>
+                )}
+                {(submitState === 'idle' || submitState === 'error') && (
+                  <>Asegurar mi lugar en la waitlist →</>
+                )}
               </button>
               <p
                 className="font-dm text-center"

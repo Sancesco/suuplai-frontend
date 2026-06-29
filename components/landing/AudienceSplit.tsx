@@ -5,14 +5,14 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const beforeAfterTienda = [
-  { before: 'metros vacíos', after: 'slots que marcas pagan por ocupar' },
+  { before: 'metros vacíos', after: 'espacios disponibles que marcas pagan por ocupar' },
   { before: 'ingresos solo por ventas', after: 'ingreso fijo mensual por espacio' },
   { before: 'productos genéricos', after: 'marcas exclusivas que hacen tu tienda un destino' },
   { before: 'sin datos', after: 'dashboard de métricas por producto y zona' },
 ]
 
 const beforeAfterProductor = [
-  { before: '6 meses + slotting fee + factoraje', after: 'en días, sin inventario masivo' },
+  { before: '6 meses + costo de entrada alto + factoraje', after: 'en días, sin inventario masivo' },
   { before: 'lanzar SKU = apostar ciego', after: 'prueba en 3 fines de semana' },
   { before: 'cero datos de rotación', after: 'reportes por zona y perfil de comprador' },
   { before: 'uno más entre cientos de productos', after: 'curaduría de pocas marcas — protagonismo real' },
@@ -164,7 +164,7 @@ function TiendasPanel() {
           className="font-dm text-suu-muted mb-10"
           style={{ fontSize: '18px', fontWeight: 300, lineHeight: 1.6 }}
         >
-          Metros de anaquel que hoy no generan nada. Con Suuplai, esos mismos metros se convierten en ingreso fijo cada mes.
+          Metros de espacio en tienda que hoy no generan nada. Con Suuplai, esos mismos metros se convierten en ingreso fijo cada mes.
         </motion.p>
 
         <BeforeAfterList items={beforeAfterTienda} arrowColor="#E8FF47" />
@@ -226,7 +226,7 @@ function ProductoresPanel() {
           className="font-dm text-suu-muted mb-10"
           style={{ fontSize: '18px', fontWeight: 300, lineHeight: 1.6 }}
         >
-          Entra a tiendas físicas en días. Sin slotting fee inicial, sin factoraje, sin apostar ciego.
+          Entra a tiendas físicas en días. Sin costo de entrada alto, sin factoraje, sin apostar ciego.
         </motion.p>
 
         <BeforeAfterList items={beforeAfterProductor} arrowColor="#FF6B35" />

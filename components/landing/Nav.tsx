@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Menu, X, ChevronDown } from 'lucide-react'
+import { Menu, X } from 'lucide-react'
 import { Logo } from '@/components/shared/Logo'
 
 const navLinks = [
@@ -16,7 +16,7 @@ const navLinks = [
 const uneteOptions = [
   {
     label: 'Para Tiendas',
-    desc: 'Monetiza tu espacio en anaquel',
+    desc: 'Monetiza tu espacio en tienda',
     href: '/registro-tienda',
     color: '#E8FF47',
   },
@@ -31,23 +31,11 @@ const uneteOptions = [
 export function Nav() {
   const [scrolled, setScrolled] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
-  const [dropdownOpen, setDropdownOpen] = useState(false)
-  const dropdownRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20)
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
-  useEffect(() => {
-    function handleOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleOutside)
-    return () => document.removeEventListener('mousedown', handleOutside)
   }, [])
 
   return (
@@ -62,7 +50,7 @@ export function Nav() {
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Logo size="md" />
+        <Logo variant="dark" className="h-7 md:h-8" />
 
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-8">
@@ -79,81 +67,36 @@ export function Nav() {
 
         {/* Únete dropdown + Mobile toggle */}
         <div className="flex items-center gap-3">
-          {/* Desktop Únete dropdown */}
-          <div ref={dropdownRef} className="relative hidden md:block">
-            <button
-              onClick={() => setDropdownOpen((v) => !v)}
-              className="inline-flex items-center gap-1.5 px-5 py-2 rounded-pill font-syne font-bold text-sm transition-all duration-200"
-              style={{ background: '#F0EFE8', color: '#0A0A0F' }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = '0.88'
-                e.currentTarget.style.transform = 'translateY(-2px)'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = '1'
-                e.currentTarget.style.transform = ''
-              }}
-            >
-              Únete
-              <ChevronDown
-                size={14}
-                style={{
-                  transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
-                  transition: 'transform 0.2s ease',
+          {/* Desktop — dos botones directos a cada formulario (un clic, sin desplegable) */}
+          <div className="hidden md:flex items-center gap-2.5">
+            {uneteOptions.map((opt) => (
+              <Link
+                key={opt.label}
+                href={opt.href}
+                className="inline-flex items-center px-5 py-2 rounded-pill font-syne font-bold text-sm transition-all duration-200"
+                style={{ background: opt.color, color: '#0A0A0F' }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.opacity = '0.88'
+                  e.currentTarget.style.transform = 'translateY(-2px)'
                 }}
-              />
-            </button>
-
-            <AnimatePresence>
-              {dropdownOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -8, scale: 0.96 }}
-                  transition={{ duration: 0.15, ease: 'easeOut' }}
-                  className="absolute right-0 top-full mt-2 w-56 rounded-card overflow-hidden"
-                  style={{
-                    background: '#13131A',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    boxShadow: '0 16px 40px rgba(0,0,0,0.4)',
-                  }}
-                >
-                  {uneteOptions.map((opt, i) => (
-                    <Link
-                      key={opt.label}
-                      href={opt.href}
-                      onClick={() => setDropdownOpen(false)}
-                      className="flex flex-col gap-0.5 px-4 py-3.5 transition-colors duration-150"
-                      style={{
-                        borderBottom: i < uneteOptions.length - 1 ? '1px solid rgba(255,255,255,0.05)' : 'none',
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.background = ''
-                      }}
-                    >
-                      <span className="font-syne font-bold text-sm" style={{ color: opt.color }}>
-                        {opt.label}
-                      </span>
-                      <span className="font-dm text-suu-muted" style={{ fontSize: '12px' }}>
-                        {opt.desc}
-                      </span>
-                    </Link>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.opacity = '1'
+                  e.currentTarget.style.transform = ''
+                }}
+              >
+                {opt.label}
+              </Link>
+            ))}
           </div>
 
           {/* Mobile hamburger */}
           <button
-            className="md:hidden text-suu-text p-2"
+            className="md:hidden text-suu-text inline-flex items-center justify-center"
             onClick={() => setMenuOpen(!menuOpen)}
             aria-label={menuOpen ? 'Cerrar menú' : 'Abrir menú'}
+            style={{ width: '44px', height: '44px' }}
           >
-            {menuOpen ? <X size={22} /> : <Menu size={22} />}
+            {menuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </div>
@@ -175,7 +118,7 @@ export function Nav() {
                   key={link.label}
                   href={link.href}
                   onClick={() => setMenuOpen(false)}
-                  className="text-suu-text font-dm text-base py-1 border-b border-white/5"
+                  className="text-suu-text font-dm text-base py-3 border-b border-white/5"
                 >
                   {link.label}
                 </a>

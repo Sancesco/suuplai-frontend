@@ -20,7 +20,7 @@ export function NavRegistro({ tipo }: NavRegistroProps) {
       }}
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-        <Logo size="md" linkTo="/" />
+        <Logo variant="dark" className="h-8" linkTo="/" />
         <Link
           href="/"
           className="inline-flex items-center gap-2 font-dm text-sm transition-colors duration-200"

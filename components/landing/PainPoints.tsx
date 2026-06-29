@@ -25,7 +25,7 @@ const pains = [
   },
   {
     icon: '🙈',
-    title: 'Estás ciego en anaquel',
+    title: 'Estás ciego en punto de venta',
     desc: 'Pagas por estar, pero no sabes si tu producto rota, dónde rota, ni por qué no rota en ciertos puntos.',
   },
   {

@@ -100,7 +100,7 @@ export function MapaLeaflet({ activeZone }: MapaLeafletProps) {
             min-width: 140px;
           ">
             <p style="color: #F0EFE8; font-weight: 600; font-size: 14px; margin: 0 0 4px;">${point.name}</p>
-            <p style="color: #FF6B35; font-size: 12px; margin: 0;">${point.slots} slots disponibles</p>
+            <p style="color: #FF6B35; font-size: 14px; margin: 0;">${point.slots} espacios disponibles</p>
           </div>`,
           {
             className: 'suuplai-popup',
@@ -108,13 +108,13 @@ export function MapaLeaflet({ activeZone }: MapaLeafletProps) {
           }
         )
 
-        circleMarker.on('mouseover', function () {
-          this.openPopup()
-          this.setStyle({ radius: 14, fillColor: '#FF9A73' })
+        circleMarker.on('mouseover', () => {
+          circleMarker.openPopup()
+          circleMarker.setStyle({ radius: 14, fillColor: '#FF9A73' })
         })
-        circleMarker.on('mouseout', function () {
-          this.closePopup()
-          this.setStyle({ radius: 10, fillColor: '#FF6B35' })
+        circleMarker.on('mouseout', () => {
+          circleMarker.closePopup()
+          circleMarker.setStyle({ radius: 10, fillColor: '#FF6B35' })
         })
       })
     })
@@ -150,7 +150,7 @@ export function MapaLeaflet({ activeZone }: MapaLeafletProps) {
     <div
       ref={mapRef}
       style={{ width: '100%', height: 'clamp(280px, 50vw, 420px)', borderRadius: '12px' }}
-      aria-label="Mapa de CDMX con slots disponibles"
+      aria-label="Mapa de CDMX con espacios disponibles"
     />
   )
 }

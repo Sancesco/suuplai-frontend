@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { motion } from 'framer-motion'
 
@@ -9,30 +9,82 @@ const fadeUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
 }
 
-// Dynamic import — Leaflet requiere browser APIs, no SSR
+// Skeleton placeholder — same height as the real map to prevent CLS
+function MapaPlaceholder() {
+  return (
+    <div
+      className="animate-pulse"
+      style={{
+        width: '100%',
+        height: 'clamp(280px, 50vw, 420px)',
+        borderRadius: '12px',
+        background: 'linear-gradient(135deg, #13131A 0%, #1a1a23 50%, #13131A 100%)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      aria-busy="true"
+      aria-label="Cargando mapa"
+    >
+      <span className="font-dm" style={{ color: 'rgba(240,239,232,0.4)', fontSize: '13px', letterSpacing: '1px' }}>
+        Cargando mapa…
+      </span>
+    </div>
+  )
+}
+
+// Leaflet chunk fetched only when shouldLoad is true (component first mounted).
 const MapaLeaflet = dynamic(
   () => import('./MapaLeaflet').then((m) => ({ default: m.MapaLeaflet })),
   {
     ssr: false,
-    loading: () => (
-      <div
-        style={{
-          width: '100%',
-          height: 'clamp(280px, 50vw, 420px)',
-          borderRadius: '12px',
-          background: '#13131A',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <span className="font-dm text-suu-muted" style={{ fontSize: '14px' }}>
-          Cargando mapa…
-        </span>
-      </div>
-    ),
+    loading: () => <MapaPlaceholder />,
   }
 )
+
+// Viewport gate — uses native IntersectionObserver with 200px rootMargin to start
+// loading just before the map enters the screen. Skeleton stays in place until ready.
+function MapaLeafletGate({ activeZone }: { activeZone: string | null }) {
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [shouldLoad, setShouldLoad] = useState(false)
+
+  useEffect(() => {
+    if (shouldLoad) return
+    const el = containerRef.current
+    if (!el) return
+    if (typeof IntersectionObserver === 'undefined') {
+      setShouldLoad(true)
+      return
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setShouldLoad(true)
+          io.disconnect()
+        }
+      },
+      { rootMargin: '200px' }
+    )
+    io.observe(el)
+    return () => io.disconnect()
+  }, [shouldLoad])
+
+  return (
+    <div ref={containerRef}>
+      {!shouldLoad ? (
+        <MapaPlaceholder />
+      ) : (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3, ease: 'easeOut' }}
+        >
+          <MapaLeaflet activeZone={activeZone} />
+        </motion.div>
+      )}
+    </div>
+  )
+}
 
 const categoryFilters = ['Alimentos', 'Cosméticos', 'Wellness', 'Moda']
 const zoneFilters = ['Roma/Condesa', 'Polanco', 'Coyoacán', 'Santa Fe', 'Norte', 'Sur']
@@ -66,7 +118,7 @@ export function MapaCDMX() {
               Encuentra tiendas en tu zona
             </h2>
             <p className="font-dm text-suu-muted mt-2" style={{ fontSize: '16px', fontWeight: 300 }}>
-              20 slots activos hoy. Condesa, Roma, Polanco, Coyoacán, Santa Fe, Narvarte, Doctores.
+              Zonas principales con espacios activos hoy: Condesa, Roma, Polanco, Coyoacán, Santa Fe, Narvarte, Doctores.
             </p>
           </div>
           <span
@@ -79,7 +131,7 @@ export function MapaCDMX() {
             }}
           >
             <span className="w-2 h-2 rounded-full animate-pulse-dot" style={{ background: '#E8FF47' }} />
-            20 slots activos en CDMX
+            Espacios activos en CDMX
           </span>
         </motion.div>
 
@@ -135,7 +187,7 @@ export function MapaCDMX() {
           variants={fadeUp}
           style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', overflow: 'hidden' }}
         >
-          <MapaLeaflet activeZone={activeZone} />
+          <MapaLeafletGate activeZone={activeZone} />
         </motion.div>
 
         {/* CTA */}

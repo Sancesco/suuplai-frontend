@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 80" width="320" height="80">
+  <title>Suuplai</title>
+  <g transform="translate(8, 18)">
+    <rect x="2" y="2" width="40" height="40" rx="9" fill="none" stroke="#0A0A0F" stroke-width="2.5"/>
+    <rect x="10" y="10" width="9" height="24" fill="#0A0A0F"/>
+    <rect x="25" y="10" width="9" height="24" fill="#0A0A0F" opacity="0.5"/>
+  </g>
+  <text x="68" y="54"
+        font-family="'Inter', 'Helvetica Neue', Arial, sans-serif"
+        font-size="44"
+        font-weight="600"
+        letter-spacing="-2"
+        fill="#0A0A0F">suuplai</text>
+</svg>

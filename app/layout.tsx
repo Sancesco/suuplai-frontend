@@ -23,17 +23,26 @@ const spaceMono = Space_Mono({
   display: 'swap',
 })
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://suuplai.com'
+
 export const metadata: Metadata = {
-  title: 'Suuplai — El anaquel ya no es de los grandes',
+  metadataBase: new URL(SITE_URL),
+  title: 'Suuplai — El espacio en tienda ya no es solo de los grandes',
   description:
-    'Conectamos tiendas independientes con marcas que necesitan presencia física. Sin slotting fees millonarios, sin meses de espera.',
-  keywords: ['retail', 'tiendas', 'marcas', 'anaquel', 'marketplace', 'México', 'CDMX'],
+    'Conectamos tiendas independientes con marcas que necesitan presencia física. Sin costos de entrada millonarios, sin meses de espera.',
+  keywords: ['retail', 'tiendas', 'marcas', 'espacio en tienda', 'marketplace', 'México', 'CDMX'],
   openGraph: {
-    title: 'Suuplai — El anaquel ya no es de los grandes',
+    title: 'Suuplai — El espacio en tienda ya no es solo de los grandes',
     description:
       'Conectamos tiendas independientes con marcas que necesitan presencia física.',
     type: 'website',
     locale: 'es_MX',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Suuplai — El espacio en tienda ya no es solo de los grandes',
+    description:
+      'Conectamos tiendas independientes con marcas que necesitan presencia física.',
   },
 }
 

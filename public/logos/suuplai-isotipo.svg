@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>Suuplai</title>
+  <rect x="0" y="0" width="64" height="64" rx="14" fill="#0A0A0F"/>
+  <rect x="10" y="10" width="44" height="44" rx="10" fill="none" stroke="#F0EFE8" stroke-width="2.8"/>
+  <rect x="18" y="18" width="10" height="28" fill="#F0EFE8"/>
+  <rect x="35" y="18" width="10" height="28" fill="#F5C518"/>
+</svg>

@@ -23,16 +23,16 @@ export function Footer() {
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-10 mb-12">
           {/* Brand */}
           <div className="flex flex-col gap-4 max-w-xs">
-            <Logo size="md" />
+            <Logo variant="dark" className="h-8" />
             <p className="font-dm text-suu-muted" style={{ fontSize: '14px', fontWeight: 300, lineHeight: 1.6 }}>
               Democratizando el punto de venta físico · México 2026
             </p>
             <a
-              href="mailto:hola@suuplai.com"
+              href="mailto:hola@suups.com.mx"
               className="font-dm text-suu-muted hover:text-suu-text transition-colors duration-200"
               style={{ fontSize: '14px' }}
             >
-              hola@suuplai.com
+              hola@suups.com.mx
             </a>
             <div className="flex gap-4 mt-1">
               <a
@@ -46,19 +46,6 @@ export function Footer() {
                   <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
                   <circle cx="12" cy="12" r="4"/>
                   <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/>
-                </svg>
-              </a>
-              <a
-                href="https://linkedin.com/company/suuplai"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="LinkedIn de Suuplai"
-                className="text-suu-muted hover:text-suu-text transition-colors duration-200"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-                  <rect x="2" y="9" width="4" height="12"/>
-                  <circle cx="4" cy="4" r="2"/>
                 </svg>
               </a>
             </div>
