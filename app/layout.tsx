@@ -1,6 +1,10 @@
 import type { Metadata } from 'next'
 import { Syne, DM_Sans, Space_Mono } from 'next/font/google'
+import Script from 'next/script'
 import './globals.css'
+
+// Google Tag Manager — contenedor donde se administra Google Analytics y demás tags.
+const GTM_ID = 'GTM-PPRBP6ZT'
 
 const syne = Syne({
   subsets: ['latin'],
@@ -53,7 +57,26 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={`${syne.variable} ${dmSans.variable} ${spaceMono.variable}`}>
+      <head>
+        {/* Google Tag Manager */}
+        <Script id="google-tag-manager" strategy="afterInteractive">
+          {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+          new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+          j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+          'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+          })(window,document,'script','dataLayer','${GTM_ID}');`}
+        </Script>
+      </head>
       <body className="bg-suu-bg text-suu-text font-dm antialiased">
+        {/* Google Tag Manager (noscript) */}
+        <noscript>
+          <iframe
+            src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+            height="0"
+            width="0"
+            style={{ display: 'none', visibility: 'hidden' }}
+          />
+        </noscript>
         {children}
       </body>
     </html>
