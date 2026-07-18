@@ -185,7 +185,16 @@ export function MapaCDMX() {
           whileInView="visible"
           viewport={{ once: true, amount: 0.15 }}
           variants={fadeUp}
-          style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: '12px', overflow: 'hidden' }}
+          style={{
+            border: '1px solid rgba(255,255,255,0.07)',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            // Encierra los z-index internos de Leaflet (controles = 1000) para que
+            // NO tapen el nav fijo al hacer scroll.
+            isolation: 'isolate',
+            position: 'relative',
+            zIndex: 0,
+          }}
         >
           <MapaLeafletGate activeZone={activeZone} />
         </motion.div>

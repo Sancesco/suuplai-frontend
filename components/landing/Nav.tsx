@@ -7,10 +7,11 @@ import { Menu, X } from 'lucide-react'
 import { Logo } from '@/components/shared/Logo'
 
 const navLinks = [
-  { label: 'Para Tiendas', href: '#tiendas' },
-  { label: 'Para Productores', href: '#productores' },
-  { label: 'Calculadora', href: '#calculadora' },
-  { label: 'Cómo funciona', href: '#como-funciona' },
+  { label: 'Para Tiendas', href: '#tiendas', route: false },
+  { label: 'Para Productores', href: '#productores', route: false },
+  { label: 'Agente Comercial', href: '/agente-comercial', route: true },
+  { label: 'Calculadora', href: '#calculadora', route: false },
+  { label: 'Cómo funciona', href: '#como-funciona', route: false },
 ]
 
 const uneteOptions = [
@@ -54,15 +55,26 @@ export function Nav() {
 
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-8">
-          {navLinks.map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              className="text-suu-muted hover:text-suu-text transition-colors duration-200 font-dm text-sm"
-            >
-              {link.label}
-            </a>
-          ))}
+          {navLinks.map((link) =>
+            link.route ? (
+              <Link
+                key={link.label}
+                href={link.href}
+                className="hover:text-suu-text transition-colors duration-200 font-dm text-sm"
+                style={{ color: '#FF6B35' }}
+              >
+                {link.label}
+              </Link>
+            ) : (
+              <a
+                key={link.label}
+                href={link.href}
+                className="text-suu-muted hover:text-suu-text transition-colors duration-200 font-dm text-sm"
+              >
+                {link.label}
+              </a>
+            )
+          )}
         </div>
 
         {/* Únete dropdown + Mobile toggle */}
@@ -113,16 +125,28 @@ export function Nav() {
             style={{ background: 'rgba(10,10,15,0.98)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
           >
             <div className="px-6 py-4 flex flex-col gap-4">
-              {navLinks.map((link) => (
-                <a
-                  key={link.label}
-                  href={link.href}
-                  onClick={() => setMenuOpen(false)}
-                  className="text-suu-text font-dm text-base py-3 border-b border-white/5"
-                >
-                  {link.label}
-                </a>
-              ))}
+              {navLinks.map((link) =>
+                link.route ? (
+                  <Link
+                    key={link.label}
+                    href={link.href}
+                    onClick={() => setMenuOpen(false)}
+                    className="font-dm text-base py-3 border-b border-white/5"
+                    style={{ color: '#FF6B35' }}
+                  >
+                    {link.label}
+                  </Link>
+                ) : (
+                  <a
+                    key={link.label}
+                    href={link.href}
+                    onClick={() => setMenuOpen(false)}
+                    className="text-suu-text font-dm text-base py-3 border-b border-white/5"
+                  >
+                    {link.label}
+                  </a>
+                )
+              )}
               <div className="flex flex-col gap-2 mt-2">
                 {uneteOptions.map((opt) => (
                   <Link
