@@ -31,7 +31,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://suuplai.com'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: 'Suuplai — El espacio en tienda ya no es solo de los grandes',
+  title: 'Suuplai',
   description:
     'Conectamos tiendas independientes con marcas que necesitan presencia física. Sin costos de entrada millonarios, sin meses de espera.',
   keywords: ['retail', 'tiendas', 'marcas', 'espacio en tienda', 'marketplace', 'México', 'CDMX'],
