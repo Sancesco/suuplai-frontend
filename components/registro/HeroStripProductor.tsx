@@ -17,7 +17,7 @@ const staggerContainer = {
 const stats = [
   { number: '$3K', label: 'MXN/mes por slot vs $50K en cadena grande' },
   { number: '4', label: 'marcas por espacio — tu producto no se pierde entre cientos' },
-  { number: '48h', label: 'Para confirmar tu lugar en la waitlist' },
+  { number: '48h', label: 'Para responder a tu solicitud' },
   { number: 'Días', label: 'Para activar tu primer slot activo' },
 ]
 
@@ -44,7 +44,7 @@ export function HeroStripProductor() {
             className="font-dm font-medium"
             style={{ fontSize: '11px', letterSpacing: '0.18em', color: ACCENT }}
           >
-            WAITLIST DE MARCAS — CDMX 2026
+            REGISTRO DE MARCAS — CDMX 2026
           </motion.span>
 
           <motion.h1
@@ -68,7 +68,7 @@ export function HeroStripProductor() {
             className="font-dm max-w-md"
             style={{ fontSize: '17px', fontWeight: 300, lineHeight: 1.65, color: 'rgba(240,239,232,0.7)' }}
           >
-            Asegura tu lugar en la waitlist. Revisamos cada marca personalmente — si hay fit,
+            Registra tu marca. Revisamos cada una personalmente — si hay fit,
             activamos tu primer slot en días.
           </motion.p>
 

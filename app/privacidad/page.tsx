@@ -95,7 +95,7 @@ export default function PrivacidadPage() {
           <Section title="III. Finalidades del tratamiento">
             <p>Sus datos personales son utilizados para las siguientes finalidades primarias:</p>
             <ul className="list-disc list-inside flex flex-col gap-1 ml-2">
-              <li>Gestionar su registro en la plataforma Suuplai (waitlist de tiendas o marcas)</li>
+              <li>Gestionar su registro en la plataforma Suuplai (registro de tiendas o marcas)</li>
               <li>Contactarle para confirmar su lugar y agendar llamada de activación</li>
               <li>Generar documentos de intención (PDF) cuando corresponda</li>
               <li>Brindar soporte y seguimiento a su proceso de incorporación</li>

@@ -31,17 +31,26 @@ function LogoCard({
       onMouseEnter={() => onHoverChange(index)}
       onMouseLeave={() => onHoverChange(null)}
     >
-      <Image
-        src={tienda.logo}
-        alt={tienda.nombre}
-        width={220}
-        height={80}
-        className="logo-card-img pointer-events-none"
-        style={{
-          width: 'auto',
-          objectFit: 'contain',
-        }}
-      />
+      {tienda.logo ? (
+        <Image
+          src={tienda.logo}
+          alt={tienda.nombre}
+          width={220}
+          height={80}
+          className="logo-card-img pointer-events-none"
+          style={{
+            width: 'auto',
+            objectFit: 'contain',
+          }}
+        />
+      ) : (
+        <span
+          className="logo-card-img pointer-events-none font-syne font-extrabold text-center px-2"
+          style={{ fontSize: '18px', color: '#111111', letterSpacing: '-0.3px', lineHeight: 1.1 }}
+        >
+          {tienda.nombre}
+        </span>
+      )}
 
       {/* Hover tooltip — desktop only via CSS @media (hover: hover) */}
       <AnimatePresence>

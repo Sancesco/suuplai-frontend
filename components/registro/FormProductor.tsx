@@ -308,7 +308,7 @@ export function FormProductor({ onSuccess }: { onSuccess: () => void }) {
             className="font-syne font-extrabold"
             style={{ fontSize: '28px', color: ACCENT, letterSpacing: '-0.5px' }}
           >
-            ¡Estás en la waitlist!
+            ¡Recibimos tu solicitud!
           </h2>
           <p
             className="font-dm max-w-sm"
@@ -333,7 +333,7 @@ export function FormProductor({ onSuccess }: { onSuccess: () => void }) {
             className="font-syne font-extrabold mb-2"
             style={{ fontSize: '28px', letterSpacing: '-0.5px', color: '#F0EFE8' }}
           >
-            Únete a la waitlist
+            Registra tu marca
           </h2>
           <p
             className="font-dm mb-8"
@@ -601,7 +601,7 @@ export function FormProductor({ onSuccess }: { onSuccess: () => void }) {
                   </>
                 )}
                 {(submitState === 'idle' || submitState === 'error') && (
-                  <>Asegurar mi lugar en la waitlist →</>
+                  <>Enviar mi solicitud →</>
                 )}
               </button>
               <p

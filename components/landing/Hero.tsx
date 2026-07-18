@@ -11,7 +11,7 @@ const ROTATION_SPEED = 3500
 const STATS = [
   { number: '+40',    unit: 'puntos', label: 'de venta activos en CDMX y creciendo',                  color: '#E8FF47' },
   { number: '<14',    unit: 'días',   label: 'onboarding promedio — de contrato a tienda',            color: '#E8FF47' },
-  { number: '6',      unit: 'cadenas',label: 'socias: Alchef, Casa Bruna, Moramora, SuperCope, Comando, Numu', color: '#F0EFE8' },
+  { number: '8',      unit: 'tiendas',label: 'socias: Alchef, Casa Bruna, Moramora, SuperCope, Commando, Numu, AAA Seafood, La Cueva del Gourmet', color: '#F0EFE8' },
   { number: '0%',     unit: '',       label: 'comisión sobre ventas para la tienda',                  color: '#E8FF47' },
   { number: '$2,000', unit: 'MXN/mes',label: 'costo de entrada por marca — sin penalizaciones',       color: '#FF6B35' },
   { number: '4',      unit: 'marcas', label: 'máximo por espacio — tu tienda no se satura',           color: '#E8FF47' },
@@ -360,7 +360,7 @@ export function Hero() {
         >
           <span className="w-2 h-2 rounded-full hero-badge-dot" />
           <span className="font-dm text-sm" style={{ color: 'rgba(240,239,232,0.7)' }}>
-            Únete a la waitlist — acceso anticipado en CDMX
+            Regístrate — acceso anticipado en CDMX
           </span>
         </motion.div>
 

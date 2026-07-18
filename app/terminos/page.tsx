@@ -88,9 +88,9 @@ export default function TerminosPage() {
             </ul>
           </Section>
 
-          <Section title="III. Registro en waitlist">
+          <Section title="III. Registro en la plataforma">
             <p>
-              El registro en la waitlist de Suuplai no garantiza automáticamente la asignación de un slot.
+              El registro en la plataforma de Suuplai no garantiza automáticamente la asignación de un slot.
               La incorporación está sujeta a:
             </p>
             <ul className="list-disc list-inside flex flex-col gap-1 ml-2">

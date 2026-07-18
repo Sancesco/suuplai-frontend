@@ -3,7 +3,7 @@
 export interface Tienda {
   slug: string
   nombre: string
-  logo: string
+  logo: string | null // si es null, la tarjeta muestra el nombre en texto (hasta subir el logo)
   sucursales: number
   zonas: string
   tagline: string
@@ -57,5 +57,21 @@ export const TIENDAS: Tienda[] = [
     sucursales: 19,
     zonas: 'CDMX',
     tagline: 'Boutique fitness studios',
+  },
+  {
+    slug: 'aaa-seafood',
+    nombre: 'AAA Seafood',
+    logo: '/logos-tiendas/aaa-seafood.png',
+    sucursales: 1,
+    zonas: 'Las Lomas',
+    tagline: 'Highest standards',
+  },
+  {
+    slug: 'cueva-del-gourmet',
+    nombre: 'La Cueva del Gourmet',
+    logo: null, // pendiente: subir logo a public/logos-tiendas/
+    sucursales: 1,
+    zonas: 'CDMX',
+    tagline: 'Tienda gourmet',
   },
 ]

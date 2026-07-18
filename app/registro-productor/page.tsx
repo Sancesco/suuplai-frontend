@@ -13,7 +13,7 @@ const ACCENT = '#FF6B35'
 const keyStats = [
   { number: '$3K', unit: 'MXN/mes', label: 'Costo de entrada vs $50K en cadena grande' },
   { number: '4', unit: 'marcas', label: 'por espacio — tu marca se destaca, no se pierde' },
-  { number: '48h', unit: 'respuesta', label: 'Para confirmar tu lugar en la waitlist' },
+  { number: '48h', unit: 'respuesta', label: 'Para responder a tu solicitud' },
   { number: '94%', unit: 'de ahorro', label: 'En costo de entrada vs retailers grandes' },
 ]
 
@@ -164,7 +164,7 @@ export default function RegistroProductorPage() {
               className="font-syne font-extrabold"
               style={{ fontSize: 'clamp(26px, 3.5vw, 42px)', letterSpacing: '-1px', color: '#F0EFE8' }}
             >
-              De la waitlist al anaquel en días.
+              Del registro al anaquel en días.
             </h2>
             <p
               className="font-dm mt-4 max-w-lg mx-auto"
