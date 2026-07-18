@@ -13,18 +13,21 @@ interface LogoProps {
   ariaLabel?: string
 }
 
+// Logo oficial vigente: wordmark "suuplai." claro (para fondos oscuros).
+// Todas las variantes usan el mismo PNG porque el logo se usa siempre sobre fondo oscuro.
+const NEW_WORDMARK = '/logos/suuplai-logo-light.png'
 const wordmarkSrc: Record<LogoVariant, string> = {
-  'dark':       '/logos/suuplai-logo-dark.svg',
-  'light':      '/logos/suuplai-logo-light.svg',
-  'mono-white': '/logos/suuplai-logo-mono-white.svg',
-  'mono-black': '/logos/suuplai-logo-mono-black.svg',
+  'dark':       NEW_WORDMARK,
+  'light':      NEW_WORDMARK,
+  'mono-white': NEW_WORDMARK,
+  'mono-black': NEW_WORDMARK,
 }
 
 const isotipoSrc = '/logos/suuplai-isotipo.svg'
 
-// Wordmark SVG viewBox is 320×80 (ratio 4:1)
+// Wordmark PNG es 2400×402 (ratio ~5.97:1)
 // Isotipo SVG viewBox is 64×64 (ratio 1:1)
-const WORDMARK_RATIO = 320 / 80
+const WORDMARK_RATIO = 2400 / 402
 const ISOTIPO_RATIO = 1
 
 export function Logo({

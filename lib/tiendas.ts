@@ -69,7 +69,7 @@ export const TIENDAS: Tienda[] = [
   {
     slug: 'cueva-del-gourmet',
     nombre: 'La Cueva del Gourmet',
-    logo: null, // pendiente: subir logo a public/logos-tiendas/
+    logo: '/logos-tiendas/cueva-del-gourmet.webp',
     sucursales: 1,
     zonas: 'CDMX',
     tagline: 'Tienda gourmet',
