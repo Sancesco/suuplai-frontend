@@ -50,7 +50,7 @@ export function Nav() {
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Logo variant="dark" className="h-7 md:h-8" />
+        <Logo variant="dark" className="h-6 md:h-7" />
 
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-8">
