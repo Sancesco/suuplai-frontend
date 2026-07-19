@@ -4,7 +4,7 @@ import { AgenteComercial } from '@/components/agente/AgenteComercial'
 export const metadata: Metadata = {
   title: 'Suuplai · Agente Comercial',
   description:
-    'El equipo de ventas que no tienes que contratar. Prospectamos, muestreamos y abrimos cuentas para tu marca en tiendas gourmet de México. $3,000 + IVA al mes, sin comisiones.',
+    'El equipo de ventas que no tienes que contratar. Prospectamos, muestreamos y abrimos cuentas para tu marca en tiendas físicas de México. $3,000 + IVA al mes, sin comisiones.',
   openGraph: {
     title: 'Suuplai · Agente Comercial',
     description:

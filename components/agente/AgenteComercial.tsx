@@ -108,7 +108,7 @@ function Hero() {
             contratar</span>.
           </h1>
           <p style={{ fontSize: 18.5, color: '#C6C5BE', marginTop: 24, maxWidth: 460 }}>
-            Prospectamos, tocamos puertas y salimos a vender tu marca en tiendas gourmet de México.
+            Prospectamos, tocamos puertas y salimos a vender tu marca en tiendas físicas de México.
             Tú haces producto; nosotros abrimos cuentas.
           </p>
           <div className="flex flex-wrap gap-3.5 items-center" style={{ marginTop: 34 }}>
@@ -148,7 +148,7 @@ function Problema() {
     'Tú gestionas, entrenas y persigues',
   ]
   const us = [
-    'Ya tocamos puertas en la red gourmet de CDMX',
+    'Ya tocamos puertas en tiendas de CDMX',
     'Muestras en mano desde la semana uno',
     'Prospección, cierre y seguimiento incluidos',
     'Reporte real: quién probó, quién pidió',
