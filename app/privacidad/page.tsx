@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { Logo } from '@/components/shared/Logo'
 
 export const metadata = {
-  title: 'Aviso de Privacidad — Suuplai',
+  title: 'Aviso de Privacidad, Suuplai',
   description: 'Aviso de privacidad de AL GRANO DELI, S.A. DE C.V. (Suuplai)',
 }
 
@@ -84,7 +84,7 @@ export default function PrivacidadPage() {
               <li>Número de teléfono / WhatsApp</li>
               <li>Nombre y tipo de establecimiento o marca</li>
               <li>Datos de ubicación (colonia, alcaldía o ciudad)</li>
-              <li>Datos fiscales (RFC, razón social, tipo de persona) — únicamente cuando se solicita carta de intención</li>
+              <li>Datos fiscales (RFC, razón social, tipo de persona), únicamente cuando se solicita carta de intención</li>
             </ul>
             <p>
               No recabamos datos sensibles en el sentido del artículo 3, fracción VI de la Ley Federal
@@ -113,7 +113,7 @@ export default function PrivacidadPage() {
               Sus datos pueden ser compartidos únicamente en los siguientes supuestos:
             </p>
             <ul className="list-disc list-inside flex flex-col gap-1 ml-2">
-              <li>Con tiendas o marcas que sean contraparte en un acuerdo en el que usted participe — solo los datos estrictamente necesarios para operar el slot</li>
+              <li>Con tiendas o marcas que sean contraparte en un acuerdo en el que usted participe, solo los datos estrictamente necesarios para operar el slot</li>
               <li>Con proveedores de servicios técnicos bajo acuerdo de confidencialidad (almacenamiento, envío de correo)</li>
               <li>Cuando sea requerido por autoridad competente conforme a la ley aplicable</li>
             </ul>

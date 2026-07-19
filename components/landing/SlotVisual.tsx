@@ -174,7 +174,7 @@ export function SlotVisual() {
                       {String(i + 1).padStart(2, '0')}
                     </span>
 
-                    {/* Status dot — green when active, lime pulse when filled by user */}
+                    {/* Status dot, green when active, lime pulse when filled by user */}
                     {(slot.status === 'active' || isFilled) && (
                       <div
                         className="absolute top-4 left-4 w-1.5 h-1.5 rounded-full"
@@ -232,7 +232,7 @@ export function SlotVisual() {
                       </span>
                     </div>
 
-                    {/* Overlay for libre — swaps text when filled */}
+                    {/* Overlay for libre, swaps text when filled */}
                     {isLibre && (
                       <div
                         className="absolute inset-0 flex items-center justify-center"
@@ -297,7 +297,7 @@ export function SlotVisual() {
             variants={staggerContainer}
             className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
           >
-            {/* INGRESO MENSUAL — count-up animado */}
+            {/* INGRESO MENSUAL, count-up animado */}
             <motion.div
               variants={fadeUp}
               className="flex flex-col gap-2 p-5 rounded-card"

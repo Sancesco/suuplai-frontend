@@ -24,7 +24,7 @@ const faqs = [
   },
   {
     q: '¿Puedo sacar una marca si no funciona?',
-    a: 'Sí. El contrato digital incluye cláusulas de salida con aviso previo de 15 días. No hay penalizaciones por baja rotación. El objetivo es que ambas partes estén satisfechas — si no hay fit, es mejor cambiarlo.',
+    a: 'Sí. El contrato digital incluye cláusulas de salida con aviso previo de 15 días. No hay penalizaciones por baja rotación. El objetivo es que ambas partes estén satisfechas, si no hay fit, es mejor cambiarlo.',
   },
   {
     q: '¿Necesito factura para registrarme?',

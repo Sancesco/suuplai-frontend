@@ -66,7 +66,7 @@ function Divider({ label }: { label: string }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Shared input styles — campos claros (fondo blanco), invitan a llenarse.
+// Shared input styles, campos claros (fondo blanco), invitan a llenarse.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const inputBase: React.CSSProperties = {
@@ -92,7 +92,7 @@ function onBlurReset(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement 
   e.currentTarget.style.boxShadow = 'none'
 }
 
-// Selector de botones (chips) — más rápido y visual que un menú desplegable.
+// Selector de botones (chips), más rápido y visual que un menú desplegable.
 function ChoiceGroup({
   options,
   value,
@@ -138,7 +138,7 @@ function ChoiceGroup({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Main component — registro de UN solo paso, sin OTP ni precontrato.
+// Main component, registro de UN solo paso, sin OTP ni precontrato.
 // ─────────────────────────────────────────────────────────────────────────────
 
 type SubmitState = 'idle' | 'loading' | 'success' | 'error'
@@ -244,7 +244,7 @@ export function FormTienda({ onSuccess }: { onSuccess: () => void }) {
             className="font-dm mb-8"
             style={{ fontSize: '15px', fontWeight: 300, color: 'rgba(240,239,232,0.5)' }}
           >
-            Cuéntanos sobre tu espacio. Toma menos de 2 minutos — sin contratos ni complicaciones.
+            Cuéntanos sobre tu espacio. Toma menos de 2 minutos, sin contratos ni complicaciones.
           </p>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">

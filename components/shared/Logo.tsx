@@ -35,7 +35,7 @@ export function Logo({
   showWordmark = true,
   className = 'h-8',
   linkTo = '/',
-  ariaLabel = 'Suuplai — ir al inicio',
+  ariaLabel = 'Suuplai, ir al inicio',
 }: LogoProps) {
   const src = showWordmark ? wordmarkSrc[variant] : isotipoSrc
   const ratio = showWordmark ? WORDMARK_RATIO : ISOTIPO_RATIO

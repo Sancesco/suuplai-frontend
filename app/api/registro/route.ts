@@ -86,7 +86,7 @@ async function sendNotification(tipo: string, body: RegistroPayload) {
       html: `
         <div style="font-family:system-ui,sans-serif;max-width:560px">
           <h2 style="margin:0 0 4px">Nuevo registro de ${tipo}</h2>
-          <p style="color:#666;margin:0 0 16px">${nombre}${negocio ? ` — ${negocio}` : ''}</p>
+          <p style="color:#666;margin:0 0 16px">${nombre}${negocio ? `, ${negocio}` : ''}</p>
           <table style="border-collapse:collapse;width:100%">${rows}</table>
         </div>`,
     })

@@ -19,7 +19,7 @@ const steps = [
   'Revisamos tu perfil y te hacemos match con marcas curadas de tu categoría',
   'Recibes propuestas con términos claros: precio fijo, comisión o combinación',
   'Aceptas, la marca envía su producto y activamos el slot',
-  'Cobras puntual cada mes — sin perseguir a nadie',
+  'Cobras puntual cada mes, sin perseguir a nadie',
 ]
 
 const casoBullets = [

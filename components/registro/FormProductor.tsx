@@ -95,7 +95,7 @@ function Divider({ label }: { label: string }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Shared input styles — campos claros (fondo blanco), igual que el form de tienda.
+// Shared input styles, campos claros (fondo blanco), igual que el form de tienda.
 // ─────────────────────────────────────────────────────────────────────────────
 
 const inputBase: React.CSSProperties = {
@@ -121,7 +121,7 @@ function onBlurReset(e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement 
   e.currentTarget.style.boxShadow = 'none'
 }
 
-// Selector de botones (chips) — más rápido y visual que un menú desplegable.
+// Selector de botones (chips), más rápido y visual que un menú desplegable.
 function ChoiceGroup({
   options,
   value,
@@ -166,7 +166,7 @@ function ChoiceGroup({
   )
 }
 
-// Lista vertical de opciones largas (frases) — botones full-width, fáciles de tocar.
+// Lista vertical de opciones largas (frases), botones full-width, fáciles de tocar.
 function ChoiceList({
   options,
   value,
@@ -339,7 +339,7 @@ export function FormProductor({ onSuccess }: { onSuccess: () => void }) {
             className="font-dm mb-8"
             style={{ fontSize: '15px', fontWeight: 300, color: 'rgba(240,239,232,0.55)' }}
           >
-            Cuéntanos sobre tu marca. La mayoría son toques rápidos — confirmamos tu lugar en menos
+            Cuéntanos sobre tu marca. La mayoría son toques rápidos, confirmamos tu lugar en menos
             de 48h.
           </p>
 
@@ -441,7 +441,7 @@ export function FormProductor({ onSuccess }: { onSuccess: () => void }) {
 
             <Divider label="TU SITUACIÓN ACTUAL" />
 
-            {/* Canales de venta — multi-selección con chips claros */}
+            {/* Canales de venta, multi-selección con chips claros */}
             <Field label="¿Dónde vendes actualmente?">
               <div className="grid grid-cols-2 gap-2 mt-1">
                 {CANALES.map((canal) => {

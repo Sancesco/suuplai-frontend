@@ -96,7 +96,7 @@ export function DosServicios() {
             </Link>
           </motion.div>
 
-          {/* Agente comercial — destacado */}
+          {/* Agente comercial, destacado */}
           <motion.div
             variants={fadeUp}
             className="relative flex flex-col rounded-card p-8 md:p-10"

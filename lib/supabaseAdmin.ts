@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 // Cliente de Supabase para uso EXCLUSIVO en el servidor (API routes).
-// Usa la service_role key, que salta RLS — nunca debe llegar al navegador.
+// Usa la service_role key, que salta RLS, nunca debe llegar al navegador.
 let cached: SupabaseClient | null = null
 
 export function getSupabaseAdmin(): SupabaseClient | null {

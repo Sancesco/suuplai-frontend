@@ -13,7 +13,7 @@ const LINE = '#26262f'
 
 const TOTAL = 108 // 18 × 6
 
-// Cuenta animada — solo anima una vez al montar (respeta reduced-motion).
+// Cuenta animada, solo anima una vez al montar (respeta reduced-motion).
 function useMountCountUp(target: number, enabled: boolean) {
   const [display, setDisplay] = useState(enabled ? 0 : target)
   const doneRef = useRef(!enabled)

@@ -10,23 +10,23 @@ const ROTATION_SPEED = 3500
 
 const STATS = [
   { number: '+40',    unit: 'puntos', label: 'de venta activos en CDMX y creciendo',                  color: '#E8FF47' },
-  { number: '<14',    unit: 'días',   label: 'onboarding promedio — de contrato a tienda',            color: '#E8FF47' },
+  { number: '<14',    unit: 'días',   label: 'onboarding promedio, de contrato a tienda',            color: '#E8FF47' },
   { number: '8',      unit: 'tiendas',label: 'socias: Alchef, Casa Bruna, Moramora, SuperCope, Commando, Numu, AAA Seafood, La Cueva del Gourmet', color: '#F0EFE8' },
   { number: '0%',     unit: '',       label: 'comisión sobre ventas para la tienda',                  color: '#E8FF47' },
-  { number: '$2,000', unit: 'MXN/mes',label: 'costo de entrada por marca — sin penalizaciones',       color: '#FF6B35' },
-  { number: '4',      unit: 'marcas', label: 'máximo por espacio — tu tienda no se satura',           color: '#E8FF47' },
+  { number: '$2,000', unit: 'MXN/mes',label: 'costo de entrada por marca, sin penalizaciones',       color: '#FF6B35' },
+  { number: '4',      unit: 'marcas', label: 'máximo por espacio, tu tienda no se satura',           color: '#E8FF47' },
   { number: '94%',    unit: 'menos',  label: 'costo de entrada vs Walmart, Liverpool o Chedraui',     color: '#FF6B35' },
   { number: '48h',    unit: '',       label: 'para confirmar si hay fit entre tu marca y una tienda', color: '#FF6B35' },
-  { number: '4',      unit: 'marcas', label: 'por espacio — tu producto se ve, no compite con cientos', color: '#FF6B35' },
+  { number: '4',      unit: 'marcas', label: 'por espacio, tu producto se ve, no compite con cientos', color: '#FF6B35' },
   { number: '3',      unit: 'semanas',label: 'para saber en qué colonia rota mejor tu producto',      color: '#F0EFE8' },
-  { number: '0',      unit: 'inv.',   label: 'la tienda no compra nada, no arriesga nada — puro ingreso', color: '#F0EFE8' },
-  { number: '1.2M',   unit: 'tiendas',label: 'en México sin acceso a herramientas — tú llegas primero', color: '#F0EFE8' },
+  { number: '0',      unit: 'inv.',   label: 'la tienda no compra nada, no arriesga nada, puro ingreso', color: '#F0EFE8' },
+  { number: '1.2M',   unit: 'tiendas',label: 'en México sin acceso a herramientas, tú llegas primero', color: '#F0EFE8' },
 ]
 
 // 4 cards show different stats simultaneously, offset by 3 positions each
 const CARD_OFFSETS = [0, 3, 6, 9]
 
-// ─── Headline intro animation — "All of the Lights" flashes ────────────────────
+// ─── Headline intro animation, "All of the Lights" flashes ────────────────────
 
 const BG     = '#0A0A0F'
 const LIME   = '#E8FF47'
@@ -82,7 +82,7 @@ const LINE1_FINALE = [
   [2.00, BG],
 ] as const
 
-// Line 1 — each word with its own intro, then shared finale, then final settle color
+// Line 1, each word with its own intro, then shared finale, then final settle color
 const LINE1: WordKF[] = [
   {
     text: 'Tu ',
@@ -157,12 +157,12 @@ const LINE1: WordKF[] = [
       [1.00, ORANGE],    // preview of final color
       [1.10, BG],
       ...LINE1_FINALE,
-      [2.15, ORANGE],    // FINAL — orange Suuplai
+      [2.15, ORANGE],    // FINAL, orange Suuplai
     ]),
   },
 ]
 
-// Line 2 — staggered word flashes inside "En 14 días,", then cut, then "no en 6 meses." enters
+// Line 2, staggered word flashes inside "En 14 días,", then cut, then "no en 6 meses." enters
 const LINE2_PRE: WordKF[] = [
   {
     text: 'En ',
@@ -215,7 +215,7 @@ const statVariants = {
   exit:   { opacity: 0, y: -8, transition: { duration: 0.2, ease: 'easeIn' } },
 }
 
-// ─── StatCard — defined outside Hero to avoid remount on every render ─────────
+// ─── StatCard, defined outside Hero to avoid remount on every render ─────────
 
 interface StatCardProps {
   stat: typeof STATS[0]
@@ -239,7 +239,7 @@ function StatCard({ stat, tick, cardIndex }: StatCardProps) {
         transition: 'border-color 0.4s ease',
       }}
     >
-      {/* Progress bar — key changes each tick, restarting the CSS animation */}
+      {/* Progress bar, key changes each tick, restarting the CSS animation */}
       <div
         key={`pb-${tick}`}
         style={{
@@ -324,7 +324,7 @@ export function Hero() {
   const activeDotIndex = tick % STATS.length
   const activeColor    = STATS[activeDotIndex].color
   const prefersReducedMotion = useReducedMotion()
-  // Delays for elements that appear AFTER the headline intro — skipped when reduce motion is on
+  // Delays for elements that appear AFTER the headline intro, skipped when reduce motion is on
   const d = (s: number) => (prefersReducedMotion ? 0.1 : s)
 
   return (
@@ -332,7 +332,7 @@ export function Hero() {
       className="relative min-h-screen flex flex-col items-center justify-center pt-24 pb-16 px-6 overflow-hidden"
       style={{ background: '#0A0A0F' }}
     >
-      {/* Radial glow backdrop — dual yellow + orange halos */}
+      {/* Radial glow backdrop, dual yellow + orange halos */}
       <div
         className="absolute inset-0 pointer-events-none"
         aria-hidden="true"
@@ -360,11 +360,11 @@ export function Hero() {
         >
           <span className="w-2 h-2 rounded-full hero-badge-dot" />
           <span className="font-dm text-sm" style={{ color: 'rgba(240,239,232,0.7)' }}>
-            Regístrate — acceso anticipado en CDMX
+            Regístrate, acceso anticipado en CDMX
           </span>
         </motion.div>
 
-        {/* H1 — "All of the Lights" intro: each word flashes in brand colors, settles to final state */}
+        {/* H1, "All of the Lights" intro: each word flashes in brand colors, settles to final state */}
         <h1
           className="font-syne font-extrabold mb-6"
           style={{
@@ -482,7 +482,7 @@ export function Hero() {
           </Link>
         </motion.div>
 
-        {/* Stats carousel — 4 cards rotating in parallel with 3-position offsets */}
+        {/* Stats carousel, 4 cards rotating in parallel with 3-position offsets */}
         <motion.div
           custom={0.4}
           initial="hidden"
@@ -500,7 +500,7 @@ export function Hero() {
           ))}
         </motion.div>
 
-        {/* Dots navigation — 12 dots, one per stat in the main card (offset 0) */}
+        {/* Dots navigation, 12 dots, one per stat in the main card (offset 0) */}
         <motion.div
           custom={0.45}
           initial="hidden"

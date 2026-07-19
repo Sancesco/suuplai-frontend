@@ -9,7 +9,7 @@ const fadeUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: 'easeOut' } },
 }
 
-// Skeleton placeholder — same height as the real map to prevent CLS
+// Skeleton placeholder, same height as the real map to prevent CLS
 function MapaPlaceholder() {
   return (
     <div
@@ -42,7 +42,7 @@ const MapaLeaflet = dynamic(
   }
 )
 
-// Viewport gate — uses native IntersectionObserver with 200px rootMargin to start
+// Viewport gate, uses native IntersectionObserver with 200px rootMargin to start
 // loading just before the map enters the screen. Skeleton stays in place until ready.
 function MapaLeafletGate({ activeZone }: { activeZone: string | null }) {
   const containerRef = useRef<HTMLDivElement>(null)

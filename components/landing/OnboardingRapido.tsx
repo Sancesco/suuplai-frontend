@@ -65,7 +65,7 @@ export function OnboardingRapido() {
           variants={staggerContainer}
           className="relative grid grid-cols-1 md:grid-cols-4 gap-5 md:gap-4"
         >
-          {/* Dashed connector — desktop only */}
+          {/* Dashed connector, desktop only */}
           <div
             aria-hidden="true"
             className="hidden md:block absolute left-0 right-0 pointer-events-none"

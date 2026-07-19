@@ -2,8 +2,8 @@ import Link from 'next/link'
 import { Logo } from '@/components/shared/Logo'
 
 export const metadata = {
-  title: 'Términos de Uso — Suuplai',
-  description: 'Términos y condiciones de uso de la plataforma Suuplai — AL GRANO DELI, S.A. DE C.V.',
+  title: 'Términos de Uso, Suuplai',
+  description: 'Términos y condiciones de uso de la plataforma Suuplai, AL GRANO DELI, S.A. DE C.V.',
 }
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -104,7 +104,7 @@ export default function TerminosPage() {
             </p>
           </Section>
 
-          <Section title="IV. Modelo comercial — Tiendas">
+          <Section title="IV. Modelo comercial, Tiendas">
             <p>Las tiendas que participan en Suuplai aceptan que:</p>
             <ul className="list-disc list-inside flex flex-col gap-1 ml-2">
               <li>Recibirán un pago fijo mensual acordado por el espacio cedido en anaquel</li>
@@ -115,7 +115,7 @@ export default function TerminosPage() {
             </ul>
           </Section>
 
-          <Section title="V. Modelo comercial — Marcas / Productores">
+          <Section title="V. Modelo comercial, Marcas / Productores">
             <p>Las marcas que participan en Suuplai aceptan que:</p>
             <ul className="list-disc list-inside flex flex-col gap-1 ml-2">
               <li>El pago de slot es mensual y se acuerda previamente con Suuplai y la tienda correspondiente</li>
@@ -128,8 +128,8 @@ export default function TerminosPage() {
 
           <Section title="VI. Propiedad intelectual">
             <p>
-              Todos los contenidos del sitio web de Suuplai — incluyendo textos, imágenes, logotipos,
-              diseños y código — son propiedad de AL GRANO DELI, S.A. DE C.V. o de sus licenciantes.
+              Todos los contenidos del sitio web de Suuplai, incluyendo textos, imágenes, logotipos,
+              diseños y código, son propiedad de AL GRANO DELI, S.A. DE C.V. o de sus licenciantes.
               Queda prohibida su reproducción total o parcial sin autorización escrita.
             </p>
             <p>

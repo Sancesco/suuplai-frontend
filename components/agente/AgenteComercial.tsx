@@ -355,7 +355,7 @@ function Precio() {
             </div>
             <p style={{ fontSize: 15, color: '#B4B3AC', marginTop: 16, maxWidth: 320 }}>
               Una tarifa fija al mes. Sin comisión sobre lo que vendas: cada peso que rota en tienda
-              es tuyo. Cancelable — sin contrato forzoso.
+              es tuyo. Cancelable, sin contrato forzoso.
             </p>
           </div>
           <div className="flex flex-col justify-center gap-3.5" style={{ padding: 36, borderTop: `1px solid ${LINE}` }}>

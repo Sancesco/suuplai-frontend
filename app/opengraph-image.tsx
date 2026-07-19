@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 
 export const runtime = 'edge'
-export const alt = 'Suuplai — El espacio en tienda ya no es solo de los grandes'
+export const alt = 'Suuplai, El espacio en tienda ya no es solo de los grandes'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -21,7 +21,7 @@ export default async function Image() {
       >
         {/* Logo row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          {/* Slot mark — outlined rounded square with two bars */}
+          {/* Slot mark, outlined rounded square with two bars */}
           <div
             style={{
               width: '88px',

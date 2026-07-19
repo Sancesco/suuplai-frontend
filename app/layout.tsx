@@ -3,7 +3,7 @@ import { Syne, DM_Sans, Space_Mono } from 'next/font/google'
 import Script from 'next/script'
 import './globals.css'
 
-// Google Tag Manager — contenedor donde se administra Google Analytics y demás tags.
+// Google Tag Manager, contenedor donde se administra Google Analytics y demás tags.
 const GTM_ID = 'GTM-PPRBP6ZT'
 
 const syne = Syne({
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     'Conectamos tiendas independientes con marcas que necesitan presencia física. Sin costos de entrada millonarios, sin meses de espera.',
   keywords: ['retail', 'tiendas', 'marcas', 'espacio en tienda', 'marketplace', 'México', 'CDMX'],
   openGraph: {
-    title: 'Suuplai — El espacio en tienda ya no es solo de los grandes',
+    title: 'Suuplai, El espacio en tienda ya no es solo de los grandes',
     description:
       'Conectamos tiendas independientes con marcas que necesitan presencia física.',
     type: 'website',
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Suuplai — El espacio en tienda ya no es solo de los grandes',
+    title: 'Suuplai, El espacio en tienda ya no es solo de los grandes',
     description:
       'Conectamos tiendas independientes con marcas que necesitan presencia física.',
   },

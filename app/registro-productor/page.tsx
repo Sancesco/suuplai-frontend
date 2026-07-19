@@ -12,7 +12,7 @@ const ACCENT = '#FF6B35'
 
 const keyStats = [
   { number: '$3K', unit: 'MXN/mes', label: 'Costo de entrada vs $50K en cadena grande' },
-  { number: '4', unit: 'marcas', label: 'por espacio — tu marca se destaca, no se pierde' },
+  { number: '4', unit: 'marcas', label: 'por espacio, tu marca se destaca, no se pierde' },
   { number: '48h', unit: 'respuesta', label: 'Para responder a tu solicitud' },
   { number: '94%', unit: 'de ahorro', label: 'En costo de entrada vs retailers grandes' },
 ]
@@ -170,7 +170,7 @@ export default function RegistroProductorPage() {
               className="font-dm mt-4 max-w-lg mx-auto"
               style={{ fontSize: '16px', fontWeight: 300, lineHeight: 1.65, color: 'rgba(240,239,232,0.55)' }}
             >
-              No meses de negociación ni slotting fees de entrada. El proceso es simple — porque
+              No meses de negociación ni slotting fees de entrada. El proceso es simple, porque
               lo diseñamos para marcas independientes.
             </p>
           </motion.div>

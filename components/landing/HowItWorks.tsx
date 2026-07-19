@@ -171,7 +171,7 @@ export function HowItWorks({ id }: { id?: string }) {
                     </div>
                   </div>
 
-                  {/* Connector arrow — between cards, not after last */}
+                  {/* Connector arrow, between cards, not after last */}
                   {i < steps.length - 1 && (
                     <div
                       aria-hidden="true"

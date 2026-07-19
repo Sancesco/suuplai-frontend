@@ -52,7 +52,7 @@ function LogoCard({
         </span>
       )}
 
-      {/* Hover tooltip — desktop only via CSS @media (hover: hover) */}
+      {/* Hover tooltip, desktop only via CSS @media (hover: hover) */}
       <AnimatePresence>
         {isHovered && (
           <motion.div
@@ -153,7 +153,7 @@ export function CarruselTiendas() {
         </motion.div>
       </div>
 
-      {/* Marquee — pauses while any logo is hovered (via .is-paused class).
+      {/* Marquee, pauses while any logo is hovered (via .is-paused class).
           overflow-x-clip lets tooltips escape upward without forcing a vertical scrollbar. */}
       <div
         className={`logo-carousel-mask overflow-x-clip${hovered !== null ? ' is-paused' : ''}`}

@@ -11,7 +11,7 @@ const ORANGE = '#FF6B35'
 const WHITE  = '#F0EFE8'
 const WA     = '#25D366'
 
-// Subtle "All of the Lights"-style flash on the 404 — 1 second total
+// Subtle "All of the Lights"-style flash on the 404, 1 second total
 const flashKf = {
   initial: { color: BG },
   animate: { color: [BG, LIME, ORANGE, LIME, WHITE, LIME] },

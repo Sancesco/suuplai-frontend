@@ -1,4 +1,4 @@
-// WhatsApp contact — Santiago
+// WhatsApp contact, Santiago
 // Formato wa.me: código de país + número, sin signos ni espacios
 export const WHATSAPP_NUMBER = '525585496699'
 

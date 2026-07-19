@@ -15,7 +15,7 @@ const beforeAfterProductor = [
   { before: '6 meses + costo de entrada alto + factoraje', after: 'en días, sin inventario masivo' },
   { before: 'lanzar SKU = apostar ciego', after: 'prueba en 3 fines de semana' },
   { before: 'cero datos de rotación', after: 'reportes por zona y perfil de comprador' },
-  { before: 'uno más entre cientos de productos', after: 'curaduría de pocas marcas — protagonismo real' },
+  { before: 'uno más entre cientos de productos', after: 'curaduría de pocas marcas, protagonismo real' },
 ]
 
 const fadeUp = {

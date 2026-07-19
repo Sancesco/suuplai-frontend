@@ -90,7 +90,7 @@ export function Pricing() {
           className="rounded-card overflow-hidden"
           style={{ border: '1px solid rgba(255,255,255,0.08)' }}
         >
-          {/* Table header — desktop only */}
+          {/* Table header, desktop only */}
           <div
             className="hidden md:grid grid-cols-3 px-5 py-3 gap-4"
             style={{ background: '#0A0A0F', borderBottom: '1px solid rgba(255,255,255,0.08)' }}
@@ -134,7 +134,7 @@ export function Pricing() {
                 {row.label}
               </span>
 
-              {/* Traditional — struck through */}
+              {/* Traditional, struck through */}
               <div className="flex flex-col gap-0.5">
                 <span
                   className="md:hidden font-dm font-medium"

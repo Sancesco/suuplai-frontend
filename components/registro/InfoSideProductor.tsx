@@ -15,12 +15,12 @@ const staggerContainer = {
 }
 
 const benefits = [
-  'Sabes en qué colonia rota mejor tu producto — en semanas, no en trimestres',
+  'Sabes en qué colonia rota mejor tu producto, en semanas, no en trimestres',
   'Conoces el perfil real de tu comprador, no solo cuánto vendiste',
   'Pruebas un SKU nuevo en 5 tiendas antes de apostar producción masiva',
-  'Máximo 30 productos por tienda — tu marca tiene protagonismo, no compite con 200',
+  'Máximo 30 productos por tienda, tu marca tiene protagonismo, no compite con 200',
   'Logística simple: envío directo a tienda, sin CEDIS ni paletizado',
-  'Sin slotting fee inicial — pagas solo cuando hay slot activo',
+  'Sin slotting fee inicial, pagas solo cuando hay slot activo',
 ]
 
 const curationSteps = [
@@ -213,7 +213,7 @@ export function InfoSideProductor() {
             fontWeight: 300,
           }}
         >
-          Que haya filtro no es un obstáculo — es tu ventaja. Significa que si entras, tu marca no
+          Que haya filtro no es un obstáculo, es tu ventaja. Significa que si entras, tu marca no
           compite con ruido.
         </p>
       </motion.div>

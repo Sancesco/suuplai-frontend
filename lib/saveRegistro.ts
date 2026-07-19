@@ -9,6 +9,6 @@ export async function saveRegistro(payload: Record<string, unknown>): Promise<vo
       body: JSON.stringify(payload),
     })
   } catch {
-    // silencioso a propósito — la UX no debe depender del backend
+    // silencioso a propósito, la UX no debe depender del backend
   }
 }

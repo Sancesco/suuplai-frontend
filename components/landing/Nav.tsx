@@ -79,7 +79,7 @@ export function Nav() {
 
         {/* Únete dropdown + Mobile toggle */}
         <div className="flex items-center gap-3">
-          {/* Desktop — dos botones directos a cada formulario (un clic, sin desplegable) */}
+          {/* Desktop, dos botones directos a cada formulario (un clic, sin desplegable) */}
           <div className="hidden md:flex items-center gap-2.5">
             {uneteOptions.map((opt) => (
               <Link

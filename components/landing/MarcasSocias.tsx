@@ -67,7 +67,7 @@ function LogoCard({
         </span>
       )}
 
-      {/* Tooltip al hover — desktop */}
+      {/* Tooltip al hover, desktop */}
       <AnimatePresence>
         {isHovered && (
           <motion.div
@@ -151,13 +151,13 @@ export function MarcasSocias() {
             className="font-dm text-suu-muted max-w-2xl mx-auto"
             style={{ fontSize: '17px', fontWeight: 300, lineHeight: 1.6 }}
           >
-            Productores independientes que entraron a tiendas físicas con Suuplai — sin slotting
+            Productores independientes que entraron a tiendas físicas con Suuplai, sin slotting
             fees, sin esperar meses.
           </p>
         </motion.div>
       </div>
 
-      {/* Marquee — pausa al hover, tooltips pueden desbordar hacia arriba */}
+      {/* Marquee, pausa al hover, tooltips pueden desbordar hacia arriba */}
       <div
         className={`logo-carousel-mask overflow-x-clip${hovered !== null ? ' is-paused' : ''}`}
         style={{ overflowY: 'visible' }}
