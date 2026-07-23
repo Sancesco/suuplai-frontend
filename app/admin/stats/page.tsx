@@ -12,6 +12,14 @@ const LINE = '#26262f'
 const SYNE = 'var(--font-syne), sans-serif'
 const MONO = 'var(--font-space-mono), monospace'
 
+// Destinos rápidos para los links (se puede escribir cualquier ruta a mano también).
+const DEST_PRESETS = [
+  { label: 'Inicio', path: '/' },
+  { label: 'Agente Comercial', path: '/agente-comercial' },
+  { label: 'Registro tienda', path: '/registro-tienda' },
+  { label: 'Registro marca', path: '/registro-productor' },
+]
+
 interface Stats {
   totals: { pageviews: number; visitors: number; demoClicks: number; stripeClicks: number }
   byDay: { date: string; visits: number; sessions: number }[]
@@ -231,7 +239,20 @@ function LinksView({ links, reload, hdr }: { links: LinkRow[] | null; reload: ()
       <Section title="Crear link de seguimiento">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px,1fr))', gap: 10, alignItems: 'end' }}>
           <Fld label="Slug (ej. capicua)"><input value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="capicua" style={inp} /></Fld>
-          <Fld label="Destino"><input value={destination} onChange={(e) => setDestination(e.target.value)} style={inp} /></Fld>
+          <Fld label="Destino">
+            <input value={destination} onChange={(e) => setDestination(e.target.value)} style={inp} />
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+              {DEST_PRESETS.map((d) => {
+                const active = destination === d.path
+                return (
+                  <button key={d.path} type="button" onClick={() => setDestination(d.path)}
+                    style={{ background: active ? LIME : 'transparent', color: active ? BG : MUTED, border: `1px solid ${active ? LIME : LINE}`, borderRadius: 999, padding: '3px 10px', fontSize: 11, cursor: 'pointer', fontWeight: active ? 700 : 400 }}>
+                    {d.label}
+                  </button>
+                )
+              })}
+            </div>
+          </Fld>
           <Fld label="Etiqueta (opcional)"><input value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Capicua - propuesta julio" style={inp} /></Fld>
           <button onClick={create} disabled={busy || !slug} style={{ background: LIME, color: BG, border: 'none', borderRadius: 8, padding: '11px 18px', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: SYNE, opacity: busy || !slug ? 0.5 : 1 }}>Crear</button>
         </div>
