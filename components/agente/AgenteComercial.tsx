@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect } from 'react'
 import { motion, useReducedMotion, type Variants } from 'framer-motion'
 import { Logo } from '@/components/shared/Logo'
 import { SimuladorComercial } from './SimuladorComercial'
-import { track, trackExit } from '@/lib/analytics'
+import { AgentAnalytics } from './AgentAnalytics'
+import { track } from '@/lib/analytics'
 
 // Paleta del prototipo
 const VOID = '#0A0A0F'
@@ -93,7 +93,7 @@ function Nav() {
 // ── Hero ──────────────────────────────────────────────────────────────────
 function Hero() {
   return (
-    <header className="pt-14 md:pt-[72px] pb-14 md:pb-[60px]">
+    <header data-section="hero" className="pt-14 md:pt-[72px] pb-14 md:pb-[60px]">
       <div className={`${wrap} grid md:grid-cols-[1.05fr_0.95fr] gap-10 md:gap-[54px] items-center`}>
         <Reveal>
           <div
@@ -161,7 +161,7 @@ function Problema() {
     'Reporte real: quién probó, quién pidió',
   ]
   return (
-    <section className="py-16 md:py-[78px]">
+    <section data-section="problema" className="py-16 md:py-[78px]">
       <div className={wrap}>
         <Reveal>
           <div className="font-mono" style={{ fontSize: 12, letterSpacing: '3px', textTransform: 'uppercase', color: EMBER, marginBottom: 16 }}>
@@ -241,7 +241,7 @@ function Proceso() {
     { n: '04', name: 'Entramos', desc: 'Cerramos el primer pedido, surtimos y monitoreamos la rotación para la recompra. Tu marca queda en anaquel, generando.' },
   ]
   return (
-    <section id="como" className="py-16 md:py-[78px]">
+    <section id="como" data-section="como" className="py-16 md:py-[78px]">
       <div className={wrap}>
         <Reveal>
           <div className="font-mono" style={{ fontSize: 12, letterSpacing: '3px', textTransform: 'uppercase', color: EMBER, marginBottom: 16 }}>
@@ -280,7 +280,7 @@ function Proceso() {
 // ── Retorno ──────────────────────────────────────────────────────────────────
 function Retorno() {
   return (
-    <section className="py-16 md:py-[78px]">
+    <section data-section="retorno" className="py-16 md:py-[78px]">
       <div className={wrap}>
         <Reveal style={{ background: CARBON, borderRadius: 24, padding: '32px 24px', border: `1px solid ${LINE}` }}>
           <div className="md:p-5">
@@ -342,7 +342,7 @@ function Precio() {
     'Reporte de avance real por punto',
   ]
   return (
-    <section className="py-16 md:py-[78px]">
+    <section data-section="precio" className="py-16 md:py-[78px]">
       <div className={wrap}>
         <Reveal onEnter={() => track('scroll_price')}>
           <div className="font-mono" style={{ fontSize: 12, letterSpacing: '3px', textTransform: 'uppercase', color: EMBER, marginBottom: 16 }}>
@@ -382,7 +382,7 @@ function Precio() {
 // ── CTA final ────────────────────────────────────────────────────────────────
 function Final() {
   return (
-    <section id="contacto" className="text-center pt-[90px] pb-10">
+    <section id="contacto" data-section="cta" className="text-center pt-[90px] pb-10">
       <div className={wrap}>
         <Reveal>
           <h2 className="font-syne" style={{ fontWeight: 800, fontSize: 'clamp(34px,4.5vw,58px)', lineHeight: 1.04, letterSpacing: '-1.6px' }}>
@@ -444,24 +444,9 @@ function FooterAgente() {
 }
 
 export function AgenteComercial() {
-  // Evento de salida: segundos en la página (beforeunload + al navegar dentro del sitio).
-  useEffect(() => {
-    const start = Date.now()
-    let fired = false
-    const fire = () => {
-      if (fired) return
-      fired = true
-      trackExit({ seconds: Math.round((Date.now() - start) / 1000) })
-    }
-    window.addEventListener('beforeunload', fire)
-    return () => {
-      window.removeEventListener('beforeunload', fire)
-      fire()
-    }
-  }, [])
-
   return (
     <div style={{ background: VOID, color: BONE, overflowX: 'hidden' }}>
+      <AgentAnalytics />
       <Nav />
       <Hero />
       <Problema />

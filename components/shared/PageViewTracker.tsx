@@ -13,6 +13,12 @@ export function PageViewTracker() {
     if (pathname?.startsWith('/admin')) return
     captureAttribution()
     track('page_view', { path: pathname })
+    // Heartbeat cada 30s mientras la pestaña está visible (para el indicador "en vivo").
+    const ping = () => {
+      if (document.visibilityState === 'visible') track('heartbeat', { path: pathname })
+    }
+    const id = window.setInterval(ping, 30000)
+    return () => window.clearInterval(id)
   }, [pathname])
 
   return null

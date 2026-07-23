@@ -50,5 +50,9 @@ alter table events add column if not exists country text;
 alter table links  add column if not exists notify boolean not null default true;
 alter table links  add column if not exists last_click_at timestamptz;
 alter table links  add column if not exists last_notified_at timestamptz;
+-- Fase 2: señales de compra + operación
+alter table links  add column if not exists first_click_at timestamptz;
+alter table links  add column if not exists category text;
+alter table links  add column if not exists notes text;
 
 -- RLS activado y SIN políticas públicas: solo el servidor (service_role) escribe/lee.
