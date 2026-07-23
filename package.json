@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:telegram": "node scripts/test-telegram.mjs"
   },
   "dependencies": {
     "@emailjs/browser": "^4.3.3",

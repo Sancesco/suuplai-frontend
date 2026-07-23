@@ -60,6 +60,16 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: 'analytics no configurado' }, { status: 503 })
   }
 
+  // Geo desde los headers de Vercel (en local no vienen → 'desconocido').
+  let city: string | null = null
+  try {
+    const c = req.headers.get('x-vercel-ip-city')
+    if (c) city = decodeURIComponent(c)
+  } catch {
+    /* noop */
+  }
+  const country = req.headers.get('x-vercel-ip-country') || null
+
   const { error } = await supabase.from('events').insert({
     type,
     payload: body.payload ?? null,
@@ -71,6 +81,8 @@ export async function POST(req: Request) {
     referrer: str(body.referrer, 500),
     user_agent: str(body.userAgent, 400),
     path: str(body.path, 200),
+    city: city ?? 'desconocido',
+    country: country ?? 'desconocido',
   })
 
   if (error) {

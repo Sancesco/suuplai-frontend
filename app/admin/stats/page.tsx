@@ -33,6 +33,7 @@ interface LinkRow {
   destination: string
   label: string | null
   clicks: number
+  notify: boolean
   archived: boolean
   created_at: string
   lastVisit: string | null
@@ -226,6 +227,11 @@ function LinksView({ links, reload, hdr }: { links: LinkRow[] | null; reload: ()
     reload()
   }
 
+  const toggleNotify = async (id: string, value: boolean) => {
+    await fetch(`/api/links/${id}`, { method: 'PATCH', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ notify: value }) })
+    reload()
+  }
+
   const copy = (slugVal: string) => {
     const url = `${window.location.origin}/r/${slugVal}`
     navigator.clipboard?.writeText(url)
@@ -265,7 +271,7 @@ function LinksView({ links, reload, hdr }: { links: LinkRow[] | null; reload: ()
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead><tr style={{ color: MUTED, textAlign: 'left' }}>
-                <Th>slug</Th><Th>etiqueta</Th><Th>destino</Th><Th>clics</Th><Th>última visita</Th><Th></Th>
+                <Th>slug</Th><Th>etiqueta</Th><Th>destino</Th><Th>clics</Th><Th>última visita</Th><Th>avisar</Th><Th></Th>
               </tr></thead>
               <tbody>
                 {links.map((l) => (
@@ -275,6 +281,12 @@ function LinksView({ links, reload, hdr }: { links: LinkRow[] | null; reload: ()
                     <Td><span style={{ color: MUTED, fontSize: 12 }}>{l.destination}</span></Td>
                     <Td mono>{l.clicks}</Td>
                     <Td mono>{fmt(l.lastVisit)}</Td>
+                    <Td>
+                      <button onClick={() => toggleNotify(l.id, !l.notify)} title={l.notify ? 'Alertas ON' : 'Alertas OFF'}
+                        style={{ ...btnSm, borderColor: l.notify ? LIME : LINE, color: l.notify ? LIME : MUTED }}>
+                        {l.notify ? '🔔 ON' : '🔕 OFF'}
+                      </button>
+                    </Td>
                     <Td>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button onClick={() => copy(l.slug)} style={btnSm}>Copiar</button>

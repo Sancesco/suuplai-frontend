@@ -43,25 +43,13 @@ export async function GET(req: Request) {
 
   const { data: links, error } = await supabase
     .from('links')
-    .select('id,slug,destination,label,clicks,archived,created_at')
+    .select('id,slug,destination,label,clicks,notify,archived,last_click_at,created_at')
     .order('created_at', { ascending: false })
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
 
-  // Última visita por slug (desde events link_click)
-  const { data: clicks } = await supabase
-    .from('events')
-    .select('src,created_at')
-    .eq('type', 'link_click')
-    .order('created_at', { ascending: false })
-    .limit(20000)
-  const lastVisit = new Map<string, string>()
-  ;(clicks ?? []).forEach((c: { src: string | null; created_at: string }) => {
-    if (c.src && !lastVisit.has(c.src)) lastVisit.set(c.src, c.created_at)
-  })
-
-  const rows = (links ?? []).map((l: { slug: string } & Record<string, unknown>) => ({
+  const rows = (links ?? []).map((l: { last_click_at?: string | null } & Record<string, unknown>) => ({
     ...l,
-    lastVisit: lastVisit.get(l.slug) ?? null,
+    lastVisit: l.last_click_at ?? null,
   }))
 
   return NextResponse.json({ ok: true, links: rows })
