@@ -9,6 +9,8 @@ export function PageViewTracker() {
   const pathname = usePathname()
 
   useEffect(() => {
+    // No contamos el panel interno (/admin, /admin/stats) como visita.
+    if (pathname?.startsWith('/admin')) return
     captureAttribution()
     track('page_view', { path: pathname })
   }, [pathname])
