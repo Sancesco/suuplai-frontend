@@ -1,8 +1,10 @@
 'use client'
 
+import { useEffect } from 'react'
 import { motion, useReducedMotion, type Variants } from 'framer-motion'
 import { Logo } from '@/components/shared/Logo'
 import { SimuladorComercial } from './SimuladorComercial'
+import { track, trackExit } from '@/lib/analytics'
 
 // Paleta del prototipo
 const VOID = '#0A0A0F'
@@ -23,11 +25,13 @@ function Reveal({
   className,
   style,
   delay = 0,
+  onEnter,
 }: {
   children: React.ReactNode
   className?: string
   style?: React.CSSProperties
   delay?: number
+  onEnter?: () => void
 }) {
   const reduce = useReducedMotion()
   const variants: Variants = {
@@ -41,6 +45,7 @@ function Reveal({
       variants={variants}
       initial="hidden"
       whileInView="visible"
+      onViewportEnter={onEnter}
       viewport={{ once: true, amount: 0.15 }}
     >
       {children}
@@ -74,6 +79,7 @@ function Nav() {
           href={CALENDAR_URL}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={() => track('click_demo', { loc: 'nav' })}
           className="font-syne inline-flex items-center rounded-pill transition-transform"
           style={{ fontWeight: 700, fontSize: 14, background: LIME, color: VOID, padding: '9px 18px' }}
         >
@@ -116,6 +122,7 @@ function Hero() {
               href={CALENDAR_URL}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => track('click_demo', { loc: 'hero' })}
               className="font-syne rounded-pill"
               style={{ fontWeight: 700, fontSize: 16, background: LIME, color: VOID, padding: '15px 26px' }}
             >
@@ -337,7 +344,7 @@ function Precio() {
   return (
     <section className="py-16 md:py-[78px]">
       <div className={wrap}>
-        <Reveal>
+        <Reveal onEnter={() => track('scroll_price')}>
           <div className="font-mono" style={{ fontSize: 12, letterSpacing: '3px', textTransform: 'uppercase', color: EMBER, marginBottom: 16 }}>
             Inversión
           </div>
@@ -394,6 +401,7 @@ function Final() {
             href={CALENDAR_URL}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => track('click_demo', { loc: 'final' })}
             className="font-syne rounded-pill inline-block"
             style={{ fontWeight: 700, fontSize: 18, background: LIME, color: VOID, padding: '17px 34px' }}
           >
@@ -403,6 +411,7 @@ function Final() {
             href={ARRANCAR_HREF}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => track('click_stripe', { hasLink: Boolean(STRIPE_LINK) })}
             className="font-syne rounded-pill"
             style={{ fontWeight: 700, fontSize: 18, color: BONE, padding: '17px 30px', border: `1px solid ${LINE}` }}
           >
@@ -435,6 +444,22 @@ function FooterAgente() {
 }
 
 export function AgenteComercial() {
+  // Evento de salida: segundos en la página (beforeunload + al navegar dentro del sitio).
+  useEffect(() => {
+    const start = Date.now()
+    let fired = false
+    const fire = () => {
+      if (fired) return
+      fired = true
+      trackExit({ seconds: Math.round((Date.now() - start) / 1000) })
+    }
+    window.addEventListener('beforeunload', fire)
+    return () => {
+      window.removeEventListener('beforeunload', fire)
+      fire()
+    }
+  }, [])
+
   return (
     <div style={{ background: VOID, color: BONE, overflowX: 'hidden' }}>
       <Nav />

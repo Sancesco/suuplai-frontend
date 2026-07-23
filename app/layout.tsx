@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { Syne, DM_Sans, Space_Mono } from 'next/font/google'
 import Script from 'next/script'
+import { Analytics } from '@vercel/analytics/react'
+import { PageViewTracker } from '@/components/shared/PageViewTracker'
 import './globals.css'
 
 // Google Tag Manager, contenedor donde se administra Google Analytics y demás tags.
@@ -78,6 +80,8 @@ export default function RootLayout({
           />
         </noscript>
         {children}
+        <PageViewTracker />
+        <Analytics />
       </body>
     </html>
   )

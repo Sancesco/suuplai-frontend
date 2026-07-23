@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { track } from '@/lib/analytics'
 
 const VOID = '#0A0A0F'
 const CARBON = '#14141b'
@@ -86,6 +87,7 @@ function Slider({
   max,
   suffix,
   onChange,
+  onCommit,
 }: {
   id: string
   label: string
@@ -94,6 +96,7 @@ function Slider({
   max: number
   suffix?: string
   onChange: (v: number) => void
+  onCommit?: () => void
 }) {
   return (
     <div style={{ marginBottom: 16 }}>
@@ -114,6 +117,8 @@ function Slider({
         step={1}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
+        onPointerUp={onCommit}
+        onKeyUp={onCommit}
         aria-label={label}
         className="sim-range"
       />
@@ -131,6 +136,9 @@ export function SimuladorComercial() {
     const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
     if (!reduce) setAnimate(true)
   }, [])
+
+  // Analítica: registra los valores al SOLTAR cualquiera de los sliders.
+  const commit = () => track('simulator_change', { perWeek, rate })
 
   const perMonth = perWeek * 4
   const newAcc = Math.round((perMonth * rate) / 100)
@@ -203,8 +211,8 @@ export function SimuladorComercial() {
       </div>
 
       {/* sliders */}
-      <Slider id="sim-week" label="Muestras por semana" value={perWeek} min={5} max={20} onChange={setPerWeek} />
-      <Slider id="sim-rate" label="Tasa de éxito por muestra" value={rate} min={10} max={30} suffix="%" onChange={setRate} />
+      <Slider id="sim-week" label="Muestras por semana" value={perWeek} min={5} max={20} onChange={setPerWeek} onCommit={commit} />
+      <Slider id="sim-rate" label="Tasa de éxito por muestra" value={rate} min={10} max={30} suffix="%" onChange={setRate} onCommit={commit} />
     </div>
   )
 }
