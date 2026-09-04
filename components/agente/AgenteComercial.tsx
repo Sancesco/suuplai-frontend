@@ -39,6 +39,10 @@ const CSS = `
 .ac .zl{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
 .ac .zl span{font-family:'Syne';font-weight:700;font-size:16px;letter-spacing:-.01em;color:var(--bone);border:1px solid var(--line);border-radius:100px;padding:8px 18px}
 .ac .zf{display:block;margin-top:22px;font-size:15.5px;color:var(--ash);max-width:620px}
+.ac .logos{display:flex;flex-wrap:wrap;gap:12px;margin-top:20px;align-items:center}
+.ac .logo-chip{background:#fff;border-radius:12px;padding:10px 16px;display:flex;align-items:center;justify-content:center;height:56px}
+.ac .logo-chip img{max-height:34px;max-width:120px;width:auto;object-fit:contain;display:block}
+.ac .logo-more{font-family:'Syne';font-weight:800;font-size:15px;color:var(--bone);border:1px dashed var(--line);border-radius:12px;padding:0 20px;height:56px;display:flex;align-items:center}
 .ac .cols{display:flex;gap:20px;flex-wrap:wrap;margin-top:52px}
 .ac .cols>div{flex:1;min-width:290px;border:1px solid var(--line);border-radius:18px;padding:32px}
 .ac .cols .bad{opacity:.5}
@@ -124,13 +128,16 @@ const BODY = `
       <a href="#planes" class="btn btn-s">Ver planes</a>
     </div>
     <div class="zonas">
-      <span class="zt">Nuestras marcas ya están en</span>
-      <div class="zl">
-        <span>Polanco</span><span>Condesa</span><span>Roma</span><span>Del Valle</span>
-        <span>San Ángel</span><span>Bosques de las Lomas</span><span>Interlomas</span>
-        <span>Providencia</span><span>Puerta de Hierro</span><span>Arcos Vallarta</span>
+      <span class="zt">Marcas que ya confían en nosotros</span>
+      <div class="logos">
+        <span class="logo-chip"><img src="/marcas/looms.jpg" alt="Looms"></span>
+        <span class="logo-chip"><img src="/marcas/capicua.jpg" alt="Capicúa"></span>
+        <span class="logo-chip"><img src="/marcas/cachito.jpg" alt="Cachito"></span>
+        <span class="logo-chip"><img src="/marcas/riise.jpg" alt="Riise"></span>
+        <span class="logo-chip"><img src="/marcas/noodo.png" alt="Noodo"></span>
+        <span class="logo-more">y muchas más</span>
       </div>
-      <span class="zf">Delis, tiendas orgánicas, minisúpers premium y carnicerías de especialidad en CDMX y Guadalajara.</span>
+      <span class="zf">Prospectando y abriendo cuentas en delis, tiendas orgánicas, minisúpers premium y carnicerías de especialidad en CDMX y Guadalajara.</span>
     </div>
   </div>
 </header>
