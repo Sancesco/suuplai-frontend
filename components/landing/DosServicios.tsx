@@ -127,8 +127,9 @@ export function DosServicios() {
             </p>
 
             <div className="mt-6 mb-4">
+              <span className="font-dm text-suu-muted" style={{ fontSize: '14px' }}>desde </span>
               <span className="font-syne font-extrabold text-suu-text" style={{ fontSize: '34px', letterSpacing: '-1px' }}>
-                $3,000
+                $4,000
               </span>
               <span className="font-dm text-suu-muted" style={{ fontSize: '14px' }}> + IVA / al mes</span>
             </div>
