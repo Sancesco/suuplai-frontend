@@ -5,8 +5,8 @@ export const runtime = 'nodejs'
 
 // Lista los registros para el panel /admin. Protegido por contraseña.
 export async function GET(req: Request) {
-  const password = req.headers.get('x-admin-password')
-  const expected = process.env.ADMIN_PASSWORD
+  const password = req.headers.get('x-admin-password')?.trim()
+  const expected = process.env.ADMIN_PASSWORD?.trim()
 
   if (!expected) {
     return NextResponse.json({ ok: false, error: 'ADMIN_PASSWORD no configurada' }, { status: 503 })

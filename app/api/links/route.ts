@@ -5,9 +5,9 @@ import { deviceKey } from '@/lib/ua'
 export const runtime = 'nodejs'
 
 function authed(req: Request): boolean | null {
-  const expected = process.env.ADMIN_PASSWORD
+  const expected = process.env.ADMIN_PASSWORD?.trim()
   if (!expected) return null
-  return req.headers.get('x-admin-password') === expected
+  return req.headers.get('x-admin-password')?.trim() === expected
 }
 
 function slugify(raw: string): string {

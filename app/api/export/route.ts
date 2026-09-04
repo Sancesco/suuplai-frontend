@@ -17,9 +17,9 @@ function toCsv(rows: Record<string, unknown>[], cols: string[]): string {
 
 // GET /api/export?type=links|events → descarga CSV
 export async function GET(req: Request) {
-  const expected = process.env.ADMIN_PASSWORD
+  const expected = process.env.ADMIN_PASSWORD?.trim()
   if (!expected) return NextResponse.json({ ok: false, error: 'ADMIN_PASSWORD no configurada' }, { status: 503 })
-  if (req.headers.get('x-admin-password') !== expected) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 401 })
+  if (req.headers.get('x-admin-password')?.trim() !== expected) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 401 })
 
   const supabase = getSupabaseAdmin()
   if (!supabase) return NextResponse.json({ ok: false, error: 'Backend no configurado' }, { status: 503 })

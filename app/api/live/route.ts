@@ -6,9 +6,9 @@ export const dynamic = 'force-dynamic'
 
 // GET /api/live — sesiones con actividad en los últimos 5 minutos.
 export async function GET(req: Request) {
-  const expected = process.env.ADMIN_PASSWORD
+  const expected = process.env.ADMIN_PASSWORD?.trim()
   if (!expected) return NextResponse.json({ ok: false, error: 'ADMIN_PASSWORD no configurada' }, { status: 503 })
-  if (req.headers.get('x-admin-password') !== expected) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 401 })
+  if (req.headers.get('x-admin-password')?.trim() !== expected) return NextResponse.json({ ok: false, error: 'No autorizado' }, { status: 401 })
 
   const supabase = getSupabaseAdmin()
   if (!supabase) return NextResponse.json({ ok: false, error: 'Backend no configurado' }, { status: 503 })

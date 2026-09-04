@@ -136,7 +136,7 @@ const BODY = `
         <span class="logo-chip"><img src="/marcas/looms.jpg" alt="Looms"></span>
         <span class="logo-chip"><img src="/marcas/capicua.jpg" alt="Capicúa"></span>
         <span class="logo-chip"><img src="/marcas/cachito.jpg" alt="Cachito"></span>
-        <span class="logo-chip"><img src="/marcas/riise.jpg" alt="Riise"></span>
+        <span class="logo-chip"><img src="/marcas/riise.png" alt="Riise"></span>
         <span class="logo-chip"><img src="/marcas/noodo.png" alt="Noodo"></span>
         <span class="logo-more">y muchas más</span>
       </div>
