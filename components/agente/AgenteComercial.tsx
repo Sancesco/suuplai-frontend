@@ -111,7 +111,7 @@ const DEMO = 'https://calendar.app.google/LfAtSiFF7xAJ7YPx9'
 const BODY = `
 <nav>
   <div class="wrap">
-    <a href="#top" class="logo">suuplai.</a>
+    <a href="/" class="logo">suuplai.</a>
     <div class="links">
       <a href="#como">Cómo funciona</a>
       <a href="#planes">Planes</a>
