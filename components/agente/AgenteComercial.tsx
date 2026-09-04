@@ -196,7 +196,7 @@ const BODY = `
         <div class="name">Entrada</div>
         <div class="price">$4,000</div>
         <div class="per">MXN · mes · más IVA</div>
-        <div class="vol"><b>12</b> tiendas al mes · 3 por semana</div>
+        <div class="vol"><b>16</b> tiendas al mes · 4 por semana</div>
         <ul>
           <li class="base">Mapeo y filtrado del universo de tiendas</li>
           <li class="base">Prospección e identificación del comprador</li>
