@@ -133,7 +133,6 @@ const BODY = `
     <div class="zonas">
       <span class="zt">Marcas que ya confían en nosotros</span>
       <div class="logos">
-        <span class="logo-chip"><img src="/marcas/looms.jpg" alt="Looms"></span>
         <span class="logo-chip"><img src="/marcas/capicua.jpg" alt="Capicúa"></span>
         <span class="logo-chip"><img src="/marcas/cachito.jpg" alt="Cachito"></span>
         <span class="logo-chip"><img src="/marcas/riise.png" alt="Riise"></span>
