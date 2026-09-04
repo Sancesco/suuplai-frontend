@@ -206,7 +206,6 @@ const BODY = `
           <li class="base">Catálogo digital por tienda</li>
           <li class="base">Seguimiento hasta la orden de compra</li>
           <li class="base">Pipeline en vivo, 24/7</li>
-          <li class="base"><strong>2 aperturas garantizadas al mes</strong></li>
         </ul>
         <a href="${DEMO}" class="btn btn-s">Reservar demo</a>
       </div>
@@ -219,6 +218,7 @@ const BODY = `
         <div class="vol"><b>20</b> tiendas al mes · 5 por semana</div>
         <ul>
           <li class="base">Todo lo de Entrada</li>
+          <li><strong>2 aperturas garantizadas al mes</strong></li>
           <li><strong>Gestión de las cuentas ya abiertas</strong></li>
           <li>Corte quincenal de consignación</li>
           <li>Seguimiento de resurtido</li>
