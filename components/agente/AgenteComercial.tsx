@@ -242,7 +242,6 @@ const BODY = `
       <div class="h"><span>Extras fuera de paquete</span><span>Precio</span></div>
       <div class="r"><span>Tienda adicional sobre el paquete contratado</span><span>$500 c/u</span></div>
       <div class="r"><span>Activación en punto de venta · fin de semana</span><span>$2,500 por evento</span></div>
-      <div class="r"><span>Segunda ciudad con ruta física</span><span>+$3,000 al mes</span></div>
       <div class="r"><span>Modo remoto · ciudad sin ruta física</span><span>-$2,000 sobre el nivel</span></div>
     </div>
     <div class="note">
