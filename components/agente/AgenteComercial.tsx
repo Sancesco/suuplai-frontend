@@ -39,13 +39,13 @@ const CSS = `
 .ac .zl{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
 .ac .zl span{font-family:'Syne';font-weight:700;font-size:16px;letter-spacing:-.01em;color:var(--bone);border:1px solid var(--line);border-radius:100px;padding:8px 18px}
 .ac .zf{display:block;margin-top:22px;font-size:15.5px;color:var(--ash);max-width:620px}
-.ac .logos{display:flex;flex-wrap:wrap;gap:14px;margin-top:24px;align-items:stretch}
-.ac .logo-chip{background:#fff;border-radius:16px;width:152px;height:88px;display:flex;align-items:center;justify-content:center;padding:16px 20px;box-shadow:0 8px 24px rgba(0,0,0,.38);border:1px solid rgba(255,255,255,.10);transition:transform .22s ease,box-shadow .22s ease}
-.ac .logo-chip:hover{transform:translateY(-4px);box-shadow:0 14px 34px rgba(0,0,0,.55)}
-.ac .logo-chip img{max-height:48px;max-width:116px;width:auto;height:auto;object-fit:contain;display:block}
-.ac .logo-more{width:152px;height:88px;border:1.5px dashed rgba(232,255,71,.45);border-radius:16px;display:flex;align-items:center;justify-content:center;text-align:center;font-family:'Syne';font-weight:800;font-size:15px;color:var(--lime);line-height:1.15;padding:0 14px;transition:background .22s ease}
+.ac .logos{display:flex;flex-wrap:wrap;gap:16px;margin-top:24px;align-items:stretch}
+.ac .logo-chip{background:#fff;border-radius:18px;width:200px;height:124px;display:flex;align-items:center;justify-content:center;padding:12px;box-shadow:0 10px 28px rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.10);transition:transform .22s ease,box-shadow .22s ease}
+.ac .logo-chip:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.58)}
+.ac .logo-chip img{max-height:98px;max-width:172px;width:auto;height:auto;object-fit:contain;display:block;image-rendering:auto}
+.ac .logo-more{width:200px;height:124px;border:1.5px dashed rgba(232,255,71,.45);border-radius:18px;display:flex;align-items:center;justify-content:center;text-align:center;font-family:'Syne';font-weight:800;font-size:17px;color:var(--lime);line-height:1.15;padding:0 16px;transition:background .22s ease}
 .ac .logo-more:hover{background:rgba(232,255,71,.06)}
-@media(max-width:640px){.ac .logo-chip,.ac .logo-more{width:calc(50% - 7px);height:80px}}
+@media(max-width:640px){.ac .logo-chip,.ac .logo-more{width:calc(50% - 8px);height:112px}}
 .ac .cols{display:flex;gap:20px;flex-wrap:wrap;margin-top:52px}
 .ac .cols>div{flex:1;min-width:290px;border:1px solid var(--line);border-radius:18px;padding:32px}
 .ac .cols .bad{opacity:.5}
