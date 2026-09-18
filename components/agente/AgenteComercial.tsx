@@ -1,6 +1,11 @@
+'use client'
+
 // Página pública de Agente Comercial (suuplai.com.mx/agente-comercial).
 // Diseño autocontenido: CSS + markup inyectados, para reflejar exactamente el arte aprobado.
 // Pricing por niveles (Entrada / Ruta / Exclusiva). Actualizado sep 2026.
+// Sección "Velo en acción" (screenshots del CRM con parallax al scroll).
+
+import { useEffect } from 'react'
 
 const CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;700&family=Space+Mono:wght@400;700&display=swap');
@@ -102,8 +107,30 @@ const CSS = `
 .ac .close .btns{justify-content:center}
 .ac footer{padding:46px 0;text-align:center;border-top:1px solid var(--soft)}
 .ac footer p{font-family:'Space Mono';font-size:12px;letter-spacing:.11em;color:var(--muted);margin-top:14px}
-@media(max-width:760px){.ac nav .links{display:none}}
+.ac .showcase{background:linear-gradient(180deg,var(--void),#0b0b12 55%,var(--void))}
+.ac .scn{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center;margin-top:56px}
+.ac .scn.flip .cp{order:2}
+.ac .scn .fw{perspective:1500px}
+.ac .scn .frame{transform-origin:center 40%;will-change:transform,opacity}
+.ac .scn .frame img{width:100%;display:block;border-radius:6px;filter:drop-shadow(0 30px 55px rgba(0,0,0,.55))}
+.ac .scn .ey{font-family:'Space Mono';font-weight:700;font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--lime);display:block;margin-bottom:14px}
+.ac .scn.e .ey{color:var(--ember)}
+.ac .scn h3{font-family:'Syne';font-weight:800;font-size:clamp(24px,3.4vw,38px);letter-spacing:-.025em;line-height:1.02}
+.ac .scn p{font-size:15.5px;margin-top:14px;max-width:44ch}
+.ac .scn ul{list-style:none;margin-top:18px}
+.ac .scn li{padding-left:22px;position:relative;margin-bottom:10px;font-size:15px;color:var(--ash)}
+.ac .scn li:before{content:'';position:absolute;left:0;top:7px;width:8px;height:8px;border-radius:2px;background:var(--lime);box-shadow:0 0 0 4px rgba(232,255,71,.12)}
+.ac .scn.e li:before{background:var(--ember);box-shadow:0 0 0 4px rgba(255,107,53,.14)}
+.ac .rev{opacity:0;transform:translateY(22px)}
+.ac .rev.in{opacity:1;transform:none;transition:opacity .7s ease,transform .7s cubic-bezier(.2,.7,.2,1)}
+.ac .phones{display:flex;gap:26px;justify-content:center;flex-wrap:wrap;margin-top:56px}
+.ac .phones img{width:206px;max-width:44%;border-radius:6px;filter:drop-shadow(0 24px 44px rgba(0,0,0,.5))}
+.ac .phcap{text-align:center;margin-top:26px;font-family:'Space Mono';font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.ac .crm-cross{border:1px solid var(--line);border-radius:20px;padding:30px 32px;display:flex;gap:22px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:linear-gradient(120deg,rgba(255,107,53,.09),rgba(232,255,71,.05))}
+.ac .crm-cross h3{font-family:'Syne';font-weight:800;font-size:clamp(20px,2.6vw,28px);letter-spacing:-.02em}
+@media(max-width:760px){.ac nav .links{display:none}.ac .scn{grid-template-columns:1fr;gap:24px}.ac .scn.flip .cp{order:0}}
 @media(max-width:640px){.ac section{padding:70px 0}.ac .hero{padding:72px 0 60px}.ac .proof>div{min-width:calc(50% - 7px)}.ac .roi .arrow{display:none}.ac .extras .r{flex-direction:column;gap:4px}}
+@media(prefers-reduced-motion:reduce){.ac .scn .frame{transform:none!important}.ac .rev{opacity:1;transform:none}}
 `
 
 const DEMO = 'https://calendar.app.google/LfAtSiFF7xAJ7YPx9'
@@ -114,6 +141,7 @@ const BODY = `
     <a href="/" class="logo">suuplai.</a>
     <div class="links">
       <a href="#como">Cómo funciona</a>
+      <a href="#enaccion">Velo en acción</a>
       <a href="#planes">Planes</a>
       <a href="#dudas">Dudas</a>
     </div>
@@ -184,6 +212,32 @@ const BODY = `
       <div><div class="num">03</div><h3>Damos seguimiento</h3><p>¿Probó? ¿Le gustó? ¿Pidió precios? Empujamos cada cuenta hasta el pedido y te reportamos el avance real por tienda.</p></div>
       <div><div class="num">04</div><h3>Sostenemos</h3><p>Cerramos el primer pedido y luego cuidamos la rotación: conteo, resurtido y recompra. Abrir una tienda es fácil; que reordene es el negocio.</p></div>
     </div>
+  </div>
+</section>
+
+<section class="showcase" id="enaccion">
+  <div class="wrap">
+    <span class="kick">Velo en acción</span>
+    <h2>No te lo prometemos.<br>Te lo <em>enseñamos</em>.</h2>
+    <p class="lead">Así trabajamos tu marca en la calle: cada cuenta en su etapa, la ruta en vivo y cada muestra entregada con firma. Transparencia total sobre lo que pagas.</p>
+    <div class="scn">
+      <div class="cp rev"><span class="ey">Pipeline en vivo</span><h3>Cada cuenta,<br>en su etapa.</h3><p>Mira en qué va cada punto de venta (contactado, con muestra, en negociación, cuenta abierta) con un link en vivo, solo tuyo. Sin reportes maquillados a fin de mes.</p><ul><li>Tablero por etapas, actualizado al momento</li><li>Nota y próximo paso por cuenta</li><li>Tu propio link, solo tus cuentas</li></ul></div>
+      <div class="fw"><div class="frame"><img src="/screenshots/pipeline-d.webp" alt="Pipeline en vivo del CRM" loading="lazy"></div></div>
+    </div>
+    <div class="scn flip e">
+      <div class="cp rev"><span class="ey">Ruta en tiempo real</span><h3>La ruta<br>de tus muestras.</h3><p>Un mapa con las paradas del día y cada entrega marcándose sola conforme se firma. Ves por dónde anda tu producto sin tener que llamar a preguntar.</p><ul><li>Mapa con paradas en orden óptimo</li><li>Entregas en tiempo real</li><li>Piezas dejadas por tienda</li></ul></div>
+      <div class="fw"><div class="frame"><img src="/screenshots/ruta-d.webp" alt="Ruta de muestreo en vivo" loading="lazy"></div></div>
+    </div>
+    <div class="scn">
+      <div class="cp rev"><span class="ey">Recibos firmados</span><h3>Cada muestra,<br>firmada.</h3><p>Comprobante con folio, firma de quien recibió, fecha y ubicación verificada. La prueba real de cada visita, no la palabra de nadie.</p><ul><li>Firma, geolocalización y sello de tiempo</li><li>Folio por marca en cada entrega</li><li>Recibo compartible al instante</li></ul></div>
+      <div class="fw"><div class="frame"><img src="/screenshots/comprobante-d.webp" alt="Recibo de entrega firmado" loading="lazy"></div></div>
+    </div>
+    <div class="phones">
+      <img class="rev" src="/screenshots/pipeline-m.webp" alt="Pipeline en móvil" loading="lazy">
+      <img class="rev" src="/screenshots/ruta-m.webp" alt="Ruta en móvil" loading="lazy">
+      <img class="rev" src="/screenshots/comprobante-m.webp" alt="Recibo en móvil" loading="lazy">
+    </div>
+    <div class="phcap">Todo lo sigues en vivo desde tu teléfono</div>
   </div>
 </section>
 
@@ -274,6 +328,19 @@ const BODY = `
   </div>
 </section>
 
+<section>
+  <div class="wrap">
+    <div class="crm-cross">
+      <div>
+        <span class="kick" style="margin-bottom:10px">¿Prefieres hacerlo tú?</span>
+        <h3>La misma herramienta, en tus manos.</h3>
+        <p style="margin-top:8px;max-width:54ch">Si quieres operar tu propia prospección, el CRM de Suuplai te da la base de miles de contactos y todo lo que ves aquí desde $1,000 al mes.</p>
+      </div>
+      <a href="/crm" class="btn btn-s">Conocer el CRM &#8594;</a>
+    </div>
+  </div>
+</section>
+
 <section id="dudas">
   <div class="wrap">
     <span class="kick">Dudas frecuentes</span>
@@ -311,6 +378,42 @@ const BODY = `
 `
 
 export function AgenteComercial() {
+  useEffect(() => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const io = new IntersectionObserver(
+      (es) => es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target) } }),
+      { threshold: 0.16, rootMargin: '0px 0px -8% 0px' },
+    )
+    document.querySelectorAll('.ac .rev').forEach((el) => io.observe(el))
+
+    const frames = Array.from(document.querySelectorAll<HTMLElement>('.ac .scn .frame'))
+    let raf = 0
+    const update = () => {
+      raf = 0
+      const vh = window.innerHeight
+      for (const f of frames) {
+        const r = f.getBoundingClientRect()
+        const c = r.top + r.height / 2
+        let t = (vh - c) / (vh * 0.62)
+        t = t < 0 ? 0 : t > 1 ? 1 : t
+        f.style.transform = `translateY(${((1 - t) * 58).toFixed(1)}px) rotateX(${((1 - t) * 6).toFixed(2)}deg) scale(${(0.96 + t * 0.04).toFixed(3)})`
+        f.style.opacity = (0.45 + t * 0.55).toFixed(3)
+      }
+    }
+    const onScroll = () => { if (!raf) raf = requestAnimationFrame(update) }
+    if (!reduce && frames.length) {
+      window.addEventListener('scroll', onScroll, { passive: true })
+      window.addEventListener('resize', onScroll, { passive: true })
+      update()
+    }
+    return () => {
+      io.disconnect()
+      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
+      if (raf) cancelAnimationFrame(raf)
+    }
+  }, [])
+
   return (
     <div className="ac">
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
