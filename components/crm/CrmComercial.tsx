@@ -37,12 +37,13 @@ const CSS = `
 .crm .hero{padding:96px 0 80px;position:relative;overflow:hidden}
 .crm .hero:after{content:'';position:absolute;width:680px;height:680px;right:-220px;top:-260px;background:radial-gradient(circle,rgba(232,255,71,.12),transparent 66%);pointer-events:none}
 .crm .hero .row{display:flex;gap:34px;flex-wrap:wrap;align-items:center;position:relative;z-index:2}
-.crm .hero .col{flex:1 1 400px;min-width:min(100%,320px)}
+.crm .hero .col{flex:1 1 480px;min-width:min(100%,300px);position:relative;z-index:2}
+.crm .hero h1{font-size:clamp(34px,5.2vw,58px);overflow-wrap:break-word}
 .crm .pills{margin-top:26px;display:flex;gap:10px;flex-wrap:wrap}
 .crm .pill{display:inline-flex;align-items:baseline;gap:8px;background:var(--carbon);border:1px solid var(--line);border-radius:100px;padding:10px 18px}
 .crm .pill .b{font-family:'Syne';font-weight:800;font-size:22px;color:var(--lime)}
 .crm .pill .s{font-family:'Space Mono';font-size:11px;color:var(--muted);letter-spacing:.06em}
-.crm .heroShot{flex:1 1 440px;min-width:min(100%,320px);perspective:1400px}
+.crm .heroShot{flex:1 1 380px;min-width:min(100%,300px);perspective:1400px;position:relative;z-index:1}
 .crm .heroShot img{width:100%;display:block;border-radius:8px;filter:drop-shadow(0 40px 70px rgba(0,0,0,.6));transform:rotateY(-12deg) rotateX(6deg) rotate(1deg)}
 .crm .band{text-align:center;background:linear-gradient(180deg,var(--void),rgba(232,255,71,.05),var(--void))}
 .crm .band .n{font-family:'Syne';font-weight:800;font-size:clamp(56px,13vw,128px);line-height:.9;letter-spacing:-.04em;color:var(--lime)}
