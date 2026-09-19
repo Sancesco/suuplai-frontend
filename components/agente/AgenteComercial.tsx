@@ -126,8 +126,15 @@ const CSS = `
 .ac .phones{display:flex;gap:26px;justify-content:center;flex-wrap:wrap;margin-top:56px}
 .ac .phones img{width:206px;max-width:44%;border-radius:6px;filter:drop-shadow(0 24px 44px rgba(0,0,0,.5))}
 .ac .phcap{text-align:center;margin-top:26px;font-family:'Space Mono';font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-.ac .crm-cross{border:1px solid var(--line);border-radius:20px;padding:30px 32px;display:flex;gap:22px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:linear-gradient(120deg,rgba(255,107,53,.09),rgba(232,255,71,.05))}
-.ac .crm-cross h3{font-family:'Syne';font-weight:800;font-size:clamp(20px,2.6vw,28px);letter-spacing:-.02em}
+.ac .crm-cross{position:relative;border:1px solid rgba(232,255,71,.34);border-radius:22px;padding:34px 32px;background:linear-gradient(135deg,rgba(232,255,71,.12),rgba(19,19,25,.55) 62%);box-shadow:0 0 0 1px rgba(232,255,71,.05),0 22px 54px rgba(0,0,0,.4);overflow:hidden}
+.ac .crm-cross:after{content:'';position:absolute;width:320px;height:320px;right:-120px;top:-150px;background:radial-gradient(circle,rgba(232,255,71,.16),transparent 66%);pointer-events:none}
+.ac .crm-cross>*{position:relative;z-index:1}
+.ac .crm-cross h3{font-family:'Syne';font-weight:800;font-size:clamp(22px,3vw,32px);letter-spacing:-.02em}
+.ac .crm-badge{display:inline-block;font-family:'Space Mono';font-weight:700;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--void);background:var(--lime);padding:5px 12px;border-radius:100px;margin-bottom:16px}
+.ac .crm-cta-row{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:22px}
+.ac .crm-price{font-family:'Space Mono';font-size:13px;color:var(--ash)}
+.ac .crm-price b{font-family:'Syne';font-weight:800;font-size:24px;color:var(--lime);letter-spacing:-.02em}
+.ac .crm-btn{background:var(--lime);color:var(--void)}
 .ac .marquee{overflow:hidden;margin-top:22px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
 .ac .marquee .track{display:flex;width:max-content;animation:acmar 32s linear infinite}
 .ac .marquee:hover .track{animation-play-state:paused}
@@ -144,7 +151,7 @@ const CSS = `
 .ac .livebadge .d{width:6px;height:6px;border-radius:50%;background:var(--void);animation:acBlink 1.4s ease-in-out infinite}
 @keyframes acBlink{0%,100%{opacity:.25}50%{opacity:1}}
 @media(max-width:760px){.ac nav .links{display:none}.ac .scn{grid-template-columns:1fr;gap:24px}.ac .scn.flip .cp{order:0}.ac .plans{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;margin:50px -24px 0;padding:22px 24px 12px;-webkit-overflow-scrolling:touch;scrollbar-width:none}.ac .plans::-webkit-scrollbar{display:none}.ac .plan{flex:0 0 87%;min-width:0;scroll-snap-align:center;padding:24px 22px 22px}.ac .plan .lvl{font-size:9px}.ac .plan .name{font-size:22px;margin-top:5px}.ac .plan .price{font-size:35px;margin-top:12px}.ac .plan .per{margin-top:6px}.ac .plan .vol{margin-top:13px;padding-top:13px;font-size:13px}.ac .plan .vol b{font-size:17px}.ac .plan ul{margin-top:13px}.ac .plan li{font-size:12.5px;margin-bottom:7px;line-height:1.32;padding-left:20px}.ac .plan .btn{margin-top:16px;padding:12px}.ac .dots{display:flex;margin-top:16px}}
-@media(max-width:640px){.ac{font-size:16px}.ac section{padding:54px 0}.ac .hero{padding:52px 0 46px}.ac h1{font-size:33px;line-height:1.03}.ac h2{font-size:26px}.ac .lead{font-size:16px;margin-top:16px}.ac .kick{margin-bottom:14px}.ac .proof{margin-top:44px}.ac .proof>div{min-width:calc(50% - 7px);padding:18px 16px}.ac .proof .n{font-size:32px}.ac .cols>div{padding:26px 24px}.ac .roi{gap:7px;margin-top:32px}.ac .roi>div{flex:1;min-width:0;padding:16px 7px;border-radius:12px}.ac .roi .big{font-size:22px}.ac .roi .sm{font-size:10.5px;margin-top:7px;line-height:1.35}.ac .roi .arrow{display:flex;align-items:center;font-size:15px;min-width:0;padding:0}.ac .extras{margin-top:26px}.ac .extras .h{padding:11px 18px;font-size:9.5px;letter-spacing:.11em}.ac .extras .h span:last-child{display:none}.ac .extras .r{padding:13px 18px;gap:14px;font-size:13.5px}.ac .extras .r span:last-child{font-size:12.5px}.ac .note{padding:20px 20px;margin-top:20px}.ac .note p{font-size:14px;line-height:1.5}.ac .marquee .logo-chip,.ac .marquee .logo-more{width:150px;height:94px}.ac .marquee .logo-chip img{max-height:74px;max-width:126px}}
+@media(max-width:640px){.ac{font-size:16px}.ac section{padding:54px 0}.ac .hero{padding:52px 0 46px}.ac h1{font-size:33px;line-height:1.03}.ac h2{font-size:26px}.ac .lead{font-size:16px;margin-top:16px}.ac .kick{margin-bottom:14px}.ac .proof{margin-top:44px}.ac .proof>div{min-width:calc(50% - 7px);padding:18px 16px}.ac .proof .n{font-size:26px;white-space:nowrap}.ac .proof .l{font-size:9px}.ac .cols>div{padding:26px 24px}.ac .roi{gap:7px;margin-top:32px}.ac .roi>div{flex:1;min-width:0;padding:16px 7px;border-radius:12px}.ac .roi .big{font-size:22px}.ac .roi .sm{font-size:10.5px;margin-top:7px;line-height:1.35}.ac .roi .arrow{display:flex;align-items:center;font-size:15px;min-width:0;padding:0}.ac .extras{margin-top:26px}.ac .extras .h{padding:11px 18px;font-size:9.5px;letter-spacing:.11em}.ac .extras .h span:last-child{display:none}.ac .extras .r{padding:13px 18px;gap:14px;font-size:13.5px}.ac .extras .r span:last-child{font-size:12.5px}.ac .note{padding:20px 20px;margin-top:20px}.ac .note p{font-size:14px;line-height:1.5}.ac .marquee .logo-chip,.ac .marquee .logo-more{width:150px;height:94px}.ac .marquee .logo-chip img{max-height:74px;max-width:126px}}
 @media(max-width:760px){.ac .steps{display:block;margin-top:38px}.ac .steps>div{position:relative;padding:0 0 30px 58px;min-width:0}.ac .steps>div:not(:last-child):before{content:'';position:absolute;left:18px;top:44px;bottom:2px;width:2px;background:linear-gradient(var(--ember),rgba(255,107,53,.18))}.ac .steps .num{position:absolute;left:0;top:2px;margin-bottom:0}.ac .steps h3{padding-top:4px}.ac .steps p{margin-top:8px}}
 @media(prefers-reduced-motion:reduce){.ac .scn .frame{transform:none!important}.ac .rev{opacity:1;transform:none}.ac .marquee .track{animation:none}.ac .hero .kick,.ac .hero h1,.ac .hero .lead,.ac .hero .btns,.ac .hero .proof,.ac .hero .zonas{animation:none}.ac .livebadge .d{animation:none}}
 `
@@ -361,12 +368,14 @@ const BODY = `
 <section>
   <div class="wrap">
     <div class="crm-cross">
-      <div>
-        <span class="kick" style="margin-bottom:10px">¿Prefieres hacerlo tú?</span>
-        <h3>La misma herramienta, en tus manos.</h3>
-        <p style="margin-top:8px;max-width:54ch">Si quieres operar tu propia prospección, el CRM de Suuplai te da la base de miles de contactos y todo lo que ves aquí desde $1,000 al mes.</p>
+      <span class="crm-badge">Nuevo · Herramienta</span>
+      <span class="kick" style="color:var(--lime);margin-bottom:8px">El CRM de Suuplai</span>
+      <h3>¿Prefieres hacerlo tú mismo?</h3>
+      <p style="margin-top:10px;max-width:52ch">La misma herramienta con la que operamos, en tus manos: base de miles de contactos, pipeline, rutas y entregas firmadas. Tú manejas tu prospección.</p>
+      <div class="crm-cta-row">
+        <span class="crm-price"><b>$1,000</b> / mes · o $6,000 al año</span>
+        <a href="/crm" class="btn crm-btn">Conocer el CRM &#8594;</a>
       </div>
-      <a href="/crm" class="btn btn-s">Conocer el CRM &#8594;</a>
     </div>
   </div>
 </section>
