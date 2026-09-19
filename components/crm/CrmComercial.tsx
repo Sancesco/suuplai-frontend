@@ -87,9 +87,18 @@ const CSS = `
 .crm .dots{display:none;justify-content:center;gap:8px;margin-top:22px}
 .crm .dots button{width:8px;height:8px;border-radius:50%;border:0;padding:0;background:var(--line);cursor:pointer;transition:width .25s ease,background .25s ease}
 .crm .dots button.on{background:var(--lime);width:22px;border-radius:5px}
+@keyframes crmHeroIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+.crm .hero .kick,.crm .hero h1,.crm .hero .lead,.crm .hero .pills{animation:crmHeroIn .7s cubic-bezier(.2,.7,.2,1) both}
+.crm .hero h1{animation-delay:.05s}.crm .hero .lead{animation-delay:.14s}.crm .hero .pills{animation-delay:.22s}
+@keyframes crmFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-11px)}}
+.crm .heroShot{animation:crmFloat 6s ease-in-out infinite}
+.crm .fw{position:relative}
+.crm .livebadge{position:absolute;top:12px;left:12px;z-index:4;display:inline-flex;align-items:center;gap:6px;font-family:'Space Mono';font-weight:700;font-size:10px;letter-spacing:.1em;color:var(--void);background:var(--lime);padding:5px 11px;border-radius:100px;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+.crm .livebadge .d{width:6px;height:6px;border-radius:50%;background:var(--void);animation:crmBlink 1.4s ease-in-out infinite}
+@keyframes crmBlink{0%,100%{opacity:.25}50%{opacity:1}}
 @media(max-width:760px){.crm nav .links{display:none}.crm .scn{grid-template-columns:1fr;gap:24px}.crm .scn.flip .cp{order:0}.crm .heroShot img{transform:rotateY(-7deg) rotateX(4deg)}.crm .plans{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;margin:40px -24px 0;padding:10px 24px 12px;-webkit-overflow-scrolling:touch;scrollbar-width:none;justify-content:flex-start}.crm .plans::-webkit-scrollbar{display:none}.crm .plan{flex:0 0 87%;max-width:none;min-width:0;scroll-snap-align:center;padding:26px 24px}.crm .plan .price{font-size:38px;margin-top:12px}.crm .plan ul{margin-top:16px}.crm .plan li{font-size:13.5px;margin-bottom:9px}.crm .plan .btn{margin-top:20px}.crm .dots{display:flex;margin-top:16px}}
 @media(max-width:640px){.crm{font-size:16px}.crm section{padding:52px 0}.crm .hero{padding:44px 0 40px}.crm .hero h1{font-size:32px}.crm h2{font-size:26px}.crm .lead{font-size:16px;margin-top:16px}.crm .band .n{font-size:70px}.crm .band .l{font-size:11px}.crm .band p{font-size:15px}.crm .scn h3{font-size:26px}.crm .scn p{font-size:15px}.crm .cross{padding:24px 22px}}
-@media(prefers-reduced-motion:reduce){.crm .scn .frame{transform:none!important}.crm .rev{opacity:1;transform:none}.crm .heroShot img{transform:none}}
+@media(prefers-reduced-motion:reduce){.crm .scn .frame{transform:none!important}.crm .rev{opacity:1;transform:none}.crm .heroShot img{transform:none}.crm .heroShot{animation:none}.crm .hero .kick,.crm .hero h1,.crm .hero .lead,.crm .hero .pills{animation:none}.crm .livebadge .d{animation:none}}
 `
 
 const BODY = `
@@ -150,7 +159,7 @@ const BODY = `
   <div class="wrap">
     <div class="scn e">
       <div class="cp rev"><span class="ey">Rutas y entregas</span><h3>Rutas de muestreo,<br>y la prueba firmada.</h3><p>Arma la ruta del día, optimízala sola desde tu salida y comparte el link en vivo. Cada muestra se entrega con firma, fecha y ubicación verificada: prueba real de cada visita.</p><ul><li>Ruta optimizada y link en vivo</li><li>Comprobante con firma y geolocalización</li><li>Inventario a repartir por parada</li></ul></div>
-      <div class="fw"><div class="frame"><img src="/screenshots/ruta-d.webp" alt="Ruta y entregas" loading="lazy"></div></div>
+      <div class="fw"><span class="livebadge"><span class="d"></span>EN VIVO</span><div class="frame"><img src="/screenshots/ruta-d.webp" alt="Ruta y entregas" loading="lazy"></div></div>
     </div>
   </div>
 </section>
@@ -251,8 +260,8 @@ export function CrmComercial() {
         const c = r.top + r.height / 2
         let t = (vh - c) / (vh * 0.62)
         t = t < 0 ? 0 : t > 1 ? 1 : t
-        f.style.transform = `translateY(${((1 - t) * 58).toFixed(1)}px) rotateX(${((1 - t) * 6).toFixed(2)}deg) scale(${(0.96 + t * 0.04).toFixed(3)})`
-        f.style.opacity = (0.45 + t * 0.55).toFixed(3)
+        f.style.transform = `translateY(${((1 - t) * 68).toFixed(1)}px) rotateX(${((1 - t) * 8.5).toFixed(2)}deg) scale(${(0.94 + t * 0.06).toFixed(3)})`
+        f.style.opacity = (0.4 + t * 0.6).toFixed(3)
       }
     }
     const onScroll = () => { if (!raf) raf = requestAnimationFrame(update) }
