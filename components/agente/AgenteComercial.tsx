@@ -181,11 +181,6 @@ const BODY = `
       <a href="${DEMO}" class="btn btn-p">Reservar demo</a>
       <a href="#planes" class="btn btn-s">Ver planes</a>
     </div>
-    <div class="proof">
-      <div><div class="n">16–30</div><div class="l">tiendas nuevas al mes</div></div>
-      <div><div class="n">0%</div><div class="l">comisión sobre tus ventas</div></div>
-      <div><div class="n">CDMX + GDL</div><div class="l">ruta física activa</div></div>
-    </div>
     <div class="zonas">
       <span class="zt">Marcas que ya confían en nosotros</span>
       <div class="marquee">
