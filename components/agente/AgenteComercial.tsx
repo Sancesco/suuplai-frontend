@@ -128,9 +128,18 @@ const CSS = `
 .ac .phcap{text-align:center;margin-top:26px;font-family:'Space Mono';font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
 .ac .crm-cross{border:1px solid var(--line);border-radius:20px;padding:30px 32px;display:flex;gap:22px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:linear-gradient(120deg,rgba(255,107,53,.09),rgba(232,255,71,.05))}
 .ac .crm-cross h3{font-family:'Syne';font-weight:800;font-size:clamp(20px,2.6vw,28px);letter-spacing:-.02em}
-@media(max-width:760px){.ac nav .links{display:none}.ac .scn{grid-template-columns:1fr;gap:24px}.ac .scn.flip .cp{order:0}}
-@media(max-width:640px){.ac section{padding:70px 0}.ac .hero{padding:72px 0 60px}.ac .proof>div{min-width:calc(50% - 7px)}.ac .roi .arrow{display:none}.ac .extras .r{flex-direction:column;gap:4px}}
-@media(prefers-reduced-motion:reduce){.ac .scn .frame{transform:none!important}.ac .rev{opacity:1;transform:none}}
+.ac .marquee{overflow:hidden;margin-top:22px;-webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+.ac .marquee .track{display:flex;width:max-content;animation:acmar 32s linear infinite}
+.ac .marquee:hover .track{animation-play-state:paused}
+.ac .marquee .logo-chip,.ac .marquee .logo-more{flex:0 0 auto;margin:0 16px 0 0;width:180px;height:112px}
+@keyframes acmar{to{transform:translateX(-50%)}}
+.ac .dots{display:none;justify-content:center;gap:8px;margin-top:22px}
+.ac .dots button{width:8px;height:8px;border-radius:50%;border:0;padding:0;background:var(--line);cursor:pointer;transition:width .25s ease,background .25s ease}
+.ac .dots button.on{background:var(--lime);width:22px;border-radius:5px}
+@media(max-width:760px){.ac nav .links{display:none}.ac .scn{grid-template-columns:1fr;gap:24px}.ac .scn.flip .cp{order:0}.ac .plans{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;margin:50px -24px 0;padding:22px 24px 12px;-webkit-overflow-scrolling:touch;scrollbar-width:none}.ac .plans::-webkit-scrollbar{display:none}.ac .plan{flex:0 0 86%;min-width:0;scroll-snap-align:center}.ac .dots{display:flex}}
+@media(max-width:640px){.ac section{padding:70px 0}.ac .hero{padding:72px 0 60px}.ac .proof>div{min-width:calc(50% - 7px)}.ac .roi .arrow{display:none}.ac .extras .r{flex-direction:column;gap:4px}.ac .marquee .logo-chip,.ac .marquee .logo-more{width:150px;height:94px}.ac .marquee .logo-chip img{max-height:74px;max-width:126px}}
+@media(max-width:760px){.ac .steps{display:block;margin-top:38px}.ac .steps>div{position:relative;padding:0 0 30px 58px;min-width:0}.ac .steps>div:not(:last-child):before{content:'';position:absolute;left:18px;top:44px;bottom:2px;width:2px;background:linear-gradient(var(--ember),rgba(255,107,53,.18))}.ac .steps .num{position:absolute;left:0;top:2px;margin-bottom:0}.ac .steps h3{padding-top:4px}.ac .steps p{margin-top:8px}}
+@media(prefers-reduced-motion:reduce){.ac .scn .frame{transform:none!important}.ac .rev{opacity:1;transform:none}.ac .marquee .track{animation:none}}
 `
 
 const DEMO = 'https://calendar.app.google/LfAtSiFF7xAJ7YPx9'
@@ -160,12 +169,19 @@ const BODY = `
     </div>
     <div class="zonas">
       <span class="zt">Marcas que ya confían en nosotros</span>
-      <div class="logos">
-        <span class="logo-chip"><img src="/marcas/capicua.jpg" alt="Capicúa"></span>
-        <span class="logo-chip"><img src="/marcas/cachito.jpg" alt="Cachito"></span>
-        <span class="logo-chip"><img src="/marcas/riise.png" alt="Riise"></span>
-        <span class="logo-chip"><img src="/marcas/noodo.png" alt="Noodo"></span>
-        <span class="logo-more">y muchas más</span>
+      <div class="marquee">
+        <div class="track">
+          <span class="logo-chip"><img src="/marcas/capicua.jpg" alt="Capicúa"></span>
+          <span class="logo-chip"><img src="/marcas/cachito.jpg" alt="Cachito"></span>
+          <span class="logo-chip"><img src="/marcas/riise.png" alt="Riise"></span>
+          <span class="logo-chip"><img src="/marcas/noodo.png" alt="Noodo"></span>
+          <span class="logo-more">y muchas más</span>
+          <span class="logo-chip" aria-hidden="true"><img src="/marcas/capicua.jpg" alt=""></span>
+          <span class="logo-chip" aria-hidden="true"><img src="/marcas/cachito.jpg" alt=""></span>
+          <span class="logo-chip" aria-hidden="true"><img src="/marcas/riise.png" alt=""></span>
+          <span class="logo-chip" aria-hidden="true"><img src="/marcas/noodo.png" alt=""></span>
+          <span class="logo-more" aria-hidden="true">y muchas más</span>
+        </div>
       </div>
       <span class="zf">Prospectando y abriendo cuentas en delis, tiendas orgánicas, minisúpers premium y carnicerías de especialidad en CDMX y Guadalajara.</span>
     </div>
@@ -301,8 +317,10 @@ const BODY = `
         <a href="${DEMO}" class="btn btn-s">Consultar disponibilidad</a>
       </div>
     </div>
+    <div class="dots" aria-label="Planes"></div>
+    <p style="text-align:center;margin:10px auto 0;max-width:620px;font-size:15px;color:var(--ash)">Tu plan es <strong>una sola tarifa fija al mes</strong>, sin comisiones sobre tus ventas. Lo de abajo es <strong>opcional</strong>, solo si lo pides.</p>
     <div class="extras">
-      <div class="h"><span>Extras fuera de paquete</span><span>Precio</span></div>
+      <div class="h"><span>Opcionales · aparte de tu plan</span><span>Precio</span></div>
       <div class="r"><span>Comisión por cada punto de venta que cerramos de más</span><span>$500 c/u</span></div>
       <div class="r"><span>Activación en punto de venta · fin de semana</span><span>$2,500 por evento</span></div>
       <div class="r"><span>Modo remoto · ciudad sin ruta física</span><span>-$2,000 sobre el nivel</span></div>
@@ -406,10 +424,42 @@ export function AgenteComercial() {
       window.addEventListener('resize', onScroll, { passive: true })
       update()
     }
+
+    // Carrusel de planes con bolitas (en móvil los planes se deslizan)
+    const plans = document.querySelector<HTMLElement>('.ac .plans')
+    const dotsWrap = document.querySelector<HTMLElement>('.ac .dots')
+    let onPlans: (() => void) | null = null
+    if (plans && dotsWrap) {
+      dotsWrap.innerHTML = ''
+      const cards = Array.from(plans.children) as HTMLElement[]
+      cards.forEach((c, i) => {
+        const b = document.createElement('button')
+        b.type = 'button'
+        b.setAttribute('aria-label', 'Plan ' + (i + 1))
+        if (i === 0) b.className = 'on'
+        b.addEventListener('click', () => plans.scrollTo({ left: c.offsetLeft - (plans.clientWidth - c.offsetWidth) / 2, behavior: 'smooth' }))
+        dotsWrap.appendChild(b)
+      })
+      const dots = Array.from(dotsWrap.children) as HTMLElement[]
+      let praf = 0
+      onPlans = () => {
+        if (praf) return
+        praf = requestAnimationFrame(() => {
+          praf = 0
+          const cx = plans.scrollLeft + plans.clientWidth / 2
+          let bi = 0, bd = Infinity
+          cards.forEach((c, i) => { const cc = c.offsetLeft + c.offsetWidth / 2; const d = Math.abs(cc - cx); if (d < bd) { bd = d; bi = i } })
+          dots.forEach((d, i) => d.classList.toggle('on', i === bi))
+        })
+      }
+      plans.addEventListener('scroll', onPlans, { passive: true })
+    }
+
     return () => {
       io.disconnect()
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onScroll)
+      if (onPlans && plans) plans.removeEventListener('scroll', onPlans)
       if (raf) cancelAnimationFrame(raf)
     }
   }, [])

@@ -84,7 +84,10 @@ const CSS = `
 .crm .close .btns{justify-content:center}
 .crm footer{padding:46px 0;text-align:center;border-top:1px solid var(--soft)}
 .crm footer p{font-family:'Space Mono';font-size:12px;letter-spacing:.11em;color:var(--muted);margin-top:14px}
-@media(max-width:760px){.crm nav .links{display:none}.crm .scn{grid-template-columns:1fr;gap:24px}.crm .scn.flip .cp{order:0}.crm .heroShot img{transform:rotateY(-7deg) rotateX(4deg)}}
+.crm .dots{display:none;justify-content:center;gap:8px;margin-top:22px}
+.crm .dots button{width:8px;height:8px;border-radius:50%;border:0;padding:0;background:var(--line);cursor:pointer;transition:width .25s ease,background .25s ease}
+.crm .dots button.on{background:var(--lime);width:22px;border-radius:5px}
+@media(max-width:760px){.crm nav .links{display:none}.crm .scn{grid-template-columns:1fr;gap:24px}.crm .scn.flip .cp{order:0}.crm .heroShot img{transform:rotateY(-7deg) rotateX(4deg)}.crm .plans{flex-wrap:nowrap;overflow-x:auto;scroll-snap-type:x mandatory;gap:14px;margin:40px -24px 0;padding:10px 24px 12px;-webkit-overflow-scrolling:touch;scrollbar-width:none;justify-content:flex-start}.crm .plans::-webkit-scrollbar{display:none}.crm .plan{flex:0 0 86%;max-width:none;min-width:0;scroll-snap-align:center}.crm .dots{display:flex}}
 @media(max-width:640px){.crm section{padding:68px 0}.crm .hero{padding:64px 0 56px}}
 @media(prefers-reduced-motion:reduce){.crm .scn .frame{transform:none!important}.crm .rev{opacity:1;transform:none}.crm .heroShot img{transform:none}}
 `
@@ -191,6 +194,8 @@ const BODY = `
         <a href="${DEMO}" class="btn btn-p">Empezar al año</a>
       </div>
     </div>
+    <div class="dots" aria-label="Planes"></div>
+    <p style="margin-top:22px;font-size:14px;color:var(--muted)">Una sola tarifa. Sin comisiones sobre tus ventas.</p>
   </div>
 </section>
 
@@ -256,10 +261,42 @@ export function CrmComercial() {
       window.addEventListener('resize', onScroll, { passive: true })
       update()
     }
+
+    // Carrusel de planes con bolitas (móvil)
+    const plans = document.querySelector<HTMLElement>('.crm .plans')
+    const dotsWrap = document.querySelector<HTMLElement>('.crm .dots')
+    let onPlans: (() => void) | null = null
+    if (plans && dotsWrap) {
+      dotsWrap.innerHTML = ''
+      const cards = Array.from(plans.children) as HTMLElement[]
+      cards.forEach((c, i) => {
+        const b = document.createElement('button')
+        b.type = 'button'
+        b.setAttribute('aria-label', 'Plan ' + (i + 1))
+        if (i === 0) b.className = 'on'
+        b.addEventListener('click', () => plans.scrollTo({ left: c.offsetLeft - (plans.clientWidth - c.offsetWidth) / 2, behavior: 'smooth' }))
+        dotsWrap.appendChild(b)
+      })
+      const dots = Array.from(dotsWrap.children) as HTMLElement[]
+      let praf = 0
+      onPlans = () => {
+        if (praf) return
+        praf = requestAnimationFrame(() => {
+          praf = 0
+          const cx = plans.scrollLeft + plans.clientWidth / 2
+          let bi = 0, bd = Infinity
+          cards.forEach((c, i) => { const cc = c.offsetLeft + c.offsetWidth / 2; const d = Math.abs(cc - cx); if (d < bd) { bd = d; bi = i } })
+          dots.forEach((d, i) => d.classList.toggle('on', i === bi))
+        })
+      }
+      plans.addEventListener('scroll', onPlans, { passive: true })
+    }
+
     return () => {
       io.disconnect()
       window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onScroll)
+      if (onPlans && plans) plans.removeEventListener('scroll', onPlans)
       if (raf) cancelAnimationFrame(raf)
     }
   }, [])
