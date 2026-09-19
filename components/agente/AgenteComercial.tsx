@@ -181,6 +181,11 @@ const BODY = `
       <a href="${DEMO}" class="btn btn-p">Reservar demo</a>
       <a href="#planes" class="btn btn-s">Ver planes</a>
     </div>
+    <div class="proof">
+      <div><div class="n">0%</div><div class="l">comisión sobre tus ventas</div></div>
+      <div><div class="n">24/7</div><div class="l">pipeline en vivo de tus cuentas</div></div>
+      <div><div class="n">Firmada</div><div class="l">cada entrega, con hora y ubicación</div></div>
+    </div>
     <div class="zonas">
       <span class="zt">Marcas que ya confían en nosotros</span>
       <div class="marquee">
