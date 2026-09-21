@@ -10,10 +10,12 @@ const MONO = 'var(--font-space-mono), monospace'
 const DEST_PRESETS = [
   { label: 'Inicio', path: '/' },
   { label: 'Agente Comercial', path: '/agente-comercial' },
+  { label: 'CRM', path: '/crm' },
+  { label: 'Vacantes', path: '/unete' },
   { label: 'Registro tienda', path: '/registro-tienda' },
   { label: 'Registro marca', path: '/registro-productor' },
 ]
-const CATEGORIES = ['marca', 'tienda', 'inversionista', 'otro']
+const CATEGORIES = ['marca', 'tienda', 'vacante', 'inversionista', 'otro']
 
 interface LinkRow {
   id: string; slug: string; destination: string; label: string | null; clicks: number
