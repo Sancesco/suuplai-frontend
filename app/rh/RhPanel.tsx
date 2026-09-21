@@ -13,7 +13,7 @@ const LBL: Record<string, { t: string; bg: string; c: string }> = {
   discard: { t: 'Descartar', bg: PAPER, c: SOFT },
 }
 
-interface Row { id: string; name: string; phone: string | null; status: string; invited_at: string; completed_at: string | null; answered: number; scored: number; total: number; maxTotal: number; label: string | null; knockout: string[]; stale: boolean }
+interface Row { id: string; name: string; phone: string | null; status: string; invited_at: string; completed_at: string | null; interview: string; answered: number; scored: number; total: number; maxTotal: number; label: string | null; knockout: string[]; stale: boolean }
 interface QDetail { order: number; text: string; rubric: Record<string, string>; audioUrl: string | null; duration: number | null; score: number | null; note: string }
 interface Detail { invite: { id: string; name: string; phone: string | null; status: string; invited_at: string; completed_at: string | null }; quick: { label: string; value: string; knockout: boolean }[]; questions: QDetail[]; total: number; maxTotal: number; fullyScored: boolean; label: string | null; knockout: string[] }
 
@@ -72,7 +72,7 @@ export function RhPanel() {
                       <div style={{ width: 38, height: 38, borderRadius: '50%', display: 'grid', placeItems: 'center', fontWeight: 700, fontSize: 14, border: `1.5px solid ${INK}`, background: r.status === 'completed' ? LIME : r.status === 'in_progress' ? '#C9A6FF' : PAPER }}>{initials(r.name)}</div>
                       <div style={{ minWidth: 0 }}>
                         <b style={{ fontSize: 15, display: 'flex', gap: 8, alignItems: 'center' }}>{r.name}{r.knockout.length > 0 && <span title={'Knockout: ' + r.knockout.join(', ')} style={{ color: '#B4451A', fontSize: 12 }}>⚠ descarte</span>}{r.stale && <span style={{ color: '#B4451A', fontSize: 12 }}>· sin completar +3d</span>}</b>
-                        <span style={{ fontSize: 13, color: SOFT }}>{ST_LABEL[r.status]} · {r.answered}/{tpl?.questions} respuestas · {fmtDate(r.invited_at)}</span>
+                        <span style={{ fontSize: 13, color: SOFT }}>{ST_LABEL[r.status]} · {r.answered}/{Math.max(1, Math.round(r.maxTotal / 3))} respuestas · {r.interview} · {fmtDate(r.invited_at)}</span>
                       </div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                         {r.label && <Badge {...LBL[r.label]} />}

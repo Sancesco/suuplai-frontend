@@ -3,7 +3,7 @@
 import { randomBytes } from 'crypto'
 import { getSupabaseAdmin } from './supabaseAdmin'
 
-export const TEMPLATE_SLUG = 'ventas-comision'
+export const DEFAULT_SLUG = 'campo-operacion'
 export const AUDIO_BUCKET = 'interview-audio'
 
 export type QuickField = { key: string; label: string; type: 'number' | 'text' | 'select'; options?: string[]; required?: boolean; knockout?: string[] }
@@ -28,14 +28,28 @@ export function checkRh(req: Request): boolean {
   return !!expected && got === expected
 }
 
-export async function getTemplate(): Promise<Template | null> {
-  const sb = getSupabaseAdmin()
-  if (!sb) return null
-  const { data } = await sb.from('interview_templates').select('*').eq('slug', TEMPLATE_SLUG).maybeSingle()
+function normTemplate(data: unknown): Template | null {
   if (!data) return null
   const t = data as Template
   t.questions = (t.questions || []).slice().sort((a, b) => a.order - b.order)
   return t
+}
+
+export async function getTemplateById(id: string): Promise<Template | null> {
+  const sb = getSupabaseAdmin(); if (!sb) return null
+  const { data } = await sb.from('interview_templates').select('*').eq('id', id).maybeSingle()
+  return normTemplate(data)
+}
+
+export async function getTemplateBySlug(slug: string): Promise<Template | null> {
+  const sb = getSupabaseAdmin(); if (!sb) return null
+  const { data } = await sb.from('interview_templates').select('*').eq('slug', slug).maybeSingle()
+  return normTemplate(data)
+}
+
+// Plantilla por defecto para invitaciones creadas desde el panel (base de campo).
+export async function getTemplate(): Promise<Template | null> {
+  return (await getTemplateBySlug(DEFAULT_SLUG)) || (await getTemplateBySlug('ventas-comision'))
 }
 
 export async function getInviteByToken(token: string): Promise<Invite | null> {

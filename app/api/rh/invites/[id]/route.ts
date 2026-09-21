@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
-import { checkRh, getTemplate, knockoutHits, labelFor, AUDIO_BUCKET, type Invite, type Answer, type Score } from '@/lib/interview'
+import { checkRh, getTemplateById, knockoutHits, labelFor, AUDIO_BUCKET, type Invite, type Answer, type Score } from '@/lib/interview'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -9,12 +9,14 @@ const STATUSES = ['pending', 'in_progress', 'completed', 'discarded', 'call_sche
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   if (!checkRh(req)) return NextResponse.json({ ok: false, error: 'no autorizado' }, { status: 401 })
-  const sb = getSupabaseAdmin(); const template = await getTemplate()
-  if (!sb || !template) return NextResponse.json({ ok: false, error: 'no config' }, { status: 500 })
+  const sb = getSupabaseAdmin()
+  if (!sb) return NextResponse.json({ ok: false, error: 'no config' }, { status: 500 })
 
   const { data: invRow } = await sb.from('interview_invites').select('*').eq('id', params.id).maybeSingle()
   const invite = invRow as Invite | null
   if (!invite) return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 })
+  const template = await getTemplateById(invite.template_id)
+  if (!template) return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 })
 
   const { data: ansRows } = await sb.from('interview_answers').select('*').eq('invite_id', invite.id)
   const { data: scoreRows } = await sb.from('interview_scores').select('*').eq('invite_id', invite.id)

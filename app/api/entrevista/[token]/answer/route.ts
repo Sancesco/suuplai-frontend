@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
-import { getInviteByToken, getTemplate, AUDIO_BUCKET } from '@/lib/interview'
+import { getInviteByToken, getTemplateById, AUDIO_BUCKET } from '@/lib/interview'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -19,7 +19,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
   const sb = getSupabaseAdmin()
   if (!sb) return NextResponse.json({ ok: false, error: 'no config' }, { status: 500 })
   const invite = await getInviteByToken(params.token)
-  const template = await getTemplate()
+  const template = invite ? await getTemplateById(invite.template_id) : null
   if (!invite || !template) return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 })
   if (invite.status === 'completed') return NextResponse.json({ ok: false, error: 'ya_completado' }, { status: 410 })
 
