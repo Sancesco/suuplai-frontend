@@ -27,7 +27,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const a = answers.get(q.order); const s = scores.get(q.order)
     let audioUrl: string | null = null
     if (a?.audio_path) { const { data } = await sb.storage.from(AUDIO_BUCKET).createSignedUrl(a.audio_path, 3600); audioUrl = data?.signedUrl ?? null }
-    return { order: q.order, text: q.text, rubric: q.rubric, audioUrl, duration: a?.duration_sec ?? null, score: s?.score ?? null, note: s?.note ?? '' }
+    return { order: q.order, text: q.text, rubric: q.rubric, audioUrl, duration: a?.duration_sec ?? null, transcript: a?.transcript ?? null, score: s?.score ?? null, note: s?.note ?? '' }
   }))
 
   const scoredArr = template.questions.map((q) => scores.get(q.order)?.score).filter((x): x is number => x != null)

@@ -14,7 +14,7 @@ const LBL: Record<string, { t: string; bg: string; c: string }> = {
 }
 
 interface Row { id: string; name: string; phone: string | null; status: string; invited_at: string; completed_at: string | null; interview: string; answered: number; scored: number; total: number; maxTotal: number; label: string | null; knockout: string[]; stale: boolean }
-interface QDetail { order: number; text: string; rubric: Record<string, string>; audioUrl: string | null; duration: number | null; score: number | null; note: string }
+interface QDetail { order: number; text: string; rubric: Record<string, string>; audioUrl: string | null; duration: number | null; transcript: string | null; score: number | null; note: string }
 interface Detail { invite: { id: string; name: string; phone: string | null; status: string; invited_at: string; completed_at: string | null }; quick: { label: string; value: string; knockout: boolean }[]; questions: QDetail[]; total: number; maxTotal: number; fullyScored: boolean; label: string | null; knockout: string[] }
 
 export function RhPanel() {
@@ -168,6 +168,7 @@ function CandidateDetail({ id, hdr, onChange }: { id: string; hdr: Record<string
           <div style={{ fontFamily: MONO, fontSize: 12, color: EMBER, marginBottom: 4 }}>Pregunta {q.order}</div>
           <div style={{ fontFamily: SYNE, fontWeight: 700, fontSize: 16, marginBottom: 10, lineHeight: 1.2 }}>{q.text}</div>
           {q.audioUrl ? <audio controls src={q.audioUrl} style={{ width: '100%', marginBottom: 10 }} /> : <p style={{ fontSize: 13, color: SOFT, margin: '0 0 10px' }}>Sin audio todavía.</p>}
+          {q.transcript && <p style={{ fontSize: 13, lineHeight: 1.5, color: INK, background: PAPER, borderRadius: 10, padding: '10px 12px', margin: '0 0 10px', whiteSpace: 'pre-wrap' }}><span style={{ fontFamily: MONO, fontSize: 10, color: SOFT, textTransform: 'uppercase', letterSpacing: '.08em', display: 'block', marginBottom: 4 }}>Transcripción</span>{q.transcript}</p>}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {[1, 2, 3].map((n) => (
               <button key={n} onClick={() => saveScore(q.order, { score: n })} style={{ flex: '1 1 150px', textAlign: 'left', border: `1.5px solid ${q.score === n ? INK : LINE}`, background: q.score === n ? INK : BONE, color: q.score === n ? BONE : INK, borderRadius: 10, padding: '9px 12px', cursor: 'pointer', fontSize: 13, lineHeight: 1.3 }}>
