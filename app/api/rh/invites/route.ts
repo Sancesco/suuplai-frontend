@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 import { checkRh, getTemplate, knockoutHits, labelFor, randToken, type Invite, type Template } from '@/lib/interview'
+import { getRole, defaultRole, rolesList } from '@/lib/roles'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -48,11 +49,12 @@ export async function GET(req: Request) {
       knockout: ko, stale,
     }
   })
-  const def = await getTemplate()
+  const role = defaultRole()
   return NextResponse.json({
     ok: true,
-    template: def ? { title: def.title, questions: def.questions.length, thresholds: def.thresholds } : null,
-    base: def ? { quick_fields: def.quick_fields, questions: def.questions } : null,
+    template: { title: role.name, questions: role.fixed_questions.length, thresholds: { call: 0, review: 0 } },
+    base: { quick_fields: role.quick_fields, questions: role.fixed_questions },
+    roles: rolesList(),
     invites: list,
   })
 }
@@ -60,6 +62,27 @@ export async function GET(req: Request) {
 function slugName(n: string) { return n.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase() }
 
 type QIn = { text?: string; maxSeconds?: number; rubric?: Record<string, string> }
+
+// Avisa por correo que una entrevista quedó lista (no bloquea si Resend no está).
+async function emailListo(origin: string, name: string, role: string, link: string, qs: { text: string }[]) {
+  try {
+    const apiKey = process.env.RESEND_API_KEY
+    if (!apiKey) return
+    const { Resend } = await import('resend')
+    const resend = new Resend(apiKey)
+    const from = process.env.MAIL_FROM || 'Suuplai <onboarding@resend.dev>'
+    const to = process.env.NOTIFY_EMAIL || 'santiago@suups.com.mx'
+    const preguntas = qs.map((q, i) => `<li>${q.text}</li>`).join('')
+    await resend.emails.send({
+      from, to,
+      subject: `✅ Entrevista lista para ${name} (${role})`,
+      html: `<p>La entrevista personalizada de <b>${name}</b> para <b>${role}</b> ya está lista.</p>
+<p><b>Link para compartir:</b><br><a href="${link}">${link}</a></p>
+<p><b>Preguntas:</b></p><ol>${preguntas}</ol>
+<p><a href="${origin}/rh">Ver en el panel de RH →</a></p>`,
+    })
+  } catch (e) { console.error('[invites] email error', e) }
+}
 
 export async function POST(req: Request) {
   if (!checkRh(req)) return NextResponse.json({ ok: false, error: 'no autorizado' }, { status: 401 })
@@ -69,9 +92,11 @@ export async function POST(req: Request) {
   const name = String(body?.name ?? '').trim()
   const phone = String(body?.phone ?? '').trim() || null
   if (!name) return NextResponse.json({ ok: false, error: 'falta nombre' }, { status: 400 })
+  const role = getRole(body?.roleKey) ?? defaultRole()
 
   // Si mandan preguntas personalizadas, se crea una plantilla propia para este candidato.
   let templateId = def.id
+  let createdQs: { text: string }[] = []
   const rawQ = Array.isArray(body?.questions) ? (body.questions as QIn[]) : null
   if (rawQ) {
     const qs = rawQ
@@ -87,14 +112,15 @@ export async function POST(req: Request) {
       }))
       .filter((q) => q.text)
     if (!qs.length) return NextResponse.json({ ok: false, error: 'faltan preguntas' }, { status: 400 })
+    createdQs = qs
     const max = qs.length * 3
     const thresholds = { call: Math.round(max * 0.78), review: Math.round(max * 0.61) }
     const first = name.split(/\s+/)[0]
-    const slug = `campo-${slugName(name)}-${randToken().slice(0, 6).replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`
+    const slug = `${role.key}-${slugName(name)}-${randToken().slice(0, 6).replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`
     const { data: tpl, error: tErr } = await sb.from('interview_templates').insert({
-      slug, title: `Campo y operación · ${first}`,
+      slug, title: `${role.name} · ${first}`,
       intro: 'Mini-entrevista en audio. Contéstala desde tu celular cuando quieras, sin instalar nada. Toma unos 10 minutos.',
-      quick_fields: def.quick_fields, questions: qs, thresholds, is_active: false,
+      quick_fields: role.quick_fields, questions: qs, thresholds, is_active: false,
     }).select('id').single()
     if (tErr || !tpl) return NextResponse.json({ ok: false, error: 'no se pudo crear la plantilla' }, { status: 500 })
     templateId = tpl.id
@@ -103,5 +129,8 @@ export async function POST(req: Request) {
   const token = randToken()
   const { error } = await sb.from('interview_invites').insert({ template_id: templateId, candidate_name: name, candidate_phone: phone, token, status: 'pending' })
   if (error) return NextResponse.json({ ok: false, error: 'no se pudo crear' }, { status: 500 })
+
+  const origin = new URL(req.url).origin
+  await emailListo(origin, name, role.name, `${origin}/entrevista/${token}`, createdQs)
   return NextResponse.json({ ok: true, token })
 }

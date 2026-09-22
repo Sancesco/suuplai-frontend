@@ -29,6 +29,7 @@ export function RhPanel() {
   const [pw, setPw] = useState(''); const [authed, setAuthed] = useState(false); const [err, setErr] = useState('')
   const [tpl, setTpl] = useState<{ title: string; questions: number } | null>(null)
   const [base, setBase] = useState<Base | null>(null)
+  const [roles, setRoles] = useState<{ key: string; name: string }[]>([])
   const [rows, setRows] = useState<Row[] | null>(null)
   const [sort, setSort] = useState<'fecha' | 'puntaje'>('fecha')
   const [openId, setOpenId] = useState<string | null>(null)
@@ -39,7 +40,7 @@ export function RhPanel() {
     try {
       const r = await fetch('/api/rh/invites', { headers: hdr })
       const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error')
-      setTpl(j.template); setBase(j.base as Base); setRows(j.invites as Row[]); setAuthed(true)
+      setTpl(j.template); setBase(j.base as Base); setRoles(j.roles || []); setRows(j.invites as Row[]); setAuthed(true)
     } catch (e) { setErr(e instanceof Error ? e.message : 'Error'); setAuthed(false) }
   }, [pw]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -80,7 +81,7 @@ export function RhPanel() {
 
         {authed && (
           <>
-            <NuevaEntrevista hdr={hdr} base={base} onCreated={load} />
+            <NuevaEntrevista hdr={hdr} base={base} roles={roles} onCreated={load} />
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '22px 0 10px' }}>
               <h2 style={{ fontFamily: SYNE, fontWeight: 800, fontSize: 20, margin: 0 }}>Candidatos {rows ? `(${rows.length})` : ''}</h2>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -116,8 +117,9 @@ export function RhPanel() {
   )
 }
 
-function NuevaEntrevista({ hdr, base, onCreated }: { hdr: Record<string, string>; base: Base | null; onCreated: () => void }) {
+function NuevaEntrevista({ hdr, base, roles, onCreated }: { hdr: Record<string, string>; base: Base | null; roles: { key: string; name: string }[]; onCreated: () => void }) {
   const [name, setName] = useState(''); const [phone, setPhone] = useState('')
+  const [roleKey, setRoleKey] = useState('')
   const [qs, setQs] = useState<QEdit[]>([])
   const [inited, setInited] = useState(false)
   const [perfil, setPerfil] = useState(''); const [duda, setDuda] = useState('')
@@ -139,6 +141,7 @@ function NuevaEntrevista({ hdr, base, onCreated }: { hdr: Record<string, string>
     const blanks: QEdit[] = [0, 1, 2].map(() => ({ text: '', r1: '', r2: '', r3: '' }))
     setQs([...fixed, ...blanks]); setInited(true)
   }, [base, inited])
+  useEffect(() => { if (!roleKey && roles.length) setRoleKey(roles[0].key) }, [roles, roleKey])
 
   const upd = (i: number, patch: Partial<QEdit>) => setQs((prev) => prev.map((q, idx) => idx === i ? { ...q, ...patch } : q))
   const addQ = () => setQs((prev) => [...prev, { text: '', r1: '', r2: '', r3: '' }])
@@ -160,7 +163,7 @@ function NuevaEntrevista({ hdr, base, onCreated }: { hdr: Record<string, string>
     try {
       const cvText = await extractPdf(file)
       if (cvText.length < 40) throw new Error('el CV no trae texto legible (¿es imagen escaneada?)')
-      const r = await fetch('/api/rh/generar', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ name, cvText }) })
+      const r = await fetch('/api/rh/generar', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ name, cvText, roleKey }) })
       const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error generando')
       setPerfil(j.perfil || ''); setDuda(j.duda || '')
       const ai: QEdit[] = (j.questions as { text: string; rubric: Record<string, string> }[]).map((q) => ({ text: q.text, r1: q.rubric['1'] || '', r2: q.rubric['2'] || '', r3: q.rubric['3'] || '' }))
@@ -175,7 +178,7 @@ function NuevaEntrevista({ hdr, base, onCreated }: { hdr: Record<string, string>
     setBusy(true); setMsg('')
     try {
       const questions = qs.filter((q) => q.text.trim()).map((q) => ({ text: q.text.trim(), rubric: { '1': q.r1.trim(), '2': q.r2.trim(), '3': q.r3.trim() } }))
-      const r = await fetch('/api/rh/invites', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ name, phone, questions }) })
+      const r = await fetch('/api/rh/invites', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ name, phone, roleKey, questions }) })
       const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error')
       setLink(`${window.location.origin}/entrevista/${j.token}`); setNm(name)
       setName(''); setPhone(''); setInited(false); setPerfil(''); setDuda(''); setCvMsg(''); onCreated()
@@ -188,9 +191,14 @@ function NuevaEntrevista({ hdr, base, onCreated }: { hdr: Record<string, string>
     <div style={{ background: BONE, border: `2px solid ${INK}`, borderRadius: 16, padding: 18 }}>
       <h3 style={{ fontFamily: SYNE, fontWeight: 800, fontSize: 18, margin: '0 0 14px' }}>Nueva entrevista a la medida</h3>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>
+        <Fld label="Rol">
+          <select value={roleKey} onChange={(e) => setRoleKey(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
+            {roles.map((r) => <option key={r.key} value={r.key}>{r.name}</option>)}
+          </select>
+        </Fld>
         <Fld label="Nombre del candidato"><input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre y apellido" style={inp} /></Fld>
         <Fld label="WhatsApp (opcional)"><input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="55…" style={inp} /></Fld>
-        <Fld label="CV en PDF (opcional, la IA arma las preguntas)">
+        <Fld label="CV en PDF (la IA arma las preguntas)">
           <label style={{ ...btn, display: 'inline-block', textAlign: 'center', opacity: cvBusy ? 0.5 : 1 }}>
             {cvBusy ? 'Generando…' : '📄 Subir CV y generar'}
             <input type="file" accept="application/pdf" disabled={cvBusy} onChange={(e) => onCV(e.target.files?.[0])} style={{ display: 'none' }} />
@@ -326,9 +334,19 @@ function buildExport(d: Detail): string {
   L.push('Puesto: **Campo y operación** en Suuplai (ventas y visitas a tiendas, trabajo de calle, pago por día).')
   L.push('')
   L.push('## Instrucciones para calificar')
-  L.push('Actúa como reclutador de Suuplai. Para CADA respuesta asigna un puntaje de 1 a 3 según SU rúbrica y explica en una línea por qué. Premia ejemplos concretos y reales; NO te dejes llevar por respuestas fluidas pero vacías. El puesto es de calle: busca constancia, trato con la gente, iniciativa y aguante ante un "no". No descartes a alguien solo porque suene con poca energía, convencerlo es parte del trabajo.')
+  L.push('Actúa como reclutador de Suuplai. El objetivo es ENCONTRAR TALENTO, no descartar: busca lo bueno de la persona. Premia ejemplos concretos y reales; no te dejes llevar por respuestas fluidas pero vacías, pero tampoco castigues a alguien por sonar con poca energía (convencerlo es parte del trabajo).')
   L.push('')
-  L.push(`Al final entrega: puntaje total sobre ${d.maxTotal}, una recomendación (AGENDAR LLAMADA si el total es ≥ ${d.thresholds.call}, REVISAR si es ≥ ${d.thresholds.review}, si no DESCARTAR), un resumen de 3 líneas y banderas (respuestas vacías, que no contesten lo que se pregunta, o que choquen con los datos rápidos).`)
+  L.push('Con base en TODAS las respuestas + los datos rápidos, califica estas 8 dimensiones de 1 a 3:')
+  L.push('1. Palabra y constancia: hace lo que dice aunque le dé flojera.')
+  L.push('2. Trato con la gente: no le da pena, conecta, lee a la otra persona.')
+  L.push('3. Resolver sola: cuando algo sale mal, busca salida sin esperar instrucciones.')
+  L.push('4. Aguante: ante un "no", insiste con otra estrategia.')
+  L.push('5. Observación y reporte: nota detalles y los cuenta con claridad.')
+  L.push('6. Iniciativa: ve algo que se puede mejorar y lo hace sin que se lo pidan.')
+  L.push('7. Motor: qué la mueve (aprender, crecer, crear, dinero, estabilidad).')
+  L.push('8. Encaje con el formato: si le late trabajar por días y en la calle, o busca oficina.')
+  L.push('')
+  L.push('Al final entrega: (a) un PERFIL DE FORTALEZAS de 3 líneas, (b) su SUPERPODER: la dimensión donde más destaca y a qué rol podría crecer (operación, ventas o contenido), (c) banderas honestas (sueldo fuera de rango, encaje de formato, respuestas vacías), y (d) una recomendación: AGENDAR LLAMADA / REVISAR / mejor NO. Recuerda: terminamos con un perfil, no con un simple sí o no.')
   L.push('')
   if (d.knockout.length) L.push(`> ⚠ Descarte automático por datos rápidos: ${d.knockout.join(', ')}`)
   L.push('## Datos rápidos')
