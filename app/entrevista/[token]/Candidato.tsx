@@ -153,7 +153,7 @@ export function Candidato({ token }: { token: string }) {
 
   // ── Render ──
   if (phase === 'loading') return <Shell><div className="body"><p className="p" style={{ margin: 'auto' }}>Cargando…</p></div></Shell>
-  if (phase === 'error') return <Shell><div className="body"><div style={{ margin: 'auto', textAlign: 'center' }}><p className="h">Link no válido</p><p className="p">Este link de entrevista no existe o ya expiró. Pídele uno nuevo a quien te contactó.</p></div></div></Shell>
+  if (phase === 'error') return <Shell><div className="body"><div style={{ margin: 'auto', textAlign: 'center' }}><p className="h">Link incompleto</p><p className="p">Este link parece haberse cortado al copiarlo (les pasa a veces en WhatsApp). Los links no caducan: pide que te reenvíen el link completo y ábrelo tal cual.</p></div></div></Shell>
   if (phase === 'done') return <Shell><div className="body"><div className="done" style={{ margin: 'auto' }}><div className="check">✓</div><p className="h">Ya la completaste</p><p className="p">Recibimos tus respuestas. Te contactamos pronto.</p></div></div></Shell>
   if (!st) return null
 
