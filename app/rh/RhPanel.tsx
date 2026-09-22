@@ -24,7 +24,8 @@ const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js
 const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
 interface SMetrics { durationSec: number; pctMax: number | null; words: number; wpm: number; fillersPerMin: number; fillersTotal: number; fillerCounts: Record<string, number>; initialPauseSec: number; longPauses: number }
 interface QDetail { order: number; text: string; rubric: Record<string, string>; audioUrl: string | null; duration: number | null; transcript: string | null; metrics: SMetrics | null; retakes: number; score: number | null; note: string }
-interface Analysis { porPregunta?: { order: number; concrecion: number; contesto: string; porque: string }[]; contradicciones?: { cita1: string; cita2: string; nota: string }[]; frasesAbsolutas?: { cita: string; order: number }[] }
+interface Calificacion { dimensiones?: { label: string; score: number; nota: string }[]; perfil?: string; superpoder?: { dimension: string; crecer: string }; banderas?: string[]; recomendacion?: string }
+interface Analysis { porPregunta?: { order: number; concrecion: number; contesto: string; porque: string }[]; contradicciones?: { cita1: string; cita2: string; nota: string }[]; frasesAbsolutas?: { cita: string; order: number }[]; calificacion?: Calificacion }
 interface Detail { invite: { id: string; name: string; phone: string | null; status: string; invited_at: string; completed_at: string | null; first_opened_at: string | null; reminded_at: string | null }; quick: { label: string; value: string; knockout: boolean }[]; questions: QDetail[]; total: number; maxTotal: number; fullyScored: boolean; label: string | null; knockout: string[]; thresholds: { call: number; review: number }; analysis: Analysis | null }
 
 export function RhPanel() {
@@ -294,6 +295,15 @@ function CandidateDetail({ id, hdr, onChange }: { id: string; hdr: Record<string
       await load()
     } catch (e) { setAnMsg(e instanceof Error ? e.message : 'Error') } finally { setAnalyzing(false) }
   }
+  const [calificando, setCalificando] = useState(false); const [calMsg, setCalMsg] = useState('')
+  const calificar = async () => {
+    setCalificando(true); setCalMsg('')
+    try {
+      const r = await fetch('/api/rh/calificar', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ inviteId: id }) })
+      const j = await r.json(); if (!r.ok || !j.ok) throw new Error((j.error || 'Error') + (j.detail ? ` (${j.detail})` : ''))
+      await load()
+    } catch (e) { setCalMsg(e instanceof Error ? e.message : 'Error') } finally { setCalificando(false) }
+  }
   const saveScore = async (order: number, patch: { score?: number; note?: string }) => {
     await fetch('/api/rh/score', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ inviteId: id, order, ...patch }) })
     load(); onChange()
@@ -322,6 +332,9 @@ function CandidateDetail({ id, hdr, onChange }: { id: string; hdr: Record<string
           {d.label ? <div style={{ marginTop: 8 }}><Badge {...LBL[d.label]} /></div> : <div style={{ marginTop: 8, fontSize: 12, color: SOFT, fontFamily: MONO }}>Falta calificar</div>}
         </div>
       </div>
+
+      {/* calificación IA */}
+      <CalificacionIA cal={d.analysis?.calificacion || null} calificando={calificando} onCalificar={calificar} calMsg={calMsg} />
 
       {/* señales */}
       <Senales d={d} analyzing={analyzing} onAnalyze={analyze} anMsg={anMsg} />
@@ -393,6 +406,43 @@ function highlightPhrases(text: string, phrases: string[]): React.ReactNode {
 
 function fmtDur(ms: number | null): string { if (ms == null || ms < 0) return '—'; const m = Math.floor(ms / 60000), s = Math.round((ms % 60000) / 1000); return m ? `${m}m ${s}s` : `${s}s` }
 function avgOf(xs: (number | null | undefined)[]): number | null { const v = xs.filter((x): x is number => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null }
+
+function CalificacionIA({ cal, calificando, onCalificar, calMsg }: { cal: Calificacion | null; calificando: boolean; onCalificar: () => void; calMsg: string }) {
+  const rec = cal?.recomendacion || ''
+  const recColor = /LLAMADA/i.test(rec) ? { bg: '#D9F2E4', c: OK } : /REVISAR/i.test(rec) ? { bg: '#FFE6DA', c: '#B4451A' } : { bg: PAPER, c: SOFT }
+  return (
+    <div style={{ border: `2px solid ${INK}`, borderRadius: 14, padding: 14, background: BONE }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: cal ? 10 : 0, flexWrap: 'wrap' }}>
+        <b style={{ fontFamily: SYNE, fontSize: 16 }}>Calificación IA</b>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {rec && <Badge t={rec} bg={recColor.bg} c={recColor.c} />}
+          <button onClick={onCalificar} disabled={calificando} style={{ ...btn, background: INK, color: LIME, opacity: calificando ? 0.5 : 1 }}>{calificando ? 'Calificando…' : cal ? 'Re-calificar' : 'Calificar con IA'}</button>
+        </div>
+      </div>
+      {calMsg && <p style={{ fontSize: 12, color: '#B4451A', margin: '6px 0 0' }}>⚠ {calMsg}</p>}
+      {cal && (
+        <>
+          {cal.dimensiones && cal.dimensiones.length > 0 && (
+            <div style={{ display: 'grid', gap: 4, marginBottom: 10 }}>
+              {cal.dimensiones.map((dm, i) => (
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 8, alignItems: 'baseline', fontSize: 13 }}>
+                  <b style={{ fontFamily: MONO, color: dm.score >= 3 ? OK : dm.score <= 1 ? '#B4451A' : EMBER }}>{dm.score}/3</b>
+                  <span><b>{dm.label}:</b> <span style={{ color: SOFT }}>{dm.nota}</span></span>
+                </div>
+              ))}
+            </div>
+          )}
+          {cal.perfil && <p style={{ fontSize: 13.5, lineHeight: 1.5, margin: '0 0 8px' }}><b>Fortalezas:</b> {cal.perfil}</p>}
+          {cal.superpoder?.dimension && <p style={{ fontSize: 13.5, margin: '0 0 8px', background: PAPER, borderRadius: 8, padding: '8px 10px' }}>⚡ <b>Superpoder:</b> {cal.superpoder.dimension}{cal.superpoder.crecer ? ` → podría crecer a ${cal.superpoder.crecer}` : ''}</p>}
+          {cal.banderas && cal.banderas.length > 0 && (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{cal.banderas.map((b, i) => <Chip key={i} warn>🚩 {b}</Chip>)}</div>
+          )}
+          <p style={{ fontSize: 11.5, color: SOFT, fontStyle: 'italic', margin: '10px 0 0' }}>Sugerencia de la IA, no un veredicto. Tú decides.</p>
+        </>
+      )}
+    </div>
+  )
+}
 
 function Senales({ d, analyzing, onAnalyze, anMsg }: { d: Detail; analyzing: boolean; onAnalyze: () => void; anMsg: string }) {
   const withM = d.questions.filter((q) => q.metrics)
