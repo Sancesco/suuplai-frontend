@@ -14,12 +14,21 @@ const LBL: Record<string, { t: string; bg: string; c: string }> = {
 }
 
 interface Row { id: string; name: string; phone: string | null; status: string; invited_at: string; completed_at: string | null; interview: string; answered: number; scored: number; total: number; maxTotal: number; label: string | null; knockout: string[]; stale: boolean }
+interface BaseQ { order: number; text: string; rubric: Record<string, string> }
+interface Base { quick_fields: { label: string }[]; questions: BaseQ[] }
+interface QEdit { text: string; r1: string; r2: string; r3: string; fixed?: boolean }
+type PdfjsLib = { GlobalWorkerOptions: { workerSrc: string }; getDocument: (o: { data: ArrayBuffer }) => { promise: Promise<PdfDoc> } }
+type PdfDoc = { numPages: number; getPage: (n: number) => Promise<PdfPage> }
+type PdfPage = { getTextContent: () => Promise<{ items: { str?: string }[] }> }
+const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
+const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
 interface QDetail { order: number; text: string; rubric: Record<string, string>; audioUrl: string | null; duration: number | null; transcript: string | null; score: number | null; note: string }
 interface Detail { invite: { id: string; name: string; phone: string | null; status: string; invited_at: string; completed_at: string | null }; quick: { label: string; value: string; knockout: boolean }[]; questions: QDetail[]; total: number; maxTotal: number; fullyScored: boolean; label: string | null; knockout: string[]; thresholds: { call: number; review: number } }
 
 export function RhPanel() {
   const [pw, setPw] = useState(''); const [authed, setAuthed] = useState(false); const [err, setErr] = useState('')
   const [tpl, setTpl] = useState<{ title: string; questions: number } | null>(null)
+  const [base, setBase] = useState<Base | null>(null)
   const [rows, setRows] = useState<Row[] | null>(null)
   const [sort, setSort] = useState<'fecha' | 'puntaje'>('fecha')
   const [openId, setOpenId] = useState<string | null>(null)
@@ -30,7 +39,7 @@ export function RhPanel() {
     try {
       const r = await fetch('/api/rh/invites', { headers: hdr })
       const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error')
-      setTpl(j.template); setRows(j.invites as Row[]); setAuthed(true)
+      setTpl(j.template); setBase(j.base as Base); setRows(j.invites as Row[]); setAuthed(true)
     } catch (e) { setErr(e instanceof Error ? e.message : 'Error'); setAuthed(false) }
   }, [pw]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -71,7 +80,7 @@ export function RhPanel() {
 
         {authed && (
           <>
-            <Invite hdr={hdr} onCreated={load} />
+            <NuevaEntrevista hdr={hdr} base={base} onCreated={load} />
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '22px 0 10px' }}>
               <h2 style={{ fontFamily: SYNE, fontWeight: 800, fontSize: 20, margin: 0 }}>Candidatos {rows ? `(${rows.length})` : ''}</h2>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -107,29 +116,120 @@ export function RhPanel() {
   )
 }
 
-function Invite({ hdr, onCreated }: { hdr: Record<string, string>; onCreated: () => void }) {
+function NuevaEntrevista({ hdr, base, onCreated }: { hdr: Record<string, string>; base: Base | null; onCreated: () => void }) {
   const [name, setName] = useState(''); const [phone, setPhone] = useState('')
-  const [busy, setBusy] = useState(false); const [link, setLink] = useState<string | null>(null); const [nm, setNm] = useState('')
-  const [msg, setMsg] = useState('')
+  const [qs, setQs] = useState<QEdit[]>([])
+  const [inited, setInited] = useState(false)
+  const [perfil, setPerfil] = useState(''); const [duda, setDuda] = useState('')
+  const [cvBusy, setCvBusy] = useState(false); const [cvMsg, setCvMsg] = useState('')
+  const [busy, setBusy] = useState(false); const [link, setLink] = useState<string | null>(null); const [nm, setNm] = useState(''); const [msg, setMsg] = useState('')
+
+  // Carga pdf.js una vez (para leer el texto del CV en el navegador).
+  useEffect(() => {
+    if (typeof window === 'undefined' || (window as unknown as { pdfjsLib?: PdfjsLib }).pdfjsLib) return
+    const s = document.createElement('script'); s.src = PDFJS
+    s.onload = () => { const lib = (window as unknown as { pdfjsLib?: PdfjsLib }).pdfjsLib; if (lib) lib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER }
+    document.body.appendChild(s)
+  }, [])
+
+  // Prefill: 3 fijas de la base (editables) + 3 personalizadas vacías.
+  useEffect(() => {
+    if (inited || !base) return
+    const fixed: QEdit[] = base.questions.map((q) => ({ text: q.text, r1: q.rubric['1'] || '', r2: q.rubric['2'] || '', r3: q.rubric['3'] || '', fixed: true }))
+    const blanks: QEdit[] = [0, 1, 2].map(() => ({ text: '', r1: '', r2: '', r3: '' }))
+    setQs([...fixed, ...blanks]); setInited(true)
+  }, [base, inited])
+
+  const upd = (i: number, patch: Partial<QEdit>) => setQs((prev) => prev.map((q, idx) => idx === i ? { ...q, ...patch } : q))
+  const addQ = () => setQs((prev) => [...prev, { text: '', r1: '', r2: '', r3: '' }])
+  const removeQ = (i: number) => setQs((prev) => prev.filter((_, idx) => idx !== i))
+
+  async function extractPdf(file: File): Promise<string> {
+    const lib = (window as unknown as { pdfjsLib?: PdfjsLib }).pdfjsLib
+    if (!lib) throw new Error('el lector de PDF aún no carga, intenta de nuevo')
+    const buf = await file.arrayBuffer()
+    const pdf = await lib.getDocument({ data: buf }).promise
+    let text = ''
+    for (let p = 1; p <= pdf.numPages; p++) { const page = await pdf.getPage(p); const c = await page.getTextContent(); text += c.items.map((it) => it.str || '').join(' ') + '\n' }
+    return text.trim()
+  }
+
+  const onCV = async (file: File | undefined) => {
+    if (!file) return
+    setCvBusy(true); setCvMsg(''); setPerfil(''); setDuda('')
+    try {
+      const cvText = await extractPdf(file)
+      if (cvText.length < 40) throw new Error('el CV no trae texto legible (¿es imagen escaneada?)')
+      const r = await fetch('/api/rh/generar', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ name, cvText }) })
+      const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error generando')
+      setPerfil(j.perfil || ''); setDuda(j.duda || '')
+      const ai: QEdit[] = (j.questions as { text: string; rubric: Record<string, string> }[]).map((q) => ({ text: q.text, r1: q.rubric['1'] || '', r2: q.rubric['2'] || '', r3: q.rubric['3'] || '' }))
+      // Conserva las fijas, reemplaza las personalizadas con las de la IA.
+      setQs((prev) => { const fixed = prev.filter((q) => q.fixed); return [...fixed, ...ai] })
+      setCvMsg('✓ Preguntas generadas. Revísalas y cámbialas si quieres antes de crear.')
+    } catch (e) { setCvMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')) } finally { setCvBusy(false) }
+  }
+
   const create = async () => {
     if (!name.trim()) return
     setBusy(true); setMsg('')
     try {
-      const r = await fetch('/api/rh/invites', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ name, phone }) })
+      const questions = qs.filter((q) => q.text.trim()).map((q) => ({ text: q.text.trim(), rubric: { '1': q.r1.trim(), '2': q.r2.trim(), '3': q.r3.trim() } }))
+      const r = await fetch('/api/rh/invites', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ name, phone, questions }) })
       const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error')
-      const l = `${window.location.origin}/entrevista/${j.token}`
-      setLink(l); setNm(name); setName(''); setPhone(''); onCreated()
+      setLink(`${window.location.origin}/entrevista/${j.token}`); setNm(name)
+      setName(''); setPhone(''); setInited(false); setPerfil(''); setDuda(''); setCvMsg(''); onCreated()
     } catch (e) { setMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')) } finally { setBusy(false) }
   }
-  const waMsg = link ? `Hola ${nm}, soy Santiago de Suuplai. Me encantaría conocerte con una mini-entrevista en audio que contestas desde tu celular cuando quieras (unos 10 min, sin instalar nada). Aquí está tu link personal:\n${link}` : ''
+
+  const waMsg = link ? `Hola ${nm}, gracias por escribir. Antes de coordinar la llamada me encantaría que me ayudes con esta mini-entrevista en audio: la contestas desde tu celular cuando quieras, son unos 10 min y no instalas nada. Aquí está tu link personal:\n${link}` : ''
+
   return (
     <div style={{ background: BONE, border: `2px solid ${INK}`, borderRadius: 16, padding: 18 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr)) auto', gap: 10, alignItems: 'end' }}>
-        <Fld label="Nombre del candidato"><input value={name} onChange={(e) => setName(e.target.value)} placeholder="David T." style={inp} /></Fld>
+      <h3 style={{ fontFamily: SYNE, fontWeight: 800, fontSize: 18, margin: '0 0 14px' }}>Nueva entrevista a la medida</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>
+        <Fld label="Nombre del candidato"><input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nombre y apellido" style={inp} /></Fld>
         <Fld label="WhatsApp (opcional)"><input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="55…" style={inp} /></Fld>
-        <button onClick={create} disabled={busy || !name.trim()} style={{ background: INK, color: LIME, border: 'none', borderRadius: 10, padding: '12px 18px', fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: SYNE, opacity: busy || !name.trim() ? 0.5 : 1, height: 44 }}>Invitar</button>
+        <Fld label="CV en PDF (opcional, la IA arma las preguntas)">
+          <label style={{ ...btn, display: 'inline-block', textAlign: 'center', opacity: cvBusy ? 0.5 : 1 }}>
+            {cvBusy ? 'Generando…' : '📄 Subir CV y generar'}
+            <input type="file" accept="application/pdf" disabled={cvBusy} onChange={(e) => onCV(e.target.files?.[0])} style={{ display: 'none' }} />
+          </label>
+        </Fld>
       </div>
+      {cvMsg && <p style={{ color: cvMsg.startsWith('✓') ? OK : '#B4451A', fontSize: 13, marginTop: 8 }}>{cvMsg}</p>}
+      {(perfil || duda) && (
+        <div style={{ background: PAPER, borderRadius: 10, padding: '10px 12px', marginTop: 8, fontSize: 13 }}>
+          {perfil && <div><b>Perfil:</b> {perfil}</div>}
+          {duda && <div style={{ marginTop: 2 }}><b>Duda a resolver:</b> {duda}</div>}
+        </div>
+      )}
+
+      {base && (
+        <p style={{ fontSize: 12, color: SOFT, margin: '14px 0 6px' }}>Datos rápidos que se preguntan igual a todos: {base.quick_fields.map((f) => f.label.replace(/\?.*/, '')).join(' · ')}</p>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 6 }}>
+        {qs.map((q, i) => (
+          <div key={i} style={{ border: `1px solid ${LINE}`, borderRadius: 12, padding: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <span style={{ fontFamily: MONO, fontSize: 11, color: q.fixed ? SOFT : EMBER, textTransform: 'uppercase', letterSpacing: '.06em' }}>Pregunta {i + 1}{q.fixed ? ' · fija' : ' · personalizada'}</span>
+              {!q.fixed && <button onClick={() => removeQ(i)} style={{ border: 0, background: 'transparent', color: '#B4451A', cursor: 'pointer', fontSize: 12 }}>quitar</button>}
+            </div>
+            <textarea value={q.text} onChange={(e) => upd(i, { text: e.target.value })} placeholder="Cuéntame de una vez que…" rows={2} style={{ ...inp, resize: 'vertical', fontFamily: "'DM Sans',sans-serif" }} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6, marginTop: 6 }}>
+              <input value={q.r1} onChange={(e) => upd(i, { r1: e.target.value })} placeholder="1 = flojo" style={{ ...inp, fontSize: 12 }} />
+              <input value={q.r2} onChange={(e) => upd(i, { r2: e.target.value })} placeholder="2 = aceptable" style={{ ...inp, fontSize: 12 }} />
+              <input value={q.r3} onChange={(e) => upd(i, { r3: e.target.value })} placeholder="3 = muy bien" style={{ ...inp, fontSize: 12 }} />
+            </div>
+          </div>
+        ))}
+        <button onClick={addQ} style={{ ...btn, alignSelf: 'flex-start' }}>+ Agregar pregunta</button>
+      </div>
+
+      <button onClick={create} disabled={busy || !name.trim()} style={{ background: INK, color: LIME, border: 'none', borderRadius: 10, padding: '13px 22px', fontWeight: 700, fontSize: 15, cursor: 'pointer', fontFamily: SYNE, opacity: busy || !name.trim() ? 0.5 : 1, marginTop: 14 }}>{busy ? 'Creando…' : 'Crear entrevista y generar link'}</button>
       {msg && <p style={{ color: '#B4451A', fontSize: 13, marginTop: 10 }}>{msg}</p>}
+
       {link && (
         <div style={{ marginTop: 14, background: PAPER, borderRadius: 12, padding: 14 }}>
           <p style={{ fontSize: 13, margin: '0 0 8px', color: SOFT }}>Link para <b>{nm}</b>:</p>

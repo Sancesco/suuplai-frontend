@@ -49,19 +49,59 @@ export async function GET(req: Request) {
     }
   })
   const def = await getTemplate()
-  return NextResponse.json({ ok: true, template: def ? { title: def.title, questions: def.questions.length, thresholds: def.thresholds } : null, invites: list })
+  return NextResponse.json({
+    ok: true,
+    template: def ? { title: def.title, questions: def.questions.length, thresholds: def.thresholds } : null,
+    base: def ? { quick_fields: def.quick_fields, questions: def.questions } : null,
+    invites: list,
+  })
 }
+
+function slugName(n: string) { return n.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase() }
+
+type QIn = { text?: string; maxSeconds?: number; rubric?: Record<string, string> }
 
 export async function POST(req: Request) {
   if (!checkRh(req)) return NextResponse.json({ ok: false, error: 'no autorizado' }, { status: 401 })
-  const sb = getSupabaseAdmin(); const template = await getTemplate()
-  if (!sb || !template) return NextResponse.json({ ok: false, error: 'no config' }, { status: 500 })
+  const sb = getSupabaseAdmin(); const def = await getTemplate()
+  if (!sb || !def) return NextResponse.json({ ok: false, error: 'no config' }, { status: 500 })
   const body = await req.json().catch(() => null)
   const name = String(body?.name ?? '').trim()
   const phone = String(body?.phone ?? '').trim() || null
   if (!name) return NextResponse.json({ ok: false, error: 'falta nombre' }, { status: 400 })
+
+  // Si mandan preguntas personalizadas, se crea una plantilla propia para este candidato.
+  let templateId = def.id
+  const rawQ = Array.isArray(body?.questions) ? (body.questions as QIn[]) : null
+  if (rawQ) {
+    const qs = rawQ
+      .map((q, i) => ({
+        order: i + 1,
+        text: String(q?.text ?? '').trim(),
+        maxSeconds: Number(q?.maxSeconds) > 0 ? Number(q.maxSeconds) : 90,
+        rubric: {
+          '1': String(q?.rubric?.['1'] ?? '').trim() || 'Flojo o no responde',
+          '2': String(q?.rubric?.['2'] ?? '').trim() || 'Aceptable',
+          '3': String(q?.rubric?.['3'] ?? '').trim() || 'Muy bien, ejemplo concreto',
+        },
+      }))
+      .filter((q) => q.text)
+    if (!qs.length) return NextResponse.json({ ok: false, error: 'faltan preguntas' }, { status: 400 })
+    const max = qs.length * 3
+    const thresholds = { call: Math.round(max * 0.78), review: Math.round(max * 0.61) }
+    const first = name.split(/\s+/)[0]
+    const slug = `campo-${slugName(name)}-${randToken().slice(0, 6).replace(/[^a-zA-Z0-9]/g, '').toLowerCase()}`
+    const { data: tpl, error: tErr } = await sb.from('interview_templates').insert({
+      slug, title: `Campo y operación · ${first}`,
+      intro: 'Mini-entrevista en audio. Contéstala desde tu celular cuando quieras, sin instalar nada. Toma unos 10 minutos.',
+      quick_fields: def.quick_fields, questions: qs, thresholds, is_active: false,
+    }).select('id').single()
+    if (tErr || !tpl) return NextResponse.json({ ok: false, error: 'no se pudo crear la plantilla' }, { status: 500 })
+    templateId = tpl.id
+  }
+
   const token = randToken()
-  const { error } = await sb.from('interview_invites').insert({ template_id: template.id, candidate_name: name, candidate_phone: phone, token, status: 'pending' })
+  const { error } = await sb.from('interview_invites').insert({ template_id: templateId, candidate_name: name, candidate_phone: phone, token, status: 'pending' })
   if (error) return NextResponse.json({ ok: false, error: 'no se pudo crear' }, { status: 500 })
   return NextResponse.json({ ok: true, token })
 }
