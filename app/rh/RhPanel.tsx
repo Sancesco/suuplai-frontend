@@ -15,7 +15,7 @@ const LBL: Record<string, { t: string; bg: string; c: string }> = {
 
 interface Row { id: string; name: string; phone: string | null; status: string; invited_at: string; completed_at: string | null; interview: string; answered: number; scored: number; total: number; maxTotal: number; label: string | null; knockout: string[]; stale: boolean }
 interface QDetail { order: number; text: string; rubric: Record<string, string>; audioUrl: string | null; duration: number | null; transcript: string | null; score: number | null; note: string }
-interface Detail { invite: { id: string; name: string; phone: string | null; status: string; invited_at: string; completed_at: string | null }; quick: { label: string; value: string; knockout: boolean }[]; questions: QDetail[]; total: number; maxTotal: number; fullyScored: boolean; label: string | null; knockout: string[] }
+interface Detail { invite: { id: string; name: string; phone: string | null; status: string; invited_at: string; completed_at: string | null }; quick: { label: string; value: string; knockout: boolean }[]; questions: QDetail[]; total: number; maxTotal: number; fullyScored: boolean; label: string | null; knockout: string[]; thresholds: { call: number; review: number } }
 
 export function RhPanel() {
   const [pw, setPw] = useState(''); const [authed, setAuthed] = useState(false); const [err, setErr] = useState('')
@@ -35,6 +35,21 @@ export function RhPanel() {
   }, [pw]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const sorted = (rows ?? []).slice().sort((a, b) => sort === 'puntaje' ? (b.total - a.total) : (new Date(b.invited_at).getTime() - new Date(a.invited_at).getTime()))
+
+  const [dlAll, setDlAll] = useState(false)
+  const downloadAll = async () => {
+    const done = (rows ?? []).filter((r) => r.status === 'completed')
+    if (!done.length) { alert('Aún no hay entrevistas completadas.'); return }
+    setDlAll(true)
+    try {
+      const parts: string[] = []
+      for (const r of done) {
+        const res = await fetch(`/api/rh/invites/${r.id}`, { headers: hdr })
+        const j = await res.json(); if (j.ok) parts.push(buildExport(j as Detail))
+      }
+      downloadText(`entrevistas-completadas-${new Date().toISOString().slice(0, 10)}.md`, parts.join('\n\n---\n\n'))
+    } finally { setDlAll(false) }
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: PAPER, color: INK, fontFamily: "'DM Sans',system-ui,sans-serif" }}>
@@ -59,7 +74,8 @@ export function RhPanel() {
             <Invite hdr={hdr} onCreated={load} />
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '22px 0 10px' }}>
               <h2 style={{ fontFamily: SYNE, fontWeight: 800, fontSize: 20, margin: 0 }}>Candidatos {rows ? `(${rows.length})` : ''}</h2>
-              <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+              <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                <button onClick={downloadAll} disabled={dlAll} style={{ ...btn, background: INK, color: LIME, opacity: dlAll ? 0.5 : 1 }}>{dlAll ? 'Preparando…' : '⬇ Descargar completados'}</button>
                 <Seg on={sort === 'fecha'} onClick={() => setSort('fecha')}>Por fecha</Seg>
                 <Seg on={sort === 'puntaje'} onClick={() => setSort('puntaje')}>Por puntaje</Seg>
               </div>
@@ -182,6 +198,7 @@ function CandidateDetail({ id, hdr, onChange }: { id: string; hdr: Record<string
 
       {/* acciones */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        <button onClick={() => downloadText(`entrevista-${slugName(d.invite.name)}.md`, buildExport(d))} style={{ ...btn, background: INK, color: LIME }}>⬇ Descargar para calificar</button>
         <button onClick={() => setStatus('call_scheduled')} style={{ ...btn, background: LIME }}>Llamada agendada</button>
         <button onClick={() => setStatus('discarded')} style={btn}>Descartar</button>
         <span style={{ fontSize: 12, color: SOFT, fontFamily: MONO }}>Estado: {ST_LABEL[d.invite.status]}</span>
@@ -200,3 +217,38 @@ function Seg({ on, onClick, children }: { on: boolean; onClick: () => void; chil
 function Badge({ t, bg, c }: { t: string; bg: string; c: string }) { return <span style={{ background: bg, color: c, fontFamily: MONO, fontSize: 11, fontWeight: 700, padding: '4px 9px', borderRadius: 6, textTransform: 'uppercase', letterSpacing: '.06em', whiteSpace: 'nowrap' }}>{t}</span> }
 function initials(n: string) { return n.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() }
 function fmtDate(iso: string) { return new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) }
+
+// Arma un archivo listo para pegar/subir a Claude y que califique.
+function buildExport(d: Detail): string {
+  const L: string[] = []
+  L.push(`# Entrevista para calificar — ${d.invite.name}`)
+  L.push('')
+  L.push('Puesto: **Campo y operación** en Suuplai (ventas y visitas a tiendas, trabajo de calle, pago por día).')
+  L.push('')
+  L.push('## Instrucciones para calificar')
+  L.push('Actúa como reclutador de Suuplai. Para CADA respuesta asigna un puntaje de 1 a 3 según SU rúbrica y explica en una línea por qué. Premia ejemplos concretos y reales; NO te dejes llevar por respuestas fluidas pero vacías. El puesto es de calle: busca constancia, trato con la gente, iniciativa y aguante ante un "no". No descartes a alguien solo porque suene con poca energía, convencerlo es parte del trabajo.')
+  L.push('')
+  L.push(`Al final entrega: puntaje total sobre ${d.maxTotal}, una recomendación (AGENDAR LLAMADA si el total es ≥ ${d.thresholds.call}, REVISAR si es ≥ ${d.thresholds.review}, si no DESCARTAR), un resumen de 3 líneas y banderas (respuestas vacías, que no contesten lo que se pregunta, o que choquen con los datos rápidos).`)
+  L.push('')
+  if (d.knockout.length) L.push(`> ⚠ Descarte automático por datos rápidos: ${d.knockout.join(', ')}`)
+  L.push('## Datos rápidos')
+  for (const q of d.quick) L.push(`- **${q.label}** ${q.value || '(sin responder)'}${q.knockout ? ' ⚠' : ''}`)
+  L.push('')
+  L.push('## Respuestas (audio transcrito)')
+  for (const q of d.questions) {
+    L.push('')
+    L.push(`### Pregunta ${q.order}: ${q.text}`)
+    L.push(`Rúbrica — 1: ${q.rubric['1']} · 2: ${q.rubric['2']} · 3: ${q.rubric['3']}`)
+    L.push(`Transcripción: ${q.transcript ? '"' + q.transcript + '"' : '(sin audio o sin transcribir todavía)'}`)
+  }
+  return L.join('\n')
+}
+
+function slugName(n: string) { return n.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '').toLowerCase() }
+
+function downloadText(filename: string, text: string) {
+  const blob = new Blob([text], { type: 'text/markdown;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click()
+  setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
