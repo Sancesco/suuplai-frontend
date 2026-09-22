@@ -76,14 +76,33 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => null)
   const name = String(body?.name ?? '').trim()
   const role = getRole(body?.roleKey) ?? defaultRole()
-  const cvText = String(body?.cvText ?? '').trim().slice(0, 12000)
-  if (!cvText) return NextResponse.json({ ok: false, error: 'no se pudo leer el CV (¿es una imagen escaneada sin texto?)' }, { status: 400 })
+  const cvFull = String(body?.cvText ?? '').trim()
+  if (!cvFull) return NextResponse.json({ ok: false, error: 'no se pudo leer el CV (¿es una imagen escaneada sin texto?)' }, { status: 400 })
 
   const guia = guiaFor(role)
-  const prompt = `Nombre: ${name || '(sin nombre)'}\n\nTexto del CV:\n"""${cvText}"""`
+  const attempt = (cv: string) => {
+    const prompt = `Nombre: ${name || '(sin nombre)'}\n\nTexto del CV:\n"""${cv}"""`
+    return groqKey ? callGroq(groqKey, guia, prompt) : callGemini(geminiKey as string, guia, prompt)
+  }
+  const saturado = (m: string) => /429|too large|rate|quota|limit/i.test(m)
+
+  // 1er intento con CV recortado; si se satura, reintenta con menos texto.
+  let raw = ''
+  try {
+    raw = await attempt(cvFull.slice(0, 7000))
+  } catch (e1) {
+    const m1 = e1 instanceof Error ? e1.message : ''
+    if (!saturado(m1)) return NextResponse.json({ ok: false, error: 'La IA no respondió, intenta de nuevo.', detail: m1.slice(0, 200) }, { status: 502 })
+    try {
+      raw = await attempt(cvFull.slice(0, 3000))
+    } catch (e2) {
+      const m2 = e2 instanceof Error ? e2.message : ''
+      const friendly = saturado(m2) ? 'La IA está saturada (límite gratis por minuto). Espera ~1 min y vuelve a intentar.' : 'La IA no respondió, intenta de nuevo.'
+      return NextResponse.json({ ok: false, error: friendly, detail: m2.slice(0, 200) }, { status: 502 })
+    }
+  }
 
   try {
-    const raw = groqKey ? await callGroq(groqKey, guia, prompt) : await callGemini(geminiKey as string, guia, prompt)
     let parsed: unknown
     try { parsed = JSON.parse(raw) } catch { parsed = JSON.parse(raw.replace(/^```json\s*|\s*```$/g, '')) }
     const p = parsed as { nombre?: string; telefono?: string; perfil?: string; duda?: string; questions?: { text?: string; rubric?: Record<string, string> }[] }
@@ -99,6 +118,6 @@ export async function POST(req: Request) {
     if (!questions.length) return NextResponse.json({ ok: false, error: 'la IA no devolvió preguntas' }, { status: 502 })
     return NextResponse.json({ ok: true, nombre: String(p.nombre ?? '').trim(), telefono, perfil: String(p.perfil ?? '').trim(), duda: String(p.duda ?? '').trim(), questions })
   } catch (e) {
-    return NextResponse.json({ ok: false, error: 'error llamando a la IA', detail: e instanceof Error ? e.message : '' }, { status: 502 })
+    return NextResponse.json({ ok: false, error: 'La IA respondió algo raro, intenta de nuevo.', detail: e instanceof Error ? e.message : '' }, { status: 502 })
   }
 }

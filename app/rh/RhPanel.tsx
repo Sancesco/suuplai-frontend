@@ -158,7 +158,7 @@ function NuevaEntrevista({ hdr, base, roles, onCreated, onClose }: { hdr: Record
       const cvText = await extractPdf(file)
       if (cvText.length < 40) throw new Error('el CV no trae texto legible (¿es imagen escaneada?)')
       const r = await fetch('/api/rh/generar', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ name, cvText, roleKey }) })
-      const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error generando')
+      const j = await r.json(); if (!r.ok || !j.ok) throw new Error((j.error || 'Error generando') + (j.detail ? ` (${j.detail})` : ''))
       setPerfil(j.perfil || ''); setDuda(j.duda || '')
       // Autollena nombre/teléfono detectados en el CV si están vacíos.
       if (j.nombre && !name.trim()) setName(j.nombre)
