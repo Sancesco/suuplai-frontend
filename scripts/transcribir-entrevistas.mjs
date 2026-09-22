@@ -85,7 +85,8 @@ async function main() {
     const item = res[m.file]
     const text = (item && item.text) || ''
     if (!text) continue
-    const metrics = { ...speechMetrics(item, maxSecondsFor(m.invite_id, m.question_order)), acoustic: m.acoustic ?? null }
+    // Acústica: prioriza la del navegador (nuevas); si no hay, usa la calculada aquí del audio (backfill).
+    const metrics = { ...speechMetrics(item, maxSecondsFor(m.invite_id, m.question_order)), acoustic: m.acoustic ?? item.acoustic ?? null }
     // Intenta guardar transcript + metrics; si la columna metrics aún no existe, guarda solo transcript.
     let { error } = await sb.from('interview_answers').update({ transcript: text, metrics }).eq('invite_id', m.invite_id).eq('question_order', m.question_order)
     if (error) { const r2 = await sb.from('interview_answers').update({ transcript: text }).eq('invite_id', m.invite_id).eq('question_order', m.question_order); error = r2.error }
