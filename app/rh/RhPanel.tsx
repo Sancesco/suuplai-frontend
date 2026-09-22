@@ -437,7 +437,7 @@ function highlightPhrases(text: string, phrases: string[]): React.ReactNode {
 
 // Descripción del SONIDO (no emociones ni estados de ánimo), a partir de números.
 function acousticLine(a: Acoustic): string {
-  const energy = a.energy0100 > 60 ? 'Energía alta' : a.energy0100 > 30 ? 'Energía media' : 'Energía baja'
+  const energy = a.energy0100 > 22 ? 'Energía alta' : a.energy0100 > 9 ? 'Energía media' : 'Energía baja'
   const tono = a.pitchSemitoneRange > 7 ? 'tono muy variado' : a.pitchSemitoneRange > 3 ? 'tono variado' : 'tono plano'
   const [t1, , t3] = a.energyThirds || [0, 0, 0]
   const ritmo = t3 > t1 * 1.15 ? 'sube al final' : t3 < t1 * 0.85 ? 'se apaga al final' : 'se mantiene'
