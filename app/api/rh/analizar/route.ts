@@ -47,8 +47,8 @@ export async function POST(req: Request) {
     // Fusiona con lo previo (para no borrar una calificación ya hecha).
     const prev = (invite.analysis && typeof invite.analysis === 'object') ? invite.analysis as Record<string, unknown> : {}
     const analysis = { ...prev, porPregunta: content.porPregunta, contradicciones: content.contradicciones, frasesAbsolutas: content.frasesAbsolutas }
-    await sb.from('interview_invites').update({ analysis }).eq('id', inviteId)
-    return NextResponse.json({ ok: true, analysis })
+    const { error: upErr } = await sb.from('interview_invites').update({ analysis }).eq('id', inviteId)
+    return NextResponse.json({ ok: true, analysis, saved: !upErr })
   } catch (e) {
     const m = e instanceof Error ? e.message : ''
     const sat = /429|too large|rate|limit|quota/i.test(m)

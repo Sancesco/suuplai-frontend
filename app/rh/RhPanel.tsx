@@ -288,14 +288,17 @@ function CandidateDetail({ id, hdr, onChange }: { id: string; hdr: Record<string
   const load = useCallback(async () => { const r = await fetch(`/api/rh/invites/${id}`, { headers: hdr }); const j = await r.json(); if (j.ok) setD(j as Detail) }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { load() }, [load])
   // Corre una acción de IA con cola: si se satura, reintenta cada 60s (hasta 4).
-  const runCola = async (endpoint: string, setBusy: (b: boolean) => void, setMsg: (m: string) => void) => {
+  // apply(j) muestra el resultado al instante (aunque no persista todavía).
+  const runCola = async (endpoint: string, setBusy: (b: boolean) => void, setMsg: (m: string) => void, apply: (j: Record<string, unknown>) => void) => {
     setBusy(true); setMsg('')
     for (let intento = 1; intento <= 4; intento++) {
       try {
         const r = await fetch(endpoint, { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ inviteId: id }) })
         const j = await r.json()
         if (!r.ok || !j.ok) { const e = new Error(j.error || 'Error') as Error & { sat?: boolean }; e.sat = /satur|límite|429|limit|rate/i.test(String(j.error) + String(j.detail || '')); throw e }
-        await load(); setBusy(false); return
+        apply(j)
+        setMsg(j.saved === false ? '⚠ Se generó pero NO se guardó: falta correr el SQL de columnas (analysis). Se ve ahora pero no persiste.' : '')
+        setBusy(false); return
       } catch (e) {
         const sat = e instanceof Error && (e as { sat?: boolean }).sat
         if (sat && intento < 4) { for (let s = 60; s > 0; s--) { setMsg(`⏳ En cola, reintento en ${s}s… (${intento}/3)`); await new Promise((res) => setTimeout(res, 1000)) } continue }
@@ -304,9 +307,9 @@ function CandidateDetail({ id, hdr, onChange }: { id: string; hdr: Record<string
     }
     setBusy(false)
   }
-  const analyze = () => runCola('/api/rh/analizar', setAnalyzing, setAnMsg)
+  const analyze = () => runCola('/api/rh/analizar', setAnalyzing, setAnMsg, (j) => setD((prev) => prev ? { ...prev, analysis: (j.analysis as Analysis) ?? prev.analysis } : prev))
   const [calificando, setCalificando] = useState(false); const [calMsg, setCalMsg] = useState('')
-  const calificar = () => runCola('/api/rh/calificar', setCalificando, setCalMsg)
+  const calificar = () => runCola('/api/rh/calificar', setCalificando, setCalMsg, (j) => setD((prev) => prev ? { ...prev, analysis: { ...(prev.analysis || {}), calificacion: j.calificacion as Calificacion } } : prev))
   const saveScore = async (order: number, patch: { score?: number; note?: string }) => {
     await fetch('/api/rh/score', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ inviteId: id, order, ...patch }) })
     load(); onChange()

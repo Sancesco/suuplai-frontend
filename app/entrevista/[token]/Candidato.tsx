@@ -62,6 +62,42 @@ function pickMime(): string {
   return ''
 }
 
+// ── Análisis acústico (solo números, sin perfiles de voz ni emociones) ──
+const acAvg = (xs: number[]) => xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0
+// Pitch por autocorrelación acotada al rango de voz (70–400 Hz). 0 si no hay voz.
+function acPitch(buf: Float32Array, sr: number): number {
+  const minLag = Math.floor(sr / 400), maxLag = Math.floor(sr / 70)
+  let best = -1, bestLag = -1
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    let s = 0; for (let i = 0; i < buf.length - lag; i++) s += buf[i] * buf[i + lag]
+    if (s > best) { best = s; bestLag = lag }
+  }
+  return bestLag > 0 ? sr / bestLag : 0
+}
+type Acoustic = { energy0100: number; energyVar0100: number; energyThirds: number[]; noise0100: number; noisy: boolean; onsetSec: number; pitchSemitoneRange: number }
+function computeAcoustic(rmsAll: number[], pitchAll: number[], durationSec: number): Acoustic | null {
+  const rms = rmsAll.filter((x) => x != null)
+  if (rms.length < 3) return null
+  const mean = acAvg(rms)
+  const std = Math.sqrt(acAvg(rms.map((x) => (x - mean) ** 2)))
+  const sorted = [...rms].sort((a, b) => a - b)
+  const floor = sorted[Math.floor(sorted.length * 0.1)]
+  const scale = (v: number) => Math.max(0, Math.min(100, Math.round(v * 400)))
+  const third = Math.max(1, Math.floor(rms.length / 3))
+  const thr = Math.max(0.03, floor * 2.5)
+  let onsetIdx = rmsAll.findIndex((x) => x > thr); if (onsetIdx < 0) onsetIdx = 0
+  const frameSec = durationSec > 0 ? durationSec / rmsAll.length : 0.12
+  const pitches = pitchAll.filter((p) => p >= 70 && p <= 400)
+  let pitchSemitoneRange = 0
+  if (pitches.length >= 5) { const ps = [...pitches].sort((a, b) => a - b); const lo = ps[Math.floor(ps.length * 0.1)], hi = ps[Math.floor(ps.length * 0.9)]; if (lo > 0) pitchSemitoneRange = +(12 * Math.log2(hi / lo)).toFixed(1) }
+  return {
+    energy0100: scale(mean), energyVar0100: scale(std),
+    energyThirds: [scale(acAvg(rms.slice(0, third))), scale(acAvg(rms.slice(third, 2 * third))), scale(acAvg(rms.slice(2 * third)))],
+    noise0100: scale(floor), noisy: mean > 0 ? floor / mean > 0.5 : false,
+    onsetSec: +(onsetIdx * frameSec).toFixed(1), pitchSemitoneRange,
+  }
+}
+
 export function Candidato({ token }: { token: string }) {
   const [phase, setPhase] = useState<'loading' | 'error' | 'done' | 'welcome' | 'quick' | 'audio' | 'thanks'>('loading')
   const [st, setSt] = useState<State | null>(null)
@@ -82,6 +118,10 @@ export function Candidato({ token }: { token: string }) {
   const stream = useRef<MediaStream | null>(null)
   const timer = useRef<ReturnType<typeof setInterval> | null>(null)
   const retakes = useRef(0) // grabaciones descartadas de la pregunta actual
+  const audioCtx = useRef<AudioContext | null>(null)
+  const acSampler = useRef<ReturnType<typeof setInterval> | null>(null)
+  const acRms = useRef<number[]>([]); const acPitchArr = useRef<number[]>([])
+  const acResult = useRef<Acoustic | null>(null)
 
   const api = useCallback((body: unknown) => fetch(`/api/entrevista/${token}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }), [token])
 
@@ -121,6 +161,22 @@ export function Candidato({ token }: { token: string }) {
     let s: MediaStream
     try { s = await navigator.mediaDevices.getUserMedia({ audio: true }) } catch { setErr('No pudimos usar tu micrófono. Dale permiso y vuelve a intentar.'); return }
     stream.current = s; chunks.current = []
+    // Muestreo acústico en vivo (energía + pitch). Si algo falla, seguimos sin acústica.
+    acRms.current = []; acPitchArr.current = []; acResult.current = null
+    try {
+      const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+      const ctx = new Ctx(); audioCtx.current = ctx
+      const an = ctx.createAnalyser(); an.fftSize = 2048
+      ctx.createMediaStreamSource(s).connect(an)
+      const tbuf = new Float32Array(an.fftSize)
+      acSampler.current = setInterval(() => {
+        an.getFloatTimeDomainData(tbuf)
+        let sum = 0; for (let i = 0; i < tbuf.length; i++) sum += tbuf[i] * tbuf[i]
+        const rms = Math.sqrt(sum / tbuf.length)
+        acRms.current.push(rms)
+        acPitchArr.current.push(rms > 0.02 ? acPitch(tbuf, ctx.sampleRate) : 0)
+      }, 120)
+    } catch { /* navegador sin Web Audio: sin acústica */ }
     const mime = pickMime()
     const r = mime ? new MediaRecorder(s, { mimeType: mime }) : new MediaRecorder(s)
     mr.current = r
@@ -133,7 +189,13 @@ export function Candidato({ token }: { token: string }) {
     r.start(); setSecs(0); setRec('recording')
     timer.current = setInterval(() => setSecs((x) => { const n = x + 1; if (n >= maxSec) stopRec(); return n }), 1000)
   }
-  function stopRec() { if (timer.current) { clearInterval(timer.current); timer.current = null } if (mr.current && mr.current.state === 'recording') mr.current.stop() }
+  function stopRec() {
+    if (timer.current) { clearInterval(timer.current); timer.current = null }
+    if (acSampler.current) { clearInterval(acSampler.current); acSampler.current = null }
+    acResult.current = computeAcoustic(acRms.current, acPitchArr.current, acRms.current.length * 0.12)
+    if (audioCtx.current) { try { audioCtx.current.close() } catch { /* noop */ } audioCtx.current = null }
+    if (mr.current && mr.current.state === 'recording') mr.current.stop()
+  }
 
   async function sendAnswer(q: Q) {
     if (!blob || busy) return

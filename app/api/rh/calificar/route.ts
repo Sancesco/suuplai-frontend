@@ -47,8 +47,8 @@ Responde SOLO JSON:
     const calificacion = parseJSON(raw)
     const prev = (invite.analysis && typeof invite.analysis === 'object') ? invite.analysis as Record<string, unknown> : {}
     const analysis = { ...prev, calificacion }
-    await sb.from('interview_invites').update({ analysis }).eq('id', inviteId)
-    return NextResponse.json({ ok: true, calificacion })
+    const { error: upErr } = await sb.from('interview_invites').update({ analysis }).eq('id', inviteId)
+    return NextResponse.json({ ok: true, calificacion, saved: !upErr })
   } catch (e) {
     const m = e instanceof Error ? e.message : ''
     const sat = /429|too large|rate|limit|quota/i.test(m)
