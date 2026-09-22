@@ -123,7 +123,6 @@ function NuevaEntrevista({ hdr, base, roles, onCreated, onClose }: { hdr: Record
   const [name, setName] = useState(''); const [phone, setPhone] = useState('')
   const [roleKey, setRoleKey] = useState('')
   const [qs, setQs] = useState<QEdit[]>([])
-  const [inited, setInited] = useState(false)
   const [perfil, setPerfil] = useState(''); const [duda, setDuda] = useState('')
   const [cvBusy, setCvBusy] = useState(false); const [cvMsg, setCvMsg] = useState('')
   const [busy, setBusy] = useState(false); const [link, setLink] = useState<string | null>(null); const [nm, setNm] = useState(''); const [msg, setMsg] = useState('')
@@ -136,13 +135,6 @@ function NuevaEntrevista({ hdr, base, roles, onCreated, onClose }: { hdr: Record
     document.body.appendChild(s)
   }, [])
 
-  // Prefill: 3 fijas de la base (editables) + 3 personalizadas vacías.
-  useEffect(() => {
-    if (inited || !base) return
-    const fixed: QEdit[] = base.questions.map((q) => ({ text: q.text, r1: q.rubric['1'] || '', r2: q.rubric['2'] || '', r3: q.rubric['3'] || '', fixed: true }))
-    const blanks: QEdit[] = [0, 1, 2].map(() => ({ text: '', r1: '', r2: '', r3: '' }))
-    setQs([...fixed, ...blanks]); setInited(true)
-  }, [base, inited])
   useEffect(() => { if (!roleKey && roles.length) setRoleKey(roles[0].key) }, [roles, roleKey])
 
   const upd = (i: number, patch: Partial<QEdit>) => setQs((prev) => prev.map((q, idx) => idx === i ? { ...q, ...patch } : q))
@@ -183,7 +175,7 @@ function NuevaEntrevista({ hdr, base, roles, onCreated, onClose }: { hdr: Record
       const r = await fetch('/api/rh/invites', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ name, phone, roleKey, questions }) })
       const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error')
       setLink(`${window.location.origin}/entrevista/${j.token}`); setNm(name)
-      setName(''); setPhone(''); setInited(false); setPerfil(''); setDuda(''); setCvMsg(''); onCreated()
+      setName(''); setPhone(''); setQs([]); setPerfil(''); setDuda(''); setCvMsg(''); onCreated()
     } catch (e) { setMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')) } finally { setBusy(false) }
   }
 
@@ -223,11 +215,12 @@ function NuevaEntrevista({ hdr, base, roles, onCreated, onClose }: { hdr: Record
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 6 }}>
+        {qs.length === 0 && <p style={{ fontSize: 13, color: SOFT, margin: '4px 0' }}>Sube el CV y la IA arma la entrevista completa a la medida de esta persona. También puedes escribir preguntas a mano.</p>}
         {qs.map((q, i) => (
           <div key={i} style={{ border: `1px solid ${LINE}`, borderRadius: 12, padding: 12 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-              <span style={{ fontFamily: MONO, fontSize: 11, color: q.fixed ? SOFT : EMBER, textTransform: 'uppercase', letterSpacing: '.06em' }}>Pregunta {i + 1}{q.fixed ? ' · fija' : ' · personalizada'}</span>
-              {!q.fixed && <button onClick={() => removeQ(i)} style={{ border: 0, background: 'transparent', color: '#B4451A', cursor: 'pointer', fontSize: 12 }}>quitar</button>}
+              <span style={{ fontFamily: MONO, fontSize: 11, color: EMBER, textTransform: 'uppercase', letterSpacing: '.06em' }}>Pregunta {i + 1}</span>
+              <button onClick={() => removeQ(i)} style={{ border: 0, background: 'transparent', color: '#B4451A', cursor: 'pointer', fontSize: 12 }}>quitar</button>
             </div>
             <textarea value={q.text} onChange={(e) => upd(i, { text: e.target.value })} placeholder="Cuéntame de una vez que…" rows={2} style={{ ...inp, resize: 'vertical', fontFamily: "'DM Sans',sans-serif" }} />
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 6, marginTop: 6 }}>
