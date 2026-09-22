@@ -151,24 +151,47 @@ function NuevaEntrevista({ hdr, base, roles, onCreated, onClose }: { hdr: Record
     return text.trim()
   }
 
+  // Un intento de generación. Devuelve la respuesta o lanza error.
+  const generarUnaVez = async (cvText: string) => {
+    const r = await fetch('/api/rh/generar', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ name, cvText, roleKey }) })
+    const j = await r.json()
+    if (!r.ok || !j.ok) { const err = new Error(j.error || 'Error generando'); (err as { saturado?: boolean }).saturado = /satur|límite|limit|429/i.test(String(j.error) + String(j.detail || '')); throw err }
+    return j
+  }
+
   const onCV = async (file: File | undefined) => {
     if (!file) return
     setCvBusy(true); setCvMsg(''); setPerfil(''); setDuda('')
+    let cvText = ''
     try {
-      const cvText = await extractPdf(file)
+      cvText = await extractPdf(file)
       if (cvText.length < 40) throw new Error('el CV no trae texto legible (¿es imagen escaneada?)')
-      const r = await fetch('/api/rh/generar', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ name, cvText, roleKey }) })
-      const j = await r.json(); if (!r.ok || !j.ok) throw new Error((j.error || 'Error generando') + (j.detail ? ` (${j.detail})` : ''))
-      setPerfil(j.perfil || ''); setDuda(j.duda || '')
-      // Autollena nombre/teléfono detectados en el CV si están vacíos.
-      if (j.nombre && !name.trim()) setName(j.nombre)
-      if (j.telefono && !phone.trim()) setPhone(j.telefono)
-      const ai: QEdit[] = (j.questions as { text: string; rubric: Record<string, string> }[]).map((q) => ({ text: q.text, r1: q.rubric['1'] || '', r2: q.rubric['2'] || '', r3: q.rubric['3'] || '' }))
-      // La IA arma la entrevista completa (decide cuántas): reemplaza todas.
-      setQs(ai)
-      const detectado = [j.nombre && 'nombre', j.telefono && 'teléfono'].filter(Boolean).join(' y ')
-      setCvMsg(`✓ ${ai.length} preguntas generadas${detectado ? ` · detecté ${detectado} del CV` : ''}. Revisa y ajusta antes de crear.`)
-    } catch (e) { setCvMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')) } finally { setCvBusy(false) }
+    } catch (e) { setCvMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')); setCvBusy(false); return }
+
+    // Cola: si la IA se satura, reintenta cada 60s hasta 4 veces.
+    const MAX = 4
+    for (let intento = 1; intento <= MAX; intento++) {
+      try {
+        const j = await generarUnaVez(cvText)
+        setPerfil(j.perfil || ''); setDuda(j.duda || '')
+        if (j.nombre && !name.trim()) setName(j.nombre)
+        if (j.telefono && !phone.trim()) setPhone(j.telefono)
+        const ai: QEdit[] = (j.questions as { text: string; rubric: Record<string, string> }[]).map((q) => ({ text: q.text, r1: q.rubric['1'] || '', r2: q.rubric['2'] || '', r3: q.rubric['3'] || '' }))
+        setQs(ai)
+        const detectado = [j.nombre && 'nombre', j.telefono && 'teléfono'].filter(Boolean).join(' y ')
+        setCvMsg(`✓ ${ai.length} preguntas generadas${detectado ? ` · detecté ${detectado} del CV` : ''}. Revisa y ajusta antes de crear.`)
+        setCvBusy(false); return
+      } catch (e) {
+        const sat = e instanceof Error && (e as { saturado?: boolean }).saturado
+        if (sat && intento < MAX) {
+          for (let s = 60; s > 0; s--) { setCvMsg(`⏳ IA saturada. En cola, reintento en ${s}s… (intento ${intento}/${MAX - 1})`); await new Promise((res) => setTimeout(res, 1000)) }
+          continue
+        }
+        setCvMsg('⚠ ' + (e instanceof Error ? e.message : 'Error') + (sat ? ' — sigue saturada, intenta más tarde.' : ''))
+        setCvBusy(false); return
+      }
+    }
+    setCvBusy(false)
   }
 
   const create = async () => {

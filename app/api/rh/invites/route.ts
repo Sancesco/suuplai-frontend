@@ -63,8 +63,8 @@ function slugName(n: string) { return n.normalize('NFD').replace(/[̀-ͯ]/g, '')
 
 type QIn = { text?: string; maxSeconds?: number; rubric?: Record<string, string> }
 
-// Avisa por correo que una entrevista quedó lista (no bloquea si Resend no está).
-async function emailListo(origin: string, name: string, role: string, link: string, qs: { text: string }[]) {
+// Avisa por correo que una entrevista quedó LISTA PARA ENVIAR (no bloquea si Resend no está).
+async function emailListo(origin: string, name: string, phone: string | null, role: string, link: string, qs: { text: string }[]) {
   try {
     const apiKey = process.env.RESEND_API_KEY
     if (!apiKey) return
@@ -72,12 +72,19 @@ async function emailListo(origin: string, name: string, role: string, link: stri
     const resend = new Resend(apiKey)
     const from = process.env.MAIL_FROM || 'Suuplai <onboarding@resend.dev>'
     const to = process.env.NOTIFY_EMAIL || 'santiago@suups.com.mx'
-    const preguntas = qs.map((q, i) => `<li>${q.text}</li>`).join('')
+    const first = name.split(/\s+/)[0]
+    const preguntas = qs.map((q) => `<li>${q.text}</li>`).join('')
+    const waMsg = `Hola ${first}, gracias por escribir. Antes de coordinar la llamada me encantaría que me ayudes con esta mini-entrevista en audio: la contestas desde tu celular cuando quieras, son unos 10 min y no instalas nada. Aquí está tu link personal:\n${link}`
+    const digits = (phone || '').replace(/\D/g, ''); const waNum = digits.length === 10 ? '52' + digits : digits
+    const waLink = waNum ? `https://wa.me/${waNum}?text=${encodeURIComponent(waMsg)}` : ''
     await resend.emails.send({
       from, to,
-      subject: `✅ Entrevista lista para ${name} (${role})`,
-      html: `<p>La entrevista personalizada de <b>${name}</b> para <b>${role}</b> ya está lista.</p>
-<p><b>Link para compartir:</b><br><a href="${link}">${link}</a></p>
+      subject: `✅ Entrevista lista para enviar: ${name} (${role})`,
+      html: `<p>La entrevista personalizada de <b>${name}</b> para <b>${role}</b> ya está <b>lista para enviar</b>.</p>
+${waLink ? `<p><a href="${waLink}" style="background:#111;color:#E8FF47;padding:10px 16px;border-radius:8px;text-decoration:none;font-weight:700">Abrir WhatsApp con ${first} →</a></p>` : ''}
+<p><b>Mensaje listo para copiar:</b></p>
+<blockquote style="border-left:3px solid #E8FF47;padding-left:10px;color:#333;white-space:pre-wrap">${waMsg}</blockquote>
+<p><b>Link:</b> <a href="${link}">${link}</a></p>
 <p><b>Preguntas:</b></p><ol>${preguntas}</ol>
 <p><a href="${origin}/rh">Ver en el panel de RH →</a></p>`,
     })
@@ -131,6 +138,6 @@ export async function POST(req: Request) {
   if (error) return NextResponse.json({ ok: false, error: 'no se pudo crear' }, { status: 500 })
 
   const origin = new URL(req.url).origin
-  await emailListo(origin, name, role.name, `${origin}/entrevista/${token}`, createdQs)
+  await emailListo(origin, name, phone, role.name, `${origin}/entrevista/${token}`, createdQs)
   return NextResponse.json({ ok: true, token })
 }
