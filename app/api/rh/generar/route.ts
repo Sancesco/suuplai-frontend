@@ -32,8 +32,9 @@ Reglas:
 - Cada pregunta debe DARLE LA OPORTUNIDAD DE LUCIRSE (buscamos fortalezas, no descartar). Nada que invite a autodescartarse.
 - Pide una anécdota concreta ("cuéntame de una vez que...").
 - Rúbrica de 3 niveles cortita (1 flojo, 2 aceptable, 3 muy bien).
+Además EXTRAE del CV el nombre completo del candidato y su teléfono celular (10 dígitos, solo números). Si no aparece alguno, déjalo como "". NO extraigas ningún otro dato personal.
 Responde SOLO un JSON válido (la lista "questions" con la cantidad que TÚ decidas, entre 3 y 10):
-{"perfil":"una línea que resuma su experiencia y posible superpoder, no solo el nombre","duda":"una línea con la duda principal a resolver","questions":[{"text":"...","rubric":{"1":"...","2":"...","3":"..."}}]}`
+{"nombre":"nombre completo o \"\"","telefono":"10 dígitos o \"\"","perfil":"una línea que resuma su experiencia y posible superpoder, no solo el nombre","duda":"una línea con la duda principal a resolver","questions":[{"text":"...","rubric":{"1":"...","2":"...","3":"..."}}]}`
 }
 
 // Llama a Groq (OpenAI-compatible) y devuelve el texto JSON crudo.
@@ -85,7 +86,8 @@ export async function POST(req: Request) {
     const raw = groqKey ? await callGroq(groqKey, guia, prompt) : await callGemini(geminiKey as string, guia, prompt)
     let parsed: unknown
     try { parsed = JSON.parse(raw) } catch { parsed = JSON.parse(raw.replace(/^```json\s*|\s*```$/g, '')) }
-    const p = parsed as { perfil?: string; duda?: string; questions?: { text?: string; rubric?: Record<string, string> }[] }
+    const p = parsed as { nombre?: string; telefono?: string; perfil?: string; duda?: string; questions?: { text?: string; rubric?: Record<string, string> }[] }
+    const telefono = String(p.telefono ?? '').replace(/\D/g, '').slice(-10)
     const questions = (p.questions ?? []).slice(0, 10).map((q) => ({
       text: String(q?.text ?? '').trim(),
       rubric: {
@@ -95,7 +97,7 @@ export async function POST(req: Request) {
       },
     })).filter((q) => q.text)
     if (!questions.length) return NextResponse.json({ ok: false, error: 'la IA no devolvió preguntas' }, { status: 502 })
-    return NextResponse.json({ ok: true, perfil: String(p.perfil ?? '').trim(), duda: String(p.duda ?? '').trim(), questions })
+    return NextResponse.json({ ok: true, nombre: String(p.nombre ?? '').trim(), telefono, perfil: String(p.perfil ?? '').trim(), duda: String(p.duda ?? '').trim(), questions })
   } catch (e) {
     return NextResponse.json({ ok: false, error: 'error llamando a la IA', detail: e instanceof Error ? e.message : '' }, { status: 502 })
   }

@@ -125,7 +125,7 @@ function NuevaEntrevista({ hdr, base, roles, onCreated, onClose }: { hdr: Record
   const [qs, setQs] = useState<QEdit[]>([])
   const [perfil, setPerfil] = useState(''); const [duda, setDuda] = useState('')
   const [cvBusy, setCvBusy] = useState(false); const [cvMsg, setCvMsg] = useState('')
-  const [busy, setBusy] = useState(false); const [link, setLink] = useState<string | null>(null); const [nm, setNm] = useState(''); const [msg, setMsg] = useState('')
+  const [busy, setBusy] = useState(false); const [link, setLink] = useState<string | null>(null); const [nm, setNm] = useState(''); const [waNum, setWaNum] = useState(''); const [msg, setMsg] = useState('')
 
   // Carga pdf.js una vez (para leer el texto del CV en el navegador).
   useEffect(() => {
@@ -160,10 +160,14 @@ function NuevaEntrevista({ hdr, base, roles, onCreated, onClose }: { hdr: Record
       const r = await fetch('/api/rh/generar', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ name, cvText, roleKey }) })
       const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error generando')
       setPerfil(j.perfil || ''); setDuda(j.duda || '')
+      // Autollena nombre/teléfono detectados en el CV si están vacíos.
+      if (j.nombre && !name.trim()) setName(j.nombre)
+      if (j.telefono && !phone.trim()) setPhone(j.telefono)
       const ai: QEdit[] = (j.questions as { text: string; rubric: Record<string, string> }[]).map((q) => ({ text: q.text, r1: q.rubric['1'] || '', r2: q.rubric['2'] || '', r3: q.rubric['3'] || '' }))
       // La IA arma la entrevista completa (decide cuántas): reemplaza todas.
       setQs(ai)
-      setCvMsg(`✓ ${ai.length} preguntas generadas. Revísalas y cámbialas si quieres antes de crear.`)
+      const detectado = [j.nombre && 'nombre', j.telefono && 'teléfono'].filter(Boolean).join(' y ')
+      setCvMsg(`✓ ${ai.length} preguntas generadas${detectado ? ` · detecté ${detectado} del CV` : ''}. Revisa y ajusta antes de crear.`)
     } catch (e) { setCvMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')) } finally { setCvBusy(false) }
   }
 
@@ -174,6 +178,7 @@ function NuevaEntrevista({ hdr, base, roles, onCreated, onClose }: { hdr: Record
       const questions = qs.filter((q) => q.text.trim()).map((q) => ({ text: q.text.trim(), rubric: { '1': q.r1.trim(), '2': q.r2.trim(), '3': q.r3.trim() } }))
       const r = await fetch('/api/rh/invites', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ name, phone, roleKey, questions }) })
       const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error')
+      const d = phone.replace(/\D/g, ''); setWaNum(d.length === 10 ? '52' + d : d)
       setLink(`${window.location.origin}/entrevista/${j.token}`); setNm(name)
       setName(''); setPhone(''); setQs([]); setPerfil(''); setDuda(''); setCvMsg(''); onCreated()
     } catch (e) { setMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')) } finally { setBusy(false) }
@@ -243,7 +248,7 @@ function NuevaEntrevista({ hdr, base, roles, onCreated, onClose }: { hdr: Record
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button onClick={() => { navigator.clipboard?.writeText(link) }} style={btn}>Copiar link</button>
             <button onClick={() => { navigator.clipboard?.writeText(waMsg) }} style={btn}>Copiar mensaje de WhatsApp</button>
-            <a href={`https://wa.me/${(phone || '').replace(/[^\d]/g, '')}?text=${encodeURIComponent(waMsg)}`} target="_blank" rel="noreferrer" style={{ ...btn, background: LIME, textDecoration: 'none' }}>Abrir WhatsApp</a>
+            {waNum && <a href={`https://wa.me/${waNum}?text=${encodeURIComponent(waMsg)}`} target="_blank" rel="noreferrer" style={{ ...btn, background: LIME, textDecoration: 'none' }}>Abrir WhatsApp con {nm.split(/\s+/)[0]}</a>}
           </div>
         </div>
       )}
