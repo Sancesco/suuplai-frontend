@@ -4,9 +4,11 @@ import { checkRh } from '@/lib/interview'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-// Genera 3 preguntas personalizadas (indirectas) a partir del texto del CV, con Gemini.
-// Requiere GEMINI_API_KEY (capa gratuita de Google AI Studio). No guarda el CV.
-const MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
+// Genera 3 preguntas personalizadas (indirectas) a partir del texto del CV.
+// Usa Groq (gratis, Llama 3.3 70B) si hay GROQ_API_KEY; si no, Gemini con GEMINI_API_KEY.
+// No guarda el CV.
+const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
 
 const GUIA = `Eres reclutador de Suuplai. El puesto es de CAMPO Y OPERACIÓN: ventas y visitas a tiendas, trabajo de calle, pago por día.
 Vas a escribir 3 preguntas de entrevista PERSONALIZADAS para este candidato, en español de México.
@@ -20,34 +22,51 @@ Reglas MUY importantes:
 Responde SOLO un JSON válido con esta forma exacta:
 {"perfil":"una línea con el perfil","duda":"una línea con la duda principal a resolver","questions":[{"text":"...","rubric":{"1":"...","2":"...","3":"..."}},{"text":"...","rubric":{"1":"...","2":"...","3":"..."}},{"text":"...","rubric":{"1":"...","2":"...","3":"..."}}]}`
 
+// Llama a Groq (OpenAI-compatible) y devuelve el texto JSON crudo.
+async function callGroq(key: string, prompt: string): Promise<string> {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+    body: JSON.stringify({
+      model: GROQ_MODEL,
+      messages: [{ role: 'system', content: GUIA }, { role: 'user', content: prompt }],
+      temperature: 0.7,
+      response_format: { type: 'json_object' },
+    }),
+  })
+  if (!res.ok) throw new Error(`Groq ${res.status}: ${(await res.text()).slice(0, 200)}`)
+  const data = await res.json()
+  return data?.choices?.[0]?.message?.content ?? ''
+}
+
+// Llama a Gemini y devuelve el texto JSON crudo.
+async function callGemini(key: string, prompt: string): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts: [{ text: `${GUIA}\n\n${prompt}` }] }], generationConfig: { temperature: 0.7, responseMimeType: 'application/json' } }),
+  })
+  if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 200)}`)
+  const data = await res.json()
+  return data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+}
+
 export async function POST(req: Request) {
   if (!checkRh(req)) return NextResponse.json({ ok: false, error: 'no autorizado' }, { status: 401 })
-  const key = process.env.GEMINI_API_KEY
-  if (!key) return NextResponse.json({ ok: false, error: 'falta GEMINI_API_KEY en el servidor' }, { status: 400 })
+  const groqKey = process.env.GROQ_API_KEY
+  const geminiKey = process.env.GEMINI_API_KEY
+  if (!groqKey && !geminiKey) return NextResponse.json({ ok: false, error: 'falta GROQ_API_KEY (o GEMINI_API_KEY) en el servidor' }, { status: 400 })
 
   const body = await req.json().catch(() => null)
   const name = String(body?.name ?? '').trim()
   const cvText = String(body?.cvText ?? '').trim().slice(0, 12000)
   if (!cvText) return NextResponse.json({ ok: false, error: 'no se pudo leer el CV (¿es una imagen escaneada sin texto?)' }, { status: 400 })
 
-  const prompt = `${GUIA}\n\nNombre: ${name || '(sin nombre)'}\n\nTexto del CV:\n"""${cvText}"""`
+  const prompt = `Nombre: ${name || '(sin nombre)'}\n\nTexto del CV:\n"""${cvText}"""`
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${key}`
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.7, responseMimeType: 'application/json' },
-      }),
-    })
-    if (!res.ok) {
-      const t = await res.text()
-      return NextResponse.json({ ok: false, error: `Gemini respondió ${res.status}`, detail: t.slice(0, 300) }, { status: 502 })
-    }
-    const data = await res.json()
-    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+    const raw = groqKey ? await callGroq(groqKey, prompt) : await callGemini(geminiKey as string, prompt)
     let parsed: unknown
     try { parsed = JSON.parse(raw) } catch { parsed = JSON.parse(raw.replace(/^```json\s*|\s*```$/g, '')) }
     const p = parsed as { perfil?: string; duda?: string; questions?: { text?: string; rubric?: Record<string, string> }[] }
@@ -62,6 +81,6 @@ export async function POST(req: Request) {
     if (!questions.length) return NextResponse.json({ ok: false, error: 'la IA no devolvió preguntas' }, { status: 502 })
     return NextResponse.json({ ok: true, perfil: String(p.perfil ?? '').trim(), duda: String(p.duda ?? '').trim(), questions })
   } catch (e) {
-    return NextResponse.json({ ok: false, error: 'error llamando a Gemini', detail: e instanceof Error ? e.message : '' }, { status: 500 })
+    return NextResponse.json({ ok: false, error: 'error llamando a la IA', detail: e instanceof Error ? e.message : '' }, { status: 502 })
   }
 }
