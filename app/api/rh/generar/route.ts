@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 // Genera 3 preguntas personalizadas (indirectas) a partir del texto del CV.
 // Usa Groq (gratis, Llama 3.3 70B) si hay GROQ_API_KEY; si no, Gemini con GEMINI_API_KEY.
 // No guarda el CV.
-const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile'
+const GROQ_MODEL = process.env.GROQ_MODEL || 'qwen/qwen3.8-27b'
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
 
 const GUIA = `Eres reclutador de Suuplai. El puesto es de CAMPO Y OPERACIÓN: ventas y visitas a tiendas, trabajo de calle, pago por día.
@@ -20,7 +20,7 @@ Reglas MUY importantes:
 - Cada pregunta pide contar una anécdota concreta ("cuéntame de una vez que...").
 - Cada pregunta trae una rúbrica de 3 niveles (1 flojo, 2 aceptable, 3 muy bien), cortita.
 Responde SOLO un JSON válido con esta forma exacta:
-{"perfil":"una línea con el perfil","duda":"una línea con la duda principal a resolver","questions":[{"text":"...","rubric":{"1":"...","2":"...","3":"..."}},{"text":"...","rubric":{"1":"...","2":"...","3":"..."}},{"text":"...","rubric":{"1":"...","2":"...","3":"..."}}]}`
+{"perfil":"una línea que resuma su experiencia relevante, no solo el nombre","duda":"una línea con la duda principal a resolver para el puesto de calle","questions":[{"text":"...","rubric":{"1":"...","2":"...","3":"..."}},{"text":"...","rubric":{"1":"...","2":"...","3":"..."}},{"text":"...","rubric":{"1":"...","2":"...","3":"..."}}]}`
 
 // Llama a Groq (OpenAI-compatible) y devuelve el texto JSON crudo.
 async function callGroq(key: string, prompt: string): Promise<string> {
