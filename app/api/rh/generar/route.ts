@@ -12,7 +12,6 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash'
 
 function guiaFor(role: Role): string {
   const dims = role.dimensions.map((d) => `- ${d.label}: ${d.desc}`).join('\n')
-  const fijas = role.fixed_questions.map((q) => `- ${q.text}`).join('\n')
   return `Eres reclutador de Suuplai contratando para el rol "${role.name}".
 
 CONTEXTO DEL PUESTO:
@@ -21,20 +20,20 @@ ${role.context}
 OBJETIVO DE LA ENTREVISTA:
 ${role.objetivo}
 
-DIMENSIONES QUE QUEREMOS PODER MEDIR (con el conjunto de la entrevista):
+DIMENSIONES QUE LA ENTREVISTA DEBE PODER MEDIR (en conjunto):
 ${dims}
 
-Estas preguntas FIJAS ya cubren constancia, trato y observación; NO las repitas:
-${fijas}
-
-TU TAREA: escribe 3 preguntas PERSONALIZADAS para ESTE candidato (según su CV), en español de México, que cubran sobre todo: aguante ante un "no", iniciativa y su motor, más un guiño a su experiencia.
+TU TAREA: arma la entrevista COMPLETA para ESTE candidato, en español de México, a partir de su CV.
+- TÚ DECIDES cuántas preguntas necesitas: entre 3 y 10, las que hagan falta para cubrir bien las dimensiones según este perfil. Un CV con más que mostrar puede llevar más preguntas; uno sencillo, menos.
+- Las preguntas juntas deben cubrir las 8 dimensiones (constancia, trato, resolver, aguante, observación, iniciativa, motor y encaje). No repitas dimensión sin razón.
+- Están tailoreadas al CV: haz un guiño neutral a su experiencia real.
 Reglas:
 - INDIRECTAS: no delates qué mides; NO menciones "tiendas", "calle" ni "ventas" de forma obvia.
 - Cada pregunta debe DARLE LA OPORTUNIDAD DE LUCIRSE (buscamos fortalezas, no descartar). Nada que invite a autodescartarse.
 - Pide una anécdota concreta ("cuéntame de una vez que...").
 - Rúbrica de 3 niveles cortita (1 flojo, 2 aceptable, 3 muy bien).
-Responde SOLO un JSON válido:
-{"perfil":"una línea que resuma su experiencia y posible superpoder, no solo el nombre","duda":"una línea con la duda principal a resolver","questions":[{"text":"...","rubric":{"1":"...","2":"...","3":"..."}},{"text":"...","rubric":{"1":"...","2":"...","3":"..."}},{"text":"...","rubric":{"1":"...","2":"...","3":"..."}}]}`
+Responde SOLO un JSON válido (la lista "questions" con la cantidad que TÚ decidas, entre 3 y 10):
+{"perfil":"una línea que resuma su experiencia y posible superpoder, no solo el nombre","duda":"una línea con la duda principal a resolver","questions":[{"text":"...","rubric":{"1":"...","2":"...","3":"..."}}]}`
 }
 
 // Llama a Groq (OpenAI-compatible) y devuelve el texto JSON crudo.
@@ -87,7 +86,7 @@ export async function POST(req: Request) {
     let parsed: unknown
     try { parsed = JSON.parse(raw) } catch { parsed = JSON.parse(raw.replace(/^```json\s*|\s*```$/g, '')) }
     const p = parsed as { perfil?: string; duda?: string; questions?: { text?: string; rubric?: Record<string, string> }[] }
-    const questions = (p.questions ?? []).slice(0, 3).map((q) => ({
+    const questions = (p.questions ?? []).slice(0, 10).map((q) => ({
       text: String(q?.text ?? '').trim(),
       rubric: {
         '1': String(q?.rubric?.['1'] ?? '').trim() || 'Flojo o no responde',

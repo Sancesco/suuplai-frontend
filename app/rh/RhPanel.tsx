@@ -33,6 +33,7 @@ export function RhPanel() {
   const [rows, setRows] = useState<Row[] | null>(null)
   const [sort, setSort] = useState<'fecha' | 'puntaje'>('fecha')
   const [openId, setOpenId] = useState<string | null>(null)
+  const [showNew, setShowNew] = useState(false)
   const hdr = { 'x-admin-password': pw }
 
   const load = useCallback(async () => {
@@ -81,10 +82,11 @@ export function RhPanel() {
 
         {authed && (
           <>
-            <NuevaEntrevista hdr={hdr} base={base} roles={roles} onCreated={load} />
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '22px 0 10px' }}>
-              <h2 style={{ fontFamily: SYNE, fontWeight: 800, fontSize: 20, margin: 0 }}>Candidatos {rows ? `(${rows.length})` : ''}</h2>
+            {showNew && <NuevaEntrevista hdr={hdr} base={base} roles={roles} onCreated={load} onClose={() => setShowNew(false)} />}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '22px 0 10px', flexWrap: 'wrap' }}>
+              <h2 style={{ fontFamily: SYNE, fontWeight: 800, fontSize: 20, margin: 0 }}>Entrevistas {rows ? `(${rows.length})` : ''}</h2>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+                <button onClick={() => setShowNew((v) => !v)} style={{ ...btn, background: LIME }}>{showNew ? '✕ Cerrar' : '+ Nueva entrevista'}</button>
                 <button onClick={downloadAll} disabled={dlAll} style={{ ...btn, background: INK, color: LIME, opacity: dlAll ? 0.5 : 1 }}>{dlAll ? 'Preparando…' : '⬇ Descargar completados'}</button>
                 <Seg on={sort === 'fecha'} onClick={() => setSort('fecha')}>Por fecha</Seg>
                 <Seg on={sort === 'puntaje'} onClick={() => setSort('puntaje')}>Por puntaje</Seg>
@@ -117,7 +119,7 @@ export function RhPanel() {
   )
 }
 
-function NuevaEntrevista({ hdr, base, roles, onCreated }: { hdr: Record<string, string>; base: Base | null; roles: { key: string; name: string }[]; onCreated: () => void }) {
+function NuevaEntrevista({ hdr, base, roles, onCreated, onClose }: { hdr: Record<string, string>; base: Base | null; roles: { key: string; name: string }[]; onCreated: () => void; onClose: () => void }) {
   const [name, setName] = useState(''); const [phone, setPhone] = useState('')
   const [roleKey, setRoleKey] = useState('')
   const [qs, setQs] = useState<QEdit[]>([])
@@ -167,9 +169,9 @@ function NuevaEntrevista({ hdr, base, roles, onCreated }: { hdr: Record<string, 
       const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error generando')
       setPerfil(j.perfil || ''); setDuda(j.duda || '')
       const ai: QEdit[] = (j.questions as { text: string; rubric: Record<string, string> }[]).map((q) => ({ text: q.text, r1: q.rubric['1'] || '', r2: q.rubric['2'] || '', r3: q.rubric['3'] || '' }))
-      // Conserva las fijas, reemplaza las personalizadas con las de la IA.
-      setQs((prev) => { const fixed = prev.filter((q) => q.fixed); return [...fixed, ...ai] })
-      setCvMsg('✓ Preguntas generadas. Revísalas y cámbialas si quieres antes de crear.')
+      // La IA arma la entrevista completa (decide cuántas): reemplaza todas.
+      setQs(ai)
+      setCvMsg(`✓ ${ai.length} preguntas generadas. Revísalas y cámbialas si quieres antes de crear.`)
     } catch (e) { setCvMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')) } finally { setCvBusy(false) }
   }
 
@@ -189,7 +191,10 @@ function NuevaEntrevista({ hdr, base, roles, onCreated }: { hdr: Record<string, 
 
   return (
     <div style={{ background: BONE, border: `2px solid ${INK}`, borderRadius: 16, padding: 18 }}>
-      <h3 style={{ fontFamily: SYNE, fontWeight: 800, fontSize: 18, margin: '0 0 14px' }}>Nueva entrevista a la medida</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+        <h3 style={{ fontFamily: SYNE, fontWeight: 800, fontSize: 18, margin: 0 }}>Nueva entrevista a la medida</h3>
+        <button onClick={onClose} style={{ border: 0, background: 'transparent', cursor: 'pointer', fontSize: 18, color: SOFT }}>✕</button>
+      </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>
         <Fld label="Rol">
           <select value={roleKey} onChange={(e) => setRoleKey(e.target.value)} style={{ ...inp, cursor: 'pointer' }}>
