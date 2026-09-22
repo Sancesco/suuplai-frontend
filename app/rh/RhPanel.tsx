@@ -301,6 +301,7 @@ function CandidateDetail({ id, hdr, onChange }: { id: string; hdr: Record<string
         const j = await r.json()
         if (!r.ok || !j.ok) { const e = new Error(j.error || 'Error') as Error & { sat?: boolean }; e.sat = /satur|límite|429|limit|rate/i.test(String(j.error) + String(j.detail || '')); throw e }
         apply(j)
+        if (j.saved !== false) onChange() // refresca la fila/lista con la nueva calificación
         setMsg(j.saved === false ? '⚠ Se generó pero NO se guardó: falta correr el SQL de columnas (analysis). Se ve ahora pero no persiste.' : '')
         setBusy(false); return
       } catch (e) {
