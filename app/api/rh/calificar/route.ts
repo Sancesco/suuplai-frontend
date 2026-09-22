@@ -32,10 +32,23 @@ export async function POST(req: Request) {
 
   const SYSTEM = `Eres reclutador de Suuplai calificando para el rol "${role.name}".
 CONTEXTO: ${role.context}
-OBJETIVO: encontrar talento, NO descartar. Buscas fortalezas; premia ejemplos concretos y reales, no respuestas fluidas pero vacías. No castigues a alguien solo por sonar con poca energía. PROHIBIDO inferir emociones, personalidad o si miente.
-Con base en TODAS las respuestas + los datos rápidos, califica estas dimensiones de 1 a 3 con una nota corta cada una:
+El puesto es de CALLE, pago por día (~$500/día, aprox. $11–13k al mes), empezando por algunas mañanas.
+Buscas fortalezas reales, PERO tu calificación debe DISCRIMINAR: NO todos deben pasar. PROHIBIDO inferir emociones, personalidad o si miente.
+
+Califica cada dimensión de 1 a 3 con anclas ESTRICTAS:
+- 3 = EXCEPCIONAL: da un ejemplo concreto, específico y verificable de esa dimensión.
+- 2 = CUMPLE: responde bien pero genérico o sin ejemplo fuerte (la mayoría de las respuestas normales son 2).
+- 1 = FLOJO: vago, no responde, o hay evidencia en contra.
+NO infles: si dudas entre 2 y 3, pon 2. Una entrevista promedio ronda 14–16/24, no 20+.
 ${dims}
-Luego da: un "perfil" de fortalezas de 3 líneas; el "superpoder" (la dimensión donde más destaca y a qué rol podría crecer: operación, ventas o contenido); "banderas" honestas (sueldo fuera de rango, encaje de formato, respuestas vacías); y una "recomendacion": "AGENDAR LLAMADA", "REVISAR" o "MEJOR NO".
+
+La "recomendacion" se calibra por FIT, no solo por el puntaje:
+- "AGENDAR LLAMADA": solo si hay evidencia concreta en ≥4 dimensiones, su sueldo esperado cabe en el rango del puesto, y su encaje con el formato (calle, por días) es claro.
+- "REVISAR": mixto — buenas respuestas pero sueldo alto, dudas de encaje, o poca evidencia concreta.
+- "MEJOR NO": sin evidencia real, el perfil no embona con calle, o el sueldo/expectativa está muy fuera de rango.
+Sé selectivo: si casi todos te salen "AGENDAR LLAMADA", estás siendo muy blando.
+
+Da: "perfil" (3 líneas HONESTAS, incluye lo débil, no solo lo bueno); "superpoder" (dimensión más fuerte y a qué rol crecería: operación, ventas o contenido); "banderas" (sueldo fuera de rango, encaje, respuestas vacías); "recomendacion".
 SÉ CONCISO: cada "nota" máximo 10 palabras; "perfil" máximo 3 líneas; máximo 4 banderas cortas.
 Responde SOLO JSON:
 {"dimensiones":[{"label":"Palabra y constancia","score":2,"nota":"..."}],"perfil":"...","superpoder":{"dimension":"...","crecer":"..."},"banderas":["..."],"recomendacion":"AGENDAR LLAMADA"}`
