@@ -36,6 +36,7 @@ OBJETIVO: encontrar talento, NO descartar. Buscas fortalezas; premia ejemplos co
 Con base en TODAS las respuestas + los datos rápidos, califica estas dimensiones de 1 a 3 con una nota corta cada una:
 ${dims}
 Luego da: un "perfil" de fortalezas de 3 líneas; el "superpoder" (la dimensión donde más destaca y a qué rol podría crecer: operación, ventas o contenido); "banderas" honestas (sueldo fuera de rango, encaje de formato, respuestas vacías); y una "recomendacion": "AGENDAR LLAMADA", "REVISAR" o "MEJOR NO".
+SÉ CONCISO: cada "nota" máximo 10 palabras; "perfil" máximo 3 líneas; máximo 4 banderas cortas.
 Responde SOLO JSON:
 {"dimensiones":[{"label":"Palabra y constancia","score":2,"nota":"..."}],"perfil":"...","superpoder":{"dimension":"...","crecer":"..."},"banderas":["..."],"recomendacion":"AGENDAR LLAMADA"}`
 

@@ -287,23 +287,26 @@ function CandidateDetail({ id, hdr, onChange }: { id: string; hdr: Record<string
   const [analyzing, setAnalyzing] = useState(false); const [anMsg, setAnMsg] = useState('')
   const load = useCallback(async () => { const r = await fetch(`/api/rh/invites/${id}`, { headers: hdr }); const j = await r.json(); if (j.ok) setD(j as Detail) }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { load() }, [load])
-  const analyze = async () => {
-    setAnalyzing(true); setAnMsg('')
-    try {
-      const r = await fetch('/api/rh/analizar', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ inviteId: id }) })
-      const j = await r.json(); if (!r.ok || !j.ok) throw new Error((j.error || 'Error') + (j.detail ? ` (${j.detail})` : ''))
-      await load()
-    } catch (e) { setAnMsg(e instanceof Error ? e.message : 'Error') } finally { setAnalyzing(false) }
+  // Corre una acción de IA con cola: si se satura, reintenta cada 60s (hasta 4).
+  const runCola = async (endpoint: string, setBusy: (b: boolean) => void, setMsg: (m: string) => void) => {
+    setBusy(true); setMsg('')
+    for (let intento = 1; intento <= 4; intento++) {
+      try {
+        const r = await fetch(endpoint, { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ inviteId: id }) })
+        const j = await r.json()
+        if (!r.ok || !j.ok) { const e = new Error(j.error || 'Error') as Error & { sat?: boolean }; e.sat = /satur|límite|429|limit|rate/i.test(String(j.error) + String(j.detail || '')); throw e }
+        await load(); setBusy(false); return
+      } catch (e) {
+        const sat = e instanceof Error && (e as { sat?: boolean }).sat
+        if (sat && intento < 4) { for (let s = 60; s > 0; s--) { setMsg(`⏳ En cola, reintento en ${s}s… (${intento}/3)`); await new Promise((res) => setTimeout(res, 1000)) } continue }
+        setMsg((e instanceof Error ? e.message : 'Error') + (sat ? ' — sigue saturada.' : '')); setBusy(false); return
+      }
+    }
+    setBusy(false)
   }
+  const analyze = () => runCola('/api/rh/analizar', setAnalyzing, setAnMsg)
   const [calificando, setCalificando] = useState(false); const [calMsg, setCalMsg] = useState('')
-  const calificar = async () => {
-    setCalificando(true); setCalMsg('')
-    try {
-      const r = await fetch('/api/rh/calificar', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ inviteId: id }) })
-      const j = await r.json(); if (!r.ok || !j.ok) throw new Error((j.error || 'Error') + (j.detail ? ` (${j.detail})` : ''))
-      await load()
-    } catch (e) { setCalMsg(e instanceof Error ? e.message : 'Error') } finally { setCalificando(false) }
-  }
+  const calificar = () => runCola('/api/rh/calificar', setCalificando, setCalMsg)
   const saveScore = async (order: number, patch: { score?: number; note?: string }) => {
     await fetch('/api/rh/score', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ inviteId: id, order, ...patch }) })
     load(); onChange()

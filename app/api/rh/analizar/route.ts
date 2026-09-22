@@ -14,6 +14,7 @@ Para CADA pregunta contestada evalúa:
 A nivel candidato:
 - "contradicciones": entre respuestas o contra los datos rápidos. Cita las FRASES EXACTAS ("cita1","cita2") y una "nota" corta. Si no hay, arreglo vacío.
 - "frasesAbsolutas": frases absolutas o que suenan ensayadas ("siempre","nunca","absolutamente","yo siempre cumplo"). Cita la frase exacta ("cita") y el número de "order". Si no hay, arreglo vacío.
+SÉ MUY CONCISO: cada "porque" máximo 10 palabras; máximo 3 contradicciones y 4 frases absolutas.
 Responde SOLO JSON:
 {"porPregunta":[{"order":1,"concrecion":2,"contesto":"Sí","porque":"..."}],"contradicciones":[{"cita1":"...","cita2":"...","nota":"..."}],"frasesAbsolutas":[{"cita":"...","order":1}]}`
 
