@@ -13,7 +13,10 @@ const LBL: Record<string, { t: string; bg: string; c: string }> = {
   discard: { t: 'Descartar', bg: PAPER, c: SOFT },
 }
 
-interface Row { id: string; name: string; phone: string | null; status: string; invited_at: string; completed_at: string | null; interview: string; answered: number; scored: number; total: number; maxTotal: number; label: string | null; knockout: string[]; stale: boolean }
+interface Row { id: string; name: string; phone: string | null; status: string; invited_at: string; completed_at: string | null; interview: string; answered: number; scored: number; total: number; maxTotal: number; label: string | null; aiTotal: number | null; aiMax: number | null; aiRec: string | null; knockout: string[]; stale: boolean }
+function recBadge(rec: string): { t: string; bg: string; c: string } {
+  return /LLAMADA/i.test(rec) ? { t: 'Agendar llamada', bg: '#D9F2E4', c: OK } : /REVISAR/i.test(rec) ? { t: 'Revisar', bg: '#FFE6DA', c: '#B4451A' } : { t: 'Mejor no', bg: PAPER, c: SOFT }
+}
 interface BaseQ { order: number; text: string; rubric: Record<string, string> }
 interface Base { quick_fields: { label: string }[]; questions: BaseQ[] }
 interface QEdit { text: string; r1: string; r2: string; r3: string; fixed?: boolean }
@@ -22,7 +25,8 @@ type PdfDoc = { numPages: number; getPage: (n: number) => Promise<PdfPage> }
 type PdfPage = { getTextContent: () => Promise<{ items: { str?: string }[] }> }
 const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
 const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
-interface SMetrics { durationSec: number; pctMax: number | null; words: number; wpm: number; fillersPerMin: number; fillersTotal: number; fillerCounts: Record<string, number>; initialPauseSec: number; longPauses: number }
+interface Acoustic { energy0100: number; energyVar0100: number; energyThirds: number[]; noise0100: number; noisy: boolean; onsetSec: number; pitchSemitoneRange: number }
+interface SMetrics { durationSec: number; pctMax: number | null; words: number; wpm: number; wpmThirds?: number[]; fillersPerMin: number; fillersTotal: number; fillerCounts: Record<string, number>; initialPauseSec: number; longPauses: number; acoustic?: Acoustic | null }
 interface QDetail { order: number; text: string; rubric: Record<string, string>; audioUrl: string | null; duration: number | null; transcript: string | null; metrics: SMetrics | null; retakes: number; score: number | null; note: string }
 interface Calificacion { dimensiones?: { label: string; score: number; nota: string }[]; perfil?: string; superpoder?: { dimension: string; crecer: string }; banderas?: string[]; recomendacion?: string }
 interface Analysis { porPregunta?: { order: number; concrecion: number; contesto: string; porque: string }[]; contradicciones?: { cita1: string; cita2: string; nota: string }[]; frasesAbsolutas?: { cita: string; order: number }[]; calificacion?: Calificacion }
@@ -48,7 +52,7 @@ export function RhPanel() {
     } catch (e) { setErr(e instanceof Error ? e.message : 'Error'); setAuthed(false) }
   }, [pw]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const sorted = (rows ?? []).slice().sort((a, b) => sort === 'puntaje' ? (b.total - a.total) : (new Date(b.invited_at).getTime() - new Date(a.invited_at).getTime()))
+  const sorted = (rows ?? []).slice().sort((a, b) => sort === 'puntaje' ? ((b.aiTotal ?? b.total) - (a.aiTotal ?? a.total)) : (new Date(b.invited_at).getTime() - new Date(a.invited_at).getTime()))
 
   const [dlAll, setDlAll] = useState(false)
   const downloadAll = async () => {
@@ -106,8 +110,8 @@ export function RhPanel() {
                         <span style={{ fontSize: 13, color: SOFT }}>{ST_LABEL[r.status]} · {r.answered}/{Math.max(1, Math.round(r.maxTotal / 3))} respuestas · {r.interview} · {fmtDate(r.invited_at)}</span>
                       </div>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                        {r.label && <Badge {...LBL[r.label]} />}
-                        <span style={{ fontFamily: MONO, fontSize: 14, minWidth: 44, textAlign: 'right' }}>{r.scored > 0 ? `${r.total}/${r.maxTotal}` : '—'}</span>
+                        {r.aiRec ? <Badge {...recBadge(r.aiRec)} /> : r.label && <Badge {...LBL[r.label]} />}
+                        <span style={{ fontFamily: MONO, fontSize: 14, minWidth: 44, textAlign: 'right' }}>{r.aiRec ? `${r.aiTotal}/${r.aiMax}` : r.scored > 0 ? `${r.total}/${r.maxTotal}` : '—'}</span>
                       </div>
                     </button>
                     {openId === r.id && <CandidateDetail id={r.id} hdr={hdr} onChange={load} />}
@@ -333,10 +337,25 @@ function CandidateDetail({ id, hdr, onChange }: { id: string; hdr: Record<string
             ))}
           </div>
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontFamily: SYNE, fontWeight: 800, fontSize: 30, lineHeight: 1 }}>{d.total}<span style={{ color: SOFT, fontSize: 18 }}>/{d.maxTotal}</span></div>
-          {d.label ? <div style={{ marginTop: 8 }}><Badge {...LBL[d.label]} /></div> : <div style={{ marginTop: 8, fontSize: 12, color: SOFT, fontFamily: MONO }}>Falta calificar</div>}
-        </div>
+        {(() => {
+          const cal = d.analysis?.calificacion; const aiDims = cal?.dimensiones || []
+          if (aiDims.length) {
+            const aiTotal = aiDims.reduce((a, x) => a + (x.score || 0), 0)
+            return (
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontFamily: SYNE, fontWeight: 800, fontSize: 30, lineHeight: 1 }}>{aiTotal}<span style={{ color: SOFT, fontSize: 18 }}>/{aiDims.length * 3}</span></div>
+                {cal!.recomendacion && <div style={{ marginTop: 8 }}><Badge {...recBadge(cal!.recomendacion)} /></div>}
+                <div style={{ marginTop: 4, fontSize: 10, color: SOFT, fontFamily: MONO }}>según la IA</div>
+              </div>
+            )
+          }
+          return (
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontFamily: SYNE, fontWeight: 800, fontSize: 30, lineHeight: 1 }}>{d.total}<span style={{ color: SOFT, fontSize: 18 }}>/{d.maxTotal}</span></div>
+              {d.label ? <div style={{ marginTop: 8 }}><Badge {...LBL[d.label]} /></div> : <div style={{ marginTop: 8, fontSize: 12, color: SOFT, fontFamily: MONO }}>Falta calificar</div>}
+            </div>
+          )
+        })()}
       </div>
 
       {/* calificación IA */}
@@ -361,6 +380,11 @@ function CandidateDetail({ id, hdr, onChange }: { id: string; hdr: Record<string
               {ap && <Chip>concreción {ap.concrecion}/3</Chip>}
               {ap && <Chip warn={ap.contesto !== 'Sí'}>contestó: {ap.contesto}</Chip>}
             </div>
+          )}
+          {q.metrics?.acoustic && (
+            <p style={{ fontSize: 12, color: q.metrics.acoustic.noisy ? '#B4451A' : SOFT, margin: '0 0 8px', fontFamily: MONO }}>
+              🔊 {acousticLine(q.metrics.acoustic)}{q.metrics.acoustic.noisy ? ' · Audio con ruido: métricas poco confiables' : ''}
+            </p>
           )}
           {ap && ap.contesto !== 'Sí' && ap.porque && <p style={{ fontSize: 12, color: '#B4451A', margin: '0 0 8px' }}>↳ {ap.porque}</p>}
           {q.transcript && <p style={{ fontSize: 13, lineHeight: 1.5, color: INK, background: PAPER, borderRadius: 10, padding: '10px 12px', margin: '0 0 10px', whiteSpace: 'pre-wrap' }}><span style={{ fontFamily: MONO, fontSize: 10, color: SOFT, textTransform: 'uppercase', letterSpacing: '.08em', display: 'block', marginBottom: 4 }}>Transcripción</span>{highlightPhrases(q.transcript, absol)}</p>}
@@ -410,6 +434,15 @@ function highlightPhrases(text: string, phrases: string[]): React.ReactNode {
     : <span key={i}>{part}</span>)
 }
 
+// Descripción del SONIDO (no emociones ni estados de ánimo), a partir de números.
+function acousticLine(a: Acoustic): string {
+  const energy = a.energy0100 > 60 ? 'Energía alta' : a.energy0100 > 30 ? 'Energía media' : 'Energía baja'
+  const tono = a.pitchSemitoneRange > 7 ? 'tono muy variado' : a.pitchSemitoneRange > 3 ? 'tono variado' : 'tono plano'
+  const [t1, , t3] = a.energyThirds || [0, 0, 0]
+  const ritmo = t3 > t1 * 1.15 ? 'sube al final' : t3 < t1 * 0.85 ? 'se apaga al final' : 'se mantiene'
+  const arranque = a.onsetSec < 1 ? 'arranque rápido' : a.onsetSec < 2.5 ? 'arranque normal' : 'arranque lento'
+  return `${energy} · ${tono} · ${ritmo} · ${arranque}`
+}
 function fmtDur(ms: number | null): string { if (ms == null || ms < 0) return '—'; const m = Math.floor(ms / 60000), s = Math.round((ms % 60000) / 1000); return m ? `${m}m ${s}s` : `${s}s` }
 function avgOf(xs: (number | null | undefined)[]): number | null { const v = xs.filter((x): x is number => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null }
 
@@ -459,6 +492,7 @@ function Senales({ d, analyzing, onAnalyze, anMsg }: { d: Detail; analyzing: boo
   const complMs = d.invite.completed_at && d.invite.first_opened_at ? new Date(d.invite.completed_at).getTime() - new Date(d.invite.first_opened_at).getTime() : null
   const contras = d.analysis?.contradicciones || []
   const absol = d.analysis?.frasesAbsolutas || []
+  const energySeries = d.questions.filter((q) => q.metrics?.acoustic).map((q) => ({ order: q.order, e: q.metrics!.acoustic!.energy0100, noisy: q.metrics!.acoustic!.noisy }))
   const tile = (label: string, value: string) => (
     <div style={{ background: BONE, border: `1px solid ${LINE}`, borderRadius: 10, padding: '8px 10px', minWidth: 92 }}>
       <div style={{ fontFamily: MONO, fontSize: 9.5, color: SOFT, textTransform: 'uppercase', letterSpacing: '.06em' }}>{label}</div>
@@ -482,6 +516,20 @@ function Senales({ d, analyzing, onAnalyze, anMsg }: { d: Detail; analyzing: boo
         {d.invite.reminded_at && d.invite.completed_at && `; completó ${new Date(d.invite.completed_at) < new Date(d.invite.reminded_at) ? 'antes' : 'después'} del recordatorio`}.
       </p>
       {anMsg && <p style={{ fontSize: 12, color: '#B4451A', margin: '0 0 8px' }}>⚠ {anMsg}</p>}
+      {energySeries.length > 1 && (
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: SOFT, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 4 }}>Energía por pregunta (¿sube, se mantiene o se apaga?)</div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 44 }}>
+            {energySeries.map((s) => (
+              <div key={s.order} title={`P${s.order}: ${s.e}/100${s.noisy ? ' (con ruido)' : ''}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', gap: 2 }}>
+                <div style={{ width: '100%', maxWidth: 26, height: `${Math.max(4, s.e)}%`, background: s.noisy ? '#E0A99A' : INK, borderRadius: '3px 3px 0 0' }} />
+                <span style={{ fontFamily: MONO, fontSize: 9, color: SOFT }}>{s.order}</span>
+              </div>
+            ))}
+          </div>
+          <p style={{ fontSize: 11, color: SOFT, fontStyle: 'italic', margin: '6px 0 0' }}>El sonido depende del micrófono y del lugar. Escucha el audio antes de sacar conclusiones.</p>
+        </div>
+      )}
       {contras.length > 0 && (
         <div style={{ marginBottom: 6 }}>
           <div style={{ fontFamily: MONO, fontSize: 10, color: '#B4451A', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 4 }}>Posibles contradicciones</div>

@@ -151,9 +151,9 @@ export function Candidato({ token }: { token: string }) {
   }, [token, route])
 
   // limpieza de recursos de grabación
-  useEffect(() => () => { if (timer.current) clearInterval(timer.current); stream.current?.getTracks().forEach((t) => t.stop()) }, [])
+  useEffect(() => () => { if (timer.current) clearInterval(timer.current); if (acSampler.current) clearInterval(acSampler.current); if (audioCtx.current) { try { audioCtx.current.close() } catch { /* noop */ } } stream.current?.getTracks().forEach((t) => t.stop()) }, [])
 
-  const resetRec = () => { setBlob(null); if (url) URL.revokeObjectURL(url); setUrl(null); setSecs(0); setRec('idle') }
+  const resetRec = () => { setBlob(null); if (url) URL.revokeObjectURL(url); setUrl(null); setSecs(0); setRec('idle'); acResult.current = null }
 
   async function startRec(maxSec: number) {
     setErr('')
@@ -203,6 +203,7 @@ export function Candidato({ token }: { token: string }) {
     try {
       const fd = new FormData()
       fd.append('audio', blob, `q${q.order}`); fd.append('order', String(q.order)); fd.append('duration', String(secs)); fd.append('retakes', String(retakes.current))
+      if (acResult.current) fd.append('acoustic', JSON.stringify(acResult.current))
       const r = await fetch(`/api/entrevista/${token}/answer`, { method: 'POST', body: fd })
       const j = await r.json().catch(() => null)
       if (!r.ok || !j?.ok) { setErr('No se pudo enviar. Revisa tu internet y reintenta.'); return }

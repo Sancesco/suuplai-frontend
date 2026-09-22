@@ -29,6 +29,8 @@ export async function POST(req: Request, { params }: { params: { token: string }
   const order = Number(form.get('order'))
   const duration = Math.max(0, Math.round(Number(form.get('duration')) || 0))
   const retakes = Math.max(0, Math.round(Number(form.get('retakes')) || 0))
+  let acoustic: unknown = null
+  try { const a = form.get('acoustic'); if (typeof a === 'string' && a) acoustic = JSON.parse(a) } catch { acoustic = null }
   if (!(file instanceof Blob) || !Number.isInteger(order)) return NextResponse.json({ ok: false, error: 'faltan datos' }, { status: 400 })
   if (!template.questions.some((q) => q.order === order)) return NextResponse.json({ ok: false, error: 'pregunta inválida' }, { status: 400 })
   if (file.size > 25 * 1024 * 1024) return NextResponse.json({ ok: false, error: 'audio muy grande' }, { status: 413 })
@@ -41,8 +43,9 @@ export async function POST(req: Request, { params }: { params: { token: string }
   if (upErr) return NextResponse.json({ ok: false, error: 'no se pudo guardar el audio' }, { status: 500 })
 
   const baseRow = { invite_id: invite.id, question_order: order, audio_path: path, mime_type: mime, duration_sec: duration }
-  let { error: dbErr } = await sb.from('interview_answers').upsert({ ...baseRow, retakes }, { onConflict: 'invite_id,question_order' })
-  if (dbErr) { const r2 = await sb.from('interview_answers').upsert(baseRow, { onConflict: 'invite_id,question_order' }); dbErr = r2.error } // por si la columna retakes aún no existe
+  const richRow = { ...baseRow, retakes, metrics: acoustic ? { acoustic } : null }
+  let { error: dbErr } = await sb.from('interview_answers').upsert(richRow, { onConflict: 'invite_id,question_order' })
+  if (dbErr) { const r2 = await sb.from('interview_answers').upsert(baseRow, { onConflict: 'invite_id,question_order' }); dbErr = r2.error } // por si faltan columnas retakes/metrics
   if (dbErr) return NextResponse.json({ ok: false, error: 'no se pudo registrar' }, { status: 500 })
 
   if (invite.status === 'pending') await sb.from('interview_invites').update({ status: 'in_progress' }).eq('id', invite.id)

@@ -40,12 +40,17 @@ export async function GET(req: Request) {
     const scored = scoredCount.get(i.id) || 0
     const ko = tpl ? knockoutHits(tpl.quick_fields, i.quick_answers || {}) : []
     const stale = i.status !== 'completed' && i.status !== 'discarded' && i.status !== 'call_scheduled' && now - new Date(i.invited_at).getTime() > 3 * 86400000
+    // Calificación de la IA (si existe) para el encabezado/lista.
+    const cal = (i.analysis && typeof i.analysis === 'object') ? (i.analysis as { calificacion?: { dimensiones?: { score?: number }[]; recomendacion?: string } }).calificacion : null
+    const aiDims = cal?.dimensiones || []
+    const aiTotal = aiDims.reduce((a, x) => a + (x?.score || 0), 0)
     return {
       id: i.id, name: i.candidate_name, phone: i.candidate_phone, status: i.status,
       invited_at: i.invited_at, completed_at: i.completed_at,
       interview: tpl?.title ?? '—',
       answered: answeredCount.get(i.id) || 0, scored, total, maxTotal: nQ * 3,
       label: (tpl && scored === nQ && nQ > 0) ? labelFor(total, tpl.thresholds) : null,
+      aiTotal: aiDims.length ? aiTotal : null, aiMax: aiDims.length ? aiDims.length * 3 : null, aiRec: cal?.recomendacion || null,
       knockout: ko, stale,
     }
   })

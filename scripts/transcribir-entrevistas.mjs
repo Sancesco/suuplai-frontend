@@ -42,11 +42,16 @@ function speechMetrics(item, maxSeconds) {
   let longPauses = 0
   for (let i = 1; i < words.length; i++) if (words[i].start - words[i - 1].end > 2) longPauses++
   const pctMax = maxSeconds ? Math.round((duration / maxSeconds) * 100) : null
-  return { durationSec: Math.round(duration), pctMax, words: wordCount, wpm, fillersPerMin, fillersTotal, fillerCounts, initialPauseSec, longPauses }
+  // Ritmo: palabras por minuto por tercio (inicio / medio / final).
+  const t = duration / 3
+  const thirds = [0, 0, 0]
+  for (const w of words) { const idx = t > 0 ? Math.min(2, Math.floor(w.start / t)) : 0; thirds[idx]++ }
+  const wpmThirds = t > 0 ? thirds.map((c) => Math.round(c / (t / 60))) : [0, 0, 0]
+  return { durationSec: Math.round(duration), pctMax, words: wordCount, wpm, wpmThirds, fillersPerMin, fillersTotal, fillerCounts, initialPauseSec, longPauses }
 }
 
 async function main() {
-  const { data: rows } = await sb.from('interview_answers').select('invite_id,question_order,audio_path,transcript').not('audio_path', 'is', null)
+  const { data: rows } = await sb.from('interview_answers').select('invite_id,question_order,audio_path,transcript,metrics').not('audio_path', 'is', null)
   const pend = (rows || []).filter((r) => todas || !r.transcript)
   if (!pend.length) { console.log('Nada por transcribir. (usa --todas para rehacer)'); return }
   console.log(`Por transcribir: ${pend.length} audios`)
@@ -58,7 +63,7 @@ async function main() {
     if (error || !blob) { console.log('  no se pudo bajar', r.audio_path); continue }
     const file = join(dir, `${r.invite_id}__${r.question_order}.${extFromPath(r.audio_path)}`)
     writeFileSync(file, Buffer.from(await blob.arrayBuffer()))
-    map.push({ file, invite_id: r.invite_id, question_order: r.question_order })
+    map.push({ file, invite_id: r.invite_id, question_order: r.question_order, acoustic: r.metrics?.acoustic ?? null })
   }
   if (!map.length) { console.log('No se bajó ningún audio.'); rmSync(dir, { recursive: true, force: true }); return }
 
@@ -80,7 +85,7 @@ async function main() {
     const item = res[m.file]
     const text = (item && item.text) || ''
     if (!text) continue
-    const metrics = speechMetrics(item, maxSecondsFor(m.invite_id, m.question_order))
+    const metrics = { ...speechMetrics(item, maxSecondsFor(m.invite_id, m.question_order)), acoustic: m.acoustic ?? null }
     // Intenta guardar transcript + metrics; si la columna metrics aún no existe, guarda solo transcript.
     let { error } = await sb.from('interview_answers').update({ transcript: text, metrics }).eq('invite_id', m.invite_id).eq('question_order', m.question_order)
     if (error) { const r2 = await sb.from('interview_answers').update({ transcript: text }).eq('invite_id', m.invite_id).eq('question_order', m.question_order); error = r2.error }
