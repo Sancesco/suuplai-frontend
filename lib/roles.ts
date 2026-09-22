@@ -19,8 +19,9 @@ const QUICK_CAMPO: QuickField[] = [
   { key: 'mananas', label: '¿Tienes las mañanas libres entre semana?', type: 'select', options: ['Sí', 'A veces', 'No'], required: true },
   { key: 'formato', label: '¿Te late trabajar por días y en la calle, o buscas un horario fijo de oficina?', type: 'text', required: true },
   { key: 'inicio', label: '¿Cuándo podrías empezar?', type: 'text', required: true },
-  { key: 'transporte', label: '¿Cómo te mueves normalmente por la ciudad?', type: 'text', required: true },
-  { key: 'zona', label: '¿En qué zona vives? (colonia o alcaldía)', type: 'text' },
+  { key: 'vehiculo', label: '¿Tienes coche o moto propia?', type: 'select', options: ['Sí, coche', 'Sí, moto', 'No'], required: true },
+  { key: 'transporte', label: 'Si no, ¿cómo te mueves normalmente por la ciudad?', type: 'text' },
+  { key: 'zona', label: '¿En qué zona vives? (colonia o alcaldía)', type: 'text', required: true },
   { key: 'sueldo', label: '¿Cuánto esperas ganar? (por día o al mes)', type: 'text', required: true },
 ]
 
