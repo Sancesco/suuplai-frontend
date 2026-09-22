@@ -27,7 +27,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     const a = answers.get(q.order); const s = scores.get(q.order)
     let audioUrl: string | null = null
     if (a?.audio_path) { const { data } = await sb.storage.from(AUDIO_BUCKET).createSignedUrl(a.audio_path, 3600); audioUrl = data?.signedUrl ?? null }
-    return { order: q.order, text: q.text, rubric: q.rubric, audioUrl, duration: a?.duration_sec ?? null, transcript: a?.transcript ?? null, score: s?.score ?? null, note: s?.note ?? '' }
+    return { order: q.order, text: q.text, rubric: q.rubric, audioUrl, duration: a?.duration_sec ?? null, transcript: a?.transcript ?? null, metrics: a?.metrics ?? null, retakes: a?.retakes ?? 0, score: s?.score ?? null, note: s?.note ?? '' }
   }))
 
   const scoredArr = template.questions.map((q) => scores.get(q.order)?.score).filter((x): x is number => x != null)
@@ -37,12 +37,13 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
 
   return NextResponse.json({
     ok: true,
-    invite: { id: invite.id, name: invite.candidate_name, phone: invite.candidate_phone, status: invite.status, invited_at: invite.invited_at, completed_at: invite.completed_at },
+    invite: { id: invite.id, name: invite.candidate_name, phone: invite.candidate_phone, status: invite.status, invited_at: invite.invited_at, completed_at: invite.completed_at, first_opened_at: invite.first_opened_at ?? null, reminded_at: invite.reminded_at ?? null },
     quick, questions,
     total, maxTotal: template.questions.length * 3, fullyScored,
     label: fullyScored ? labelFor(total, template.thresholds) : null,
     thresholds: template.thresholds,
     knockout: knockoutHits(template.quick_fields, invite.quick_answers || {}),
+    analysis: invite.analysis ?? null,
   })
 }
 

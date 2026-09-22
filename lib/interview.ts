@@ -13,8 +13,10 @@ export type Invite = {
   id: string; template_id: string; candidate_name: string; candidate_phone: string | null; token: string
   status: 'pending' | 'in_progress' | 'completed' | 'discarded' | 'call_scheduled'
   quick_answers: Record<string, string>; consent_at: string | null; invited_at: string; completed_at: string | null
+  first_opened_at?: string | null; reminded_at?: string | null; analysis?: unknown
 }
-export type Answer = { id: string; invite_id: string; question_order: number; audio_path: string | null; mime_type: string | null; duration_sec: number | null; transcript: string | null; created_at: string }
+export type SpeechMetrics = { durationSec: number; pctMax: number | null; words: number; wpm: number; fillersPerMin: number; fillersTotal: number; fillerCounts: Record<string, number>; initialPauseSec: number; longPauses: number }
+export type Answer = { id: string; invite_id: string; question_order: number; audio_path: string | null; mime_type: string | null; duration_sec: number | null; transcript: string | null; created_at: string; retakes?: number; metrics?: SpeechMetrics | null }
 export type Score = { id: string; invite_id: string; question_order: number; score: number | null; note: string | null }
 
 export function randToken(): string {

@@ -28,6 +28,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
   const file = form.get('audio')
   const order = Number(form.get('order'))
   const duration = Math.max(0, Math.round(Number(form.get('duration')) || 0))
+  const retakes = Math.max(0, Math.round(Number(form.get('retakes')) || 0))
   if (!(file instanceof Blob) || !Number.isInteger(order)) return NextResponse.json({ ok: false, error: 'faltan datos' }, { status: 400 })
   if (!template.questions.some((q) => q.order === order)) return NextResponse.json({ ok: false, error: 'pregunta inválida' }, { status: 400 })
   if (file.size > 25 * 1024 * 1024) return NextResponse.json({ ok: false, error: 'audio muy grande' }, { status: 413 })
@@ -39,10 +40,9 @@ export async function POST(req: Request, { params }: { params: { token: string }
   const { error: upErr } = await sb.storage.from(AUDIO_BUCKET).upload(path, buf, { contentType: mime, upsert: true })
   if (upErr) return NextResponse.json({ ok: false, error: 'no se pudo guardar el audio' }, { status: 500 })
 
-  const { error: dbErr } = await sb.from('interview_answers').upsert(
-    { invite_id: invite.id, question_order: order, audio_path: path, mime_type: mime, duration_sec: duration },
-    { onConflict: 'invite_id,question_order' },
-  )
+  const baseRow = { invite_id: invite.id, question_order: order, audio_path: path, mime_type: mime, duration_sec: duration }
+  let { error: dbErr } = await sb.from('interview_answers').upsert({ ...baseRow, retakes }, { onConflict: 'invite_id,question_order' })
+  if (dbErr) { const r2 = await sb.from('interview_answers').upsert(baseRow, { onConflict: 'invite_id,question_order' }); dbErr = r2.error } // por si la columna retakes aún no existe
   if (dbErr) return NextResponse.json({ ok: false, error: 'no se pudo registrar' }, { status: 500 })
 
   if (invite.status === 'pending') await sb.from('interview_invites').update({ status: 'in_progress' }).eq('id', invite.id)

@@ -81,6 +81,7 @@ export function Candidato({ token }: { token: string }) {
   const chunks = useRef<BlobPart[]>([])
   const stream = useRef<MediaStream | null>(null)
   const timer = useRef<ReturnType<typeof setInterval> | null>(null)
+  const retakes = useRef(0) // grabaciones descartadas de la pregunta actual
 
   const api = useCallback((body: unknown) => fetch(`/api/entrevista/${token}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }), [token])
 
@@ -139,12 +140,12 @@ export function Candidato({ token }: { token: string }) {
     setBusy(true); setErr('')
     try {
       const fd = new FormData()
-      fd.append('audio', blob, `q${q.order}`); fd.append('order', String(q.order)); fd.append('duration', String(secs))
+      fd.append('audio', blob, `q${q.order}`); fd.append('order', String(q.order)); fd.append('duration', String(secs)); fd.append('retakes', String(retakes.current))
       const r = await fetch(`/api/entrevista/${token}/answer`, { method: 'POST', body: fd })
       const j = await r.json().catch(() => null)
       if (!r.ok || !j?.ok) { setErr('No se pudo enviar. Revisa tu internet y reintenta.'); return }
       const done = new Set(answered); done.add(q.order); setAnswered(done)
-      resetRec()
+      retakes.current = 0; resetRec()
       const nextI = st!.template.questions.findIndex((x) => !done.has(x.order))
       if (nextI === -1) { await api({ action: 'complete' }); setPhase('thanks') }
       else setQIdx(nextI)
@@ -170,7 +171,7 @@ export function Candidato({ token }: { token: string }) {
             <p className="p">{st.template.intro}</p>
             <div className="chips"><span className="chip">{total} preguntas</span><span className="chip">~10 min</span><span className="chip">Sin cuenta</span></div>
             <p className="p">Primero unos datos rápidos y luego las preguntas. Puedes escucharte y regrabar antes de enviar.</p>
-            <label className="consent"><input type="checkbox" checked={okConsent} onChange={(e) => setOkConsent(e.target.checked)} /><span>Acepto que mis respuestas se graben y transcriban únicamente para este proceso de selección. Se eliminan al concluirlo.</span></label>
+            <label className="consent"><input type="checkbox" checked={okConsent} onChange={(e) => setOkConsent(e.target.checked)} /><span>Acepto que mis respuestas se graben y transcriban únicamente para este proceso de selección. Analizamos la duración y el contenido de tus respuestas para preparar la entrevista; no guardamos perfiles de voz. Se eliminan al concluir el proceso.</span></label>
             <button className="cta" disabled={!okConsent || busy} onClick={async () => { setBusy(true); await api({ action: 'consent' }); setBusy(false); const reqMissing = st.template.quick_fields.some((f) => f.required && !String(quick[f.key] ?? '').trim()); setPhase(reqMissing ? 'quick' : 'audio') }}>Empezar</button>
           </>
         )}
@@ -225,7 +226,7 @@ export function Candidato({ token }: { token: string }) {
                   <div className="time">{fmt(secs)}</div>
                   {url && <audio controls src={url} />}
                   <div className="row2" style={{ width: '100%' }}>
-                    <button className="cta ghost" disabled={busy} onClick={resetRec}>Regrabar</button>
+                    <button className="cta ghost" disabled={busy} onClick={() => { retakes.current += 1; resetRec() }}>Regrabar</button>
                     <button className="cta" disabled={busy} onClick={() => sendAnswer(q)}>{busy ? 'Enviando…' : qIdx === total - 1 ? 'Enviar y terminar' : 'Enviar'}</button>
                   </div>
                 </>)}

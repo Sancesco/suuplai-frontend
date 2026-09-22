@@ -13,6 +13,11 @@ export async function GET(_req: Request, { params }: { params: { token: string }
   const template = invite ? await getTemplateById(invite.template_id) : null
   if (!invite || !template) return NextResponse.json({ ok: false, error: 'not_found' }, { status: 404 })
 
+  // Registra la primera apertura del link (métrica de proceso). Ignora si la columna no existe aún.
+  if (!(invite as { first_opened_at?: string | null }).first_opened_at) {
+    try { await sb.from('interview_invites').update({ first_opened_at: new Date().toISOString() }).eq('id', invite.id) } catch { /* columna aún no creada */ }
+  }
+
   const { data: ans } = await sb.from('interview_answers').select('question_order').eq('invite_id', invite.id)
   const answered = (ans ?? []).map((a) => a.question_order as number)
 

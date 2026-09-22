@@ -22,8 +22,10 @@ type PdfDoc = { numPages: number; getPage: (n: number) => Promise<PdfPage> }
 type PdfPage = { getTextContent: () => Promise<{ items: { str?: string }[] }> }
 const PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'
 const PDFJS_WORKER = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'
-interface QDetail { order: number; text: string; rubric: Record<string, string>; audioUrl: string | null; duration: number | null; transcript: string | null; score: number | null; note: string }
-interface Detail { invite: { id: string; name: string; phone: string | null; status: string; invited_at: string; completed_at: string | null }; quick: { label: string; value: string; knockout: boolean }[]; questions: QDetail[]; total: number; maxTotal: number; fullyScored: boolean; label: string | null; knockout: string[]; thresholds: { call: number; review: number } }
+interface SMetrics { durationSec: number; pctMax: number | null; words: number; wpm: number; fillersPerMin: number; fillersTotal: number; fillerCounts: Record<string, number>; initialPauseSec: number; longPauses: number }
+interface QDetail { order: number; text: string; rubric: Record<string, string>; audioUrl: string | null; duration: number | null; transcript: string | null; metrics: SMetrics | null; retakes: number; score: number | null; note: string }
+interface Analysis { porPregunta?: { order: number; concrecion: number; contesto: string; porque: string }[]; contradicciones?: { cita1: string; cita2: string; nota: string }[]; frasesAbsolutas?: { cita: string; order: number }[] }
+interface Detail { invite: { id: string; name: string; phone: string | null; status: string; invited_at: string; completed_at: string | null; first_opened_at: string | null; reminded_at: string | null }; quick: { label: string; value: string; knockout: boolean }[]; questions: QDetail[]; total: number; maxTotal: number; fullyScored: boolean; label: string | null; knockout: string[]; thresholds: { call: number; review: number }; analysis: Analysis | null }
 
 export function RhPanel() {
   const [pw, setPw] = useState(''); const [authed, setAuthed] = useState(false); const [err, setErr] = useState('')
@@ -281,8 +283,17 @@ function NuevaEntrevista({ hdr, base, roles, onCreated, onClose }: { hdr: Record
 
 function CandidateDetail({ id, hdr, onChange }: { id: string; hdr: Record<string, string>; onChange: () => void }) {
   const [d, setD] = useState<Detail | null>(null)
+  const [analyzing, setAnalyzing] = useState(false); const [anMsg, setAnMsg] = useState('')
   const load = useCallback(async () => { const r = await fetch(`/api/rh/invites/${id}`, { headers: hdr }); const j = await r.json(); if (j.ok) setD(j as Detail) }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { load() }, [load])
+  const analyze = async () => {
+    setAnalyzing(true); setAnMsg('')
+    try {
+      const r = await fetch('/api/rh/analizar', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ inviteId: id }) })
+      const j = await r.json(); if (!r.ok || !j.ok) throw new Error((j.error || 'Error') + (j.detail ? ` (${j.detail})` : ''))
+      await load()
+    } catch (e) { setAnMsg(e instanceof Error ? e.message : 'Error') } finally { setAnalyzing(false) }
+  }
   const saveScore = async (order: number, patch: { score?: number; note?: string }) => {
     await fetch('/api/rh/score', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ inviteId: id, order, ...patch }) })
     load(); onChange()
@@ -312,13 +323,28 @@ function CandidateDetail({ id, hdr, onChange }: { id: string; hdr: Record<string
         </div>
       </div>
 
+      {/* señales */}
+      <Senales d={d} analyzing={analyzing} onAnalyze={analyze} anMsg={anMsg} />
+
       {/* preguntas */}
-      {d.questions.map((q) => (
+      {d.questions.map((q) => {
+        const ap = (d.analysis?.porPregunta || []).find((x) => x.order === q.order)
+        const absol = (d.analysis?.frasesAbsolutas || []).filter((x) => x.order === q.order).map((x) => x.cita)
+        return (
         <div key={q.order} style={{ border: `1px solid ${LINE}`, borderRadius: 14, padding: 14 }}>
           <div style={{ fontFamily: MONO, fontSize: 12, color: EMBER, marginBottom: 4 }}>Pregunta {q.order}</div>
           <div style={{ fontFamily: SYNE, fontWeight: 700, fontSize: 16, marginBottom: 10, lineHeight: 1.2 }}>{q.text}</div>
           {q.audioUrl ? <audio controls src={q.audioUrl} style={{ width: '100%', marginBottom: 10 }} /> : <p style={{ fontSize: 13, color: SOFT, margin: '0 0 10px' }}>Sin audio todavía.</p>}
-          {q.transcript && <p style={{ fontSize: 13, lineHeight: 1.5, color: INK, background: PAPER, borderRadius: 10, padding: '10px 12px', margin: '0 0 10px', whiteSpace: 'pre-wrap' }}><span style={{ fontFamily: MONO, fontSize: 10, color: SOFT, textTransform: 'uppercase', letterSpacing: '.08em', display: 'block', marginBottom: 4 }}>Transcripción</span>{q.transcript}</p>}
+          {(q.metrics || ap || q.retakes > 0) && (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+              {q.metrics && <><Chip>{q.metrics.durationSec}s{q.metrics.pctMax != null ? ` · ${q.metrics.pctMax}% del máx` : ''}</Chip><Chip>{q.metrics.wpm} ppm</Chip><Chip>{q.metrics.fillersPerMin}/min muletillas</Chip>{q.metrics.longPauses > 0 && <Chip>{q.metrics.longPauses} pausas &gt;2s</Chip>}<Chip>arranque {q.metrics.initialPauseSec}s</Chip></>}
+              {q.retakes > 0 && <Chip warn>{q.retakes} regrabaciones</Chip>}
+              {ap && <Chip>concreción {ap.concrecion}/3</Chip>}
+              {ap && <Chip warn={ap.contesto !== 'Sí'}>contestó: {ap.contesto}</Chip>}
+            </div>
+          )}
+          {ap && ap.contesto !== 'Sí' && ap.porque && <p style={{ fontSize: 12, color: '#B4451A', margin: '0 0 8px' }}>↳ {ap.porque}</p>}
+          {q.transcript && <p style={{ fontSize: 13, lineHeight: 1.5, color: INK, background: PAPER, borderRadius: 10, padding: '10px 12px', margin: '0 0 10px', whiteSpace: 'pre-wrap' }}><span style={{ fontFamily: MONO, fontSize: 10, color: SOFT, textTransform: 'uppercase', letterSpacing: '.08em', display: 'block', marginBottom: 4 }}>Transcripción</span>{highlightPhrases(q.transcript, absol)}</p>}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {[1, 2, 3].map((n) => (
               <button key={n} onClick={() => saveScore(q.order, { score: n })} style={{ flex: '1 1 150px', textAlign: 'left', border: `1.5px solid ${q.score === n ? INK : LINE}`, background: q.score === n ? INK : BONE, color: q.score === n ? BONE : INK, borderRadius: 10, padding: '9px 12px', cursor: 'pointer', fontSize: 13, lineHeight: 1.3 }}>
@@ -328,7 +354,7 @@ function CandidateDetail({ id, hdr, onChange }: { id: string; hdr: Record<string
           </div>
           <textarea defaultValue={q.note} onBlur={(e) => { if (e.target.value !== q.note) saveScore(q.order, { note: e.target.value }) }} placeholder="Nota (opcional)…" rows={2} style={{ ...inp, marginTop: 8, resize: 'vertical', fontFamily: "'DM Sans',sans-serif" }} />
         </div>
-      ))}
+      ) })}
 
       {/* acciones */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -349,6 +375,74 @@ function Fld({ label, children }: { label: string; children: React.ReactNode }) 
 function Muted({ children }: { children: React.ReactNode }) { return <p style={{ color: SOFT, fontSize: 14 }}>{children}</p> }
 function Seg({ on, onClick, children }: { on: boolean; onClick: () => void; children: React.ReactNode }) { return <button onClick={onClick} style={{ border: `1.5px solid ${INK}`, background: on ? INK : 'transparent', color: on ? LIME : INK, borderRadius: 999, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{children}</button> }
 function Badge({ t, bg, c }: { t: string; bg: string; c: string }) { return <span style={{ background: bg, color: c, fontFamily: MONO, fontSize: 11, fontWeight: 700, padding: '4px 9px', borderRadius: 6, textTransform: 'uppercase', letterSpacing: '.06em', whiteSpace: 'nowrap' }}>{t}</span> }
+function Chip({ children, warn }: { children: React.ReactNode; warn?: boolean }) {
+  return <span style={{ fontFamily: MONO, fontSize: 11, padding: '3px 8px', borderRadius: 6, border: `1px solid ${warn ? '#E0A99A' : LINE}`, background: warn ? '#FFE6DA' : PAPER, color: warn ? '#B4451A' : SOFT, whiteSpace: 'nowrap' }}>{children}</span>
+}
+
+// Resalta (en <mark>) las frases citadas dentro de una transcripción.
+function highlightPhrases(text: string, phrases: string[]): React.ReactNode {
+  if (!phrases.length) return text
+  const found = phrases.map((p) => p.trim()).filter((p) => p.length > 3 && text.toLowerCase().includes(p.toLowerCase()))
+  if (!found.length) return text
+  const re = new RegExp('(' + found.map((p) => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|') + ')', 'gi')
+  const parts = text.split(re)
+  return parts.map((part, i) => found.some((p) => p.toLowerCase() === part.toLowerCase())
+    ? <mark key={i} style={{ background: '#FFE6DA', color: '#B4451A', padding: '0 2px', borderRadius: 3 }}>{part}</mark>
+    : <span key={i}>{part}</span>)
+}
+
+function fmtDur(ms: number | null): string { if (ms == null || ms < 0) return '—'; const m = Math.floor(ms / 60000), s = Math.round((ms % 60000) / 1000); return m ? `${m}m ${s}s` : `${s}s` }
+function avgOf(xs: (number | null | undefined)[]): number | null { const v = xs.filter((x): x is number => x != null); return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null }
+
+function Senales({ d, analyzing, onAnalyze, anMsg }: { d: Detail; analyzing: boolean; onAnalyze: () => void; anMsg: string }) {
+  const withM = d.questions.filter((q) => q.metrics)
+  const retakesTotal = d.questions.reduce((a, q) => a + (q.retakes || 0), 0)
+  const fillersAvg = avgOf(withM.map((q) => q.metrics!.fillersPerMin))
+  const concrAvg = avgOf((d.analysis?.porPregunta || []).map((p) => p.concrecion))
+  const openMs = d.invite.first_opened_at ? new Date(d.invite.first_opened_at).getTime() - new Date(d.invite.invited_at).getTime() : null
+  const complMs = d.invite.completed_at && d.invite.first_opened_at ? new Date(d.invite.completed_at).getTime() - new Date(d.invite.first_opened_at).getTime() : null
+  const contras = d.analysis?.contradicciones || []
+  const absol = d.analysis?.frasesAbsolutas || []
+  const tile = (label: string, value: string) => (
+    <div style={{ background: BONE, border: `1px solid ${LINE}`, borderRadius: 10, padding: '8px 10px', minWidth: 92 }}>
+      <div style={{ fontFamily: MONO, fontSize: 9.5, color: SOFT, textTransform: 'uppercase', letterSpacing: '.06em' }}>{label}</div>
+      <div style={{ fontFamily: SYNE, fontWeight: 800, fontSize: 18 }}>{value}</div>
+    </div>
+  )
+  return (
+    <div style={{ border: `1.5px solid ${INK}`, borderRadius: 14, padding: 14, background: PAPER }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+        <b style={{ fontFamily: SYNE, fontSize: 16 }}>Señales</b>
+        <button onClick={onAnalyze} disabled={analyzing} style={{ ...btn, background: INK, color: LIME, opacity: analyzing ? 0.5 : 1 }}>{analyzing ? 'Analizando…' : d.analysis ? 'Re-analizar contenido' : 'Analizar contenido con IA'}</button>
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
+        {tile('Completó en', fmtDur(complMs))}
+        {tile('Regrabaciones', String(retakesTotal))}
+        {tile('Muletillas/min', fillersAvg != null ? fillersAvg.toFixed(1) : '—')}
+        {tile('Concreción', concrAvg != null ? `${concrAvg.toFixed(1)}/3` : '—')}
+      </div>
+      <p style={{ fontSize: 12, color: SOFT, margin: '0 0 8px' }}>
+        Abrió el link {openMs != null ? fmtDur(openMs) + ' después de la invitación' : '(sin registro)'}
+        {d.invite.reminded_at && d.invite.completed_at && `; completó ${new Date(d.invite.completed_at) < new Date(d.invite.reminded_at) ? 'antes' : 'después'} del recordatorio`}.
+      </p>
+      {anMsg && <p style={{ fontSize: 12, color: '#B4451A', margin: '0 0 8px' }}>⚠ {anMsg}</p>}
+      {contras.length > 0 && (
+        <div style={{ marginBottom: 6 }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: '#B4451A', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 4 }}>Posibles contradicciones</div>
+          {contras.map((c, i) => <p key={i} style={{ fontSize: 12.5, margin: '0 0 4px', lineHeight: 1.4 }}>«{c.cita1}» vs «{c.cita2}» — {c.nota}</p>)}
+        </div>
+      )}
+      {absol.length > 0 && (
+        <div style={{ marginBottom: 6 }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: SOFT, textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 4 }}>Frases absolutas o ensayadas</div>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>{absol.map((a, i) => <Chip key={i} warn>«{a.cita}» (P{a.order})</Chip>)}</div>
+        </div>
+      )}
+      <p style={{ fontSize: 11.5, color: SOFT, fontStyle: 'italic', margin: '8px 0 0', borderTop: `1px solid ${LINE}`, paddingTop: 8 }}>Estas señales son orientativas. Ninguna métrica por sí sola indica si alguien es buen o mal candidato.</p>
+    </div>
+  )
+}
+
 function initials(n: string) { return n.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() }
 function fmtDate(iso: string) { return new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) }
 
