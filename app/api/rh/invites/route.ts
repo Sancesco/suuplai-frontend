@@ -54,12 +54,12 @@ export async function GET(req: Request) {
       knockout: ko, stale,
     }
   })
-  const role = defaultRole()
+  const role = await defaultRole()
   return NextResponse.json({
     ok: true,
     template: { title: role.name, questions: role.fixed_questions.length, thresholds: { call: 0, review: 0 } },
     base: { quick_fields: role.quick_fields, questions: role.fixed_questions },
-    roles: rolesList(),
+    roles: await rolesList(),
     invites: list,
   })
 }
@@ -104,7 +104,7 @@ export async function POST(req: Request) {
   const name = String(body?.name ?? '').trim()
   const phone = String(body?.phone ?? '').trim() || null
   if (!name) return NextResponse.json({ ok: false, error: 'falta nombre' }, { status: 400 })
-  const role = getRole(body?.roleKey) ?? defaultRole()
+  const role = await getRole(body?.roleKey)
 
   // Si mandan preguntas personalizadas, se crea una plantilla propia para este candidato.
   let templateId = def.id

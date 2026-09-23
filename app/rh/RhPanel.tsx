@@ -41,6 +41,7 @@ export function RhPanel() {
   const [sort, setSort] = useState<'fecha' | 'puntaje'>('fecha')
   const [openId, setOpenId] = useState<string | null>(null)
   const [showNew, setShowNew] = useState(false)
+  const [showRoles, setShowRoles] = useState(false)
   const hdr = { 'x-admin-password': pw }
 
   const load = useCallback(async () => {
@@ -89,11 +90,13 @@ export function RhPanel() {
 
         {authed && (
           <>
+            {showRoles && <RolesPanel hdr={hdr} onChange={load} onClose={() => setShowRoles(false)} />}
             {showNew && <NuevaEntrevista hdr={hdr} base={base} roles={roles} onCreated={load} onClose={() => setShowNew(false)} />}
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', margin: '22px 0 10px', flexWrap: 'wrap' }}>
               <h2 style={{ fontFamily: SYNE, fontWeight: 800, fontSize: 20, margin: 0 }}>Entrevistas {rows ? `(${rows.length})` : ''}</h2>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                 <button onClick={() => setShowNew((v) => !v)} style={{ ...btn, background: LIME }}>{showNew ? '✕ Cerrar' : '+ Nueva entrevista'}</button>
+                <button onClick={() => setShowRoles((v) => !v)} style={btn}>{showRoles ? '✕ Roles' : '⚙ Roles'}</button>
                 <button onClick={downloadAll} disabled={dlAll} style={{ ...btn, background: INK, color: LIME, opacity: dlAll ? 0.5 : 1 }}>{dlAll ? 'Preparando…' : '⬇ Descargar completados'}</button>
                 <Seg on={sort === 'fecha'} onClick={() => setSort('fecha')}>Por fecha</Seg>
                 <Seg on={sort === 'puntaje'} onClick={() => setSort('puntaje')}>Por puntaje</Seg>
@@ -122,6 +125,106 @@ export function RhPanel() {
           </>
         )}
       </div>
+    </div>
+  )
+}
+
+interface RoleFull { key: string; slug: string; name: string; context: string; objetivo: string; salario: string; dimensions: { label: string; desc: string }[]; quick_fields: { label: string; type: string; options?: string[]; required?: boolean; knockout?: string[] }[] }
+const ROLE_BLANK: RoleFull = { key: '', slug: '', name: '', context: '', objetivo: '', salario: '', dimensions: [], quick_fields: [] }
+
+function RolesPanel({ hdr, onChange, onClose }: { hdr: Record<string, string>; onChange: () => void; onClose: () => void }) {
+  const [roles, setRoles] = useState<RoleFull[] | null>(null)
+  const [edit, setEdit] = useState<RoleFull | null>(null)
+  const [busy, setBusy] = useState(false); const [msg, setMsg] = useState('')
+
+  const load = useCallback(async () => {
+    const r = await fetch('/api/rh/roles', { headers: hdr }); const j = await r.json(); if (j.ok) setRoles(j.roles as RoleFull[])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { load() }, [load])
+
+  const save = async () => {
+    if (!edit || !edit.name.trim()) { setMsg('Falta el nombre del rol.'); return }
+    setBusy(true); setMsg('')
+    try {
+      const body = { id: edit.key && /^[0-9a-f-]{36}$/i.test(edit.key) ? edit.key : undefined, name: edit.name, salario: edit.salario, context: edit.context, objetivo: edit.objetivo, dimensions: edit.dimensions, quick_fields: edit.quick_fields }
+      const r = await fetch('/api/rh/roles', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      const j = await r.json(); if (!r.ok || !j.ok) throw new Error((j.error || 'Error') + (j.detail ? ` (${j.detail})` : ''))
+      setEdit(null); await load(); onChange()
+    } catch (e) { setMsg(e instanceof Error ? e.message : 'Error') } finally { setBusy(false) }
+  }
+  const del = async (r: RoleFull) => { if (!confirm(`¿Borrar el rol "${r.name}"?`)) return; await fetch(`/api/rh/roles?id=${encodeURIComponent(r.key)}`, { method: 'DELETE', headers: hdr }); await load(); onChange() }
+
+  const setD = (i: number, patch: Partial<{ label: string; desc: string }>) => setEdit((e) => e ? { ...e, dimensions: e.dimensions.map((d, idx) => idx === i ? { ...d, ...patch } : d) } : e)
+  const setQ = (i: number, patch: Partial<RoleFull['quick_fields'][number]>) => setEdit((e) => e ? { ...e, quick_fields: e.quick_fields.map((q, idx) => idx === i ? { ...q, ...patch } : q) } : e)
+
+  return (
+    <div style={{ background: BONE, border: `2px solid ${INK}`, borderRadius: 16, padding: 18, marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <h3 style={{ fontFamily: SYNE, fontWeight: 800, fontSize: 18, margin: 0 }}>Roles</h3>
+        <button onClick={onClose} style={{ border: 0, background: 'transparent', cursor: 'pointer', fontSize: 18, color: SOFT }}>✕</button>
+      </div>
+
+      {!edit && (
+        <>
+          {!roles ? <Muted>Cargando…</Muted> : roles.map((r) => (
+            <div key={r.key} style={{ display: 'flex', gap: 8, alignItems: 'center', padding: '10px 0', borderBottom: `1px solid ${LINE}` }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <b style={{ fontSize: 15 }}>{r.name}</b>
+                <div style={{ fontSize: 12.5, color: SOFT }}>{r.salario || 'sin sueldo'} · {r.dimensions.length} características · {r.quick_fields.length} datos</div>
+              </div>
+              <button onClick={() => setEdit(structuredClone(r))} style={btn}>Editar</button>
+              {/^[0-9a-f-]{36}$/i.test(r.key) && <button onClick={() => del(r)} style={{ ...btn, color: '#B4451A', borderColor: '#E0A99A' }}>Borrar</button>}
+            </div>
+          ))}
+          <button onClick={() => setEdit(structuredClone(ROLE_BLANK))} style={{ ...btn, background: LIME, marginTop: 12 }}>＋ Nuevo rol</button>
+          <p style={{ fontSize: 11.5, color: SOFT, marginTop: 10 }}>Si aún ves solo un rol y no puedes borrarlo, es el de respaldo: guárdalo una vez (Editar → Guardar) para volverlo editable, o corre el SQL de <code>interview_roles</code>.</p>
+        </>
+      )}
+
+      {edit && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <Fld label="Nombre del rol"><input value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} placeholder="Ej. Campo y operación" style={inp} /></Fld>
+          <Fld label="Rango de sueldo"><input value={edit.salario} onChange={(e) => setEdit({ ...edit, salario: e.target.value })} placeholder="Ej. $500 por día + transporte (~$11–13k al mes)" style={inp} /></Fld>
+          <Fld label="Contexto del puesto (qué es, qué hace)"><textarea value={edit.context} onChange={(e) => setEdit({ ...edit, context: e.target.value })} rows={4} style={{ ...inp, resize: 'vertical', fontFamily: "'DM Sans',sans-serif" }} /></Fld>
+          <Fld label="Objetivo de la entrevista"><textarea value={edit.objetivo} onChange={(e) => setEdit({ ...edit, objetivo: e.target.value })} rows={2} style={{ ...inp, resize: 'vertical', fontFamily: "'DM Sans',sans-serif" }} /></Fld>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 12, color: SOFT, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.4 }}>Características a medir</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {edit.dimensions.map((d, i) => (
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 2fr auto', gap: 6 }}>
+                  <input value={d.label} onChange={(e) => setD(i, { label: e.target.value })} placeholder="Nombre (ej. Aguante)" style={{ ...inp, fontSize: 13 }} />
+                  <input value={d.desc} onChange={(e) => setD(i, { desc: e.target.value })} placeholder="Qué significa" style={{ ...inp, fontSize: 13 }} />
+                  <button onClick={() => setEdit({ ...edit, dimensions: edit.dimensions.filter((_, idx) => idx !== i) })} style={{ ...btn, padding: '6px 10px', color: '#B4451A' }}>×</button>
+                </div>
+              ))}
+              <button onClick={() => setEdit({ ...edit, dimensions: [...edit.dimensions, { label: '', desc: '' }] })} style={{ ...btn, alignSelf: 'flex-start' }}>＋ característica</button>
+            </div>
+          </div>
+
+          <div>
+            <label style={{ display: 'block', fontSize: 12, color: SOFT, marginBottom: 5, textTransform: 'uppercase', letterSpacing: 0.4 }}>Datos rápidos (formulario)</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {edit.quick_fields.map((q, i) => (
+                <div key={i} style={{ display: 'grid', gridTemplateColumns: '2fr auto auto auto', gap: 6, alignItems: 'center' }}>
+                  <input value={q.label} onChange={(e) => setQ(i, { label: e.target.value })} placeholder="Pregunta del formulario" style={{ ...inp, fontSize: 13 }} />
+                  <select value={q.type} onChange={(e) => setQ(i, { type: e.target.value })} style={{ ...inp, fontSize: 13, width: 'auto' }}><option value="text">texto</option><option value="number">número</option><option value="select">opciones</option></select>
+                  <label style={{ fontSize: 12, color: SOFT, display: 'flex', gap: 4, alignItems: 'center', whiteSpace: 'nowrap' }}><input type="checkbox" checked={!!q.required} onChange={(e) => setQ(i, { required: e.target.checked })} />oblig.</label>
+                  <button onClick={() => setEdit({ ...edit, quick_fields: edit.quick_fields.filter((_, idx) => idx !== i) })} style={{ ...btn, padding: '6px 10px', color: '#B4451A' }}>×</button>
+                  {q.type === 'select' && <input value={(q.options || []).join(', ')} onChange={(e) => setQ(i, { options: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) })} placeholder="Opciones separadas por coma" style={{ ...inp, fontSize: 13, gridColumn: '1 / -1' }} />}
+                </div>
+              ))}
+              <button onClick={() => setEdit({ ...edit, quick_fields: [...edit.quick_fields, { label: '', type: 'text', required: false }] })} style={{ ...btn, alignSelf: 'flex-start' }}>＋ dato rápido</button>
+            </div>
+          </div>
+
+          {msg && <p style={{ color: '#B4451A', fontSize: 13 }}>⚠ {msg}</p>}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={save} disabled={busy} style={{ ...btn, background: INK, color: LIME }}>{busy ? 'Guardando…' : 'Guardar rol'}</button>
+            <button onClick={() => { setEdit(null); setMsg('') }} style={btn}>Cancelar</button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

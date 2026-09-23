@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   const { data: ansRows } = await sb.from('interview_answers').select('*').eq('invite_id', inviteId)
   const answers = new Map((ansRows as Answer[] ?? []).map((a) => [a.question_order, a]))
 
-  const role = defaultRole()
+  const role = await defaultRole()
   const dims = role.dimensions.map((dm) => `- ${dm.label}: ${dm.desc}`).join('\n')
   const quick = (template as Template).quick_fields.map((f) => `${f.label}: ${invite.quick_answers?.[f.key] ?? '(sin responder)'}`).join('\n')
   const qa = template.questions
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
   const SYSTEM = `Eres reclutador de Suuplai calificando para el rol "${role.name}".
 CONTEXTO: ${role.context}
-El puesto es de CALLE, pago por día (~$500/día, aprox. $11–13k al mes), empezando por algunas mañanas.
+El puesto es de CALLE${role.salario ? `, sueldo: ${role.salario}` : ', pago por día (~$500/día)'}.
 Buscas fortalezas reales, PERO tu calificación debe DISCRIMINAR: NO todos deben pasar. PROHIBIDO inferir emociones, personalidad o si miente.
 
 Califica cada dimensión de 1 a 3 con anclas ESTRICTAS:

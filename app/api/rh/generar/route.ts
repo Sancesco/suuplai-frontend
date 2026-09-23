@@ -16,6 +16,7 @@ function guiaFor(role: Role): string {
 
 CONTEXTO DEL PUESTO:
 ${role.context}
+${role.salario ? `Sueldo del puesto: ${role.salario}.` : ''}
 
 OBJETIVO DE LA ENTREVISTA:
 ${role.objetivo}
@@ -75,7 +76,7 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => null)
   const name = String(body?.name ?? '').trim()
-  const role = getRole(body?.roleKey) ?? defaultRole()
+  const role = await getRole(body?.roleKey)
   const cvFull = String(body?.cvText ?? '').trim()
   if (!cvFull) return NextResponse.json({ ok: false, error: 'no se pudo leer el CV (¿es una imagen escaneada sin texto?)' }, { status: 400 })
 
