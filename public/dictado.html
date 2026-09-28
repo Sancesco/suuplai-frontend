@@ -52,6 +52,7 @@
   button.go{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
   button.on{background:var(--rec);border-color:var(--rec);color:#fff;font-weight:600}
   button.small{padding:5px 10px;font-size:12.5px}
+  select{font:inherit;font-size:13.5px;cursor:pointer;border-radius:5px;border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink);padding:7px 10px}
   .dot{width:8px;height:8px;border-radius:50%;background:#fff;display:inline-block;margin-right:7px;opacity:.5}
   .dot.blink{opacity:1;animation:p 1.3s infinite}
   @keyframes p{0%,100%{opacity:1}50%{opacity:.25}}
@@ -71,6 +72,10 @@
   <div class="head">
     <h1>Dictado</h1>
     <div class="row">
+      <select id="lang" aria-label="Idioma del dictado">
+        <option value="es-MX">🇲🇽 Español</option>
+        <option value="en-US">🇺🇸 English</option>
+      </select>
       <button class="go" id="add">+ Nueva sección</button>
       <button id="float">Flotante</button>
       <button id="copyAll">Copiar todo</button>
@@ -97,6 +102,12 @@
   var addBtn = document.getElementById("add");
   var floatBtn = document.getElementById("float");
   var copyAllBtn = document.getElementById("copyAll");
+  var langSel = document.getElementById("lang");
+  var lang = "es-MX"; // idioma del reconocimiento; se puede cambiar en caliente
+  langSel.addEventListener("change", function(){
+    lang = langSel.value;
+    if(activo != null){ start(activo); } // reinicia la sección activa con el nuevo idioma
+  });
 
   function marcarVivo(){ ultimo = Date.now(); }
 
@@ -161,7 +172,7 @@
     activo = i;
     var c = cards[i];
     rec = new SR();
-    rec.lang = "es-MX"; rec.continuous = true; rec.interimResults = true;
+    rec.lang = lang; rec.continuous = true; rec.interimResults = true;
     rec.onresult = function(e){
       marcarVivo();
       var interim = "";
