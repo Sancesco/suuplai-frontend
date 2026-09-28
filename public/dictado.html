@@ -90,6 +90,13 @@
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   var rec = null, activo = null, n = 0, cards = [];
   var latido = null, ultimo = 0, reinicios = 0, wake = null;
+  // Referencias directas: en modo Flotante el panel vive en OTRO documento (PiP),
+  // por lo que document.getElementById del documento principal devolvería null.
+  var listEl = document.getElementById("list");
+  var msgEl = document.getElementById("msg");
+  var addBtn = document.getElementById("add");
+  var floatBtn = document.getElementById("float");
+  var copyAllBtn = document.getElementById("copyAll");
 
   function marcarVivo(){ ultimo = Date.now(); }
 
@@ -125,7 +132,7 @@
     try{ if(wake){ wake.release(); wake = null; } }catch(e){}
   }
 
-  if(!SR){ $("msg").textContent = "Este navegador no reconoce voz. Ábrelo en Google Chrome."; }
+  if(!SR){ msgEl.textContent = "Este navegador no reconoce voz. Ábrelo en Google Chrome."; }
 
   function stopSilencioso(){
     if(activo == null) return;
@@ -174,13 +181,13 @@
     rec.onerror = function(e){
       // Sin permiso no hay nada que hacer: eso sí detiene.
       if(e.error === "not-allowed" || e.error === "service-not-allowed"){
-        $("msg").textContent = "Chrome bloqueó el micrófono. Dale permiso en el candado de la barra de direcciones.";
+        msgEl.textContent = "Chrome bloqueó el micrófono. Dale permiso en el candado de la barra de direcciones.";
         stop(); return;
       }
       // Todo lo demás (silencio, corte de red, aborto) se revive solo.
       marcarVivo();
       if(e.error === "network"){
-        $("msg").textContent = "Se cortó la conexión un momento; sigo reintentando.";
+        msgEl.textContent = "Se cortó la conexión un momento; sigo reintentando.";
       }
     };
     rec.onend = function(){
@@ -198,7 +205,7 @@
     c.btn.querySelector(".dot").classList.add("blink");
     c.btn.lastChild.textContent = "Detener";
     c.el.classList.add("live");
-    $("msg").textContent = "";
+    msgEl.textContent = "";
   }
 
   function addCard(name, listen){
@@ -225,7 +232,7 @@
     ta.placeholder = "Aquí cae lo que se dicte en esta sección.";
 
     el.appendChild(top); el.appendChild(interim); el.appendChild(ta);
-    $("list").appendChild(el);
+    listEl.appendChild(el);
 
     var c = { el:el, btn:btn, ta:ta, interim:interim, title:title };
     cards.push(c);
@@ -253,14 +260,14 @@
     el.scrollIntoView({ behavior:"smooth", block:"nearest" });
   }
 
-  $("add").addEventListener("click", function(){ addCard(null, true); });
+  addBtn.addEventListener("click", function(){ addCard(null, true); });
 
-  $("copyAll").addEventListener("click", function(){
+  copyAllBtn.addEventListener("click", function(){
     var out = cards.map(function(c){
       return "--- " + (c.title.value || "sección") + " ---\n" + c.ta.value;
     }).filter(function(s){ return s.split("\n")[1]; }).join("\n\n");
     if(!out) return;
-    var b = $("copyAll");
+    var b = copyAllBtn;
     var done = function(){ b.textContent = "Copiado"; setTimeout(function(){ b.textContent = "Copiar todo"; }, 1300); };
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(out).then(done).catch(done);
@@ -271,9 +278,9 @@
      y Chrome no frena el dictado. */
   var pip = null;
   function canFloat(){ return !!window.documentPictureInPicture; }
-  if(!canFloat()){ $("float").disabled = true; $("float").title = "Tu Chrome no soporta ventana flotante"; }
+  if(!canFloat()){ floatBtn.disabled = true; floatBtn.title = "Tu Chrome no soporta ventana flotante"; }
 
-  $("float").addEventListener("click", function(){
+  floatBtn.addEventListener("click", function(){
     if(!canFloat()) return;
     if(pip){ try{ pip.close(); }catch(e){} return; }
     var wrap = document.querySelector(".wrap");
@@ -293,26 +300,26 @@
         }
       });
       w.document.body.append(wrap);
-      $("float").textContent = "Regresar";
-      $("msg").textContent = "";
+      floatBtn.textContent = "Regresar";
+      msgEl.textContent = "";
       w.addEventListener("pagehide", function(){
         document.body.append(wrap);
-        $("float").textContent = "Flotante";
+        floatBtn.textContent = "Flotante";
         pip = null;
       });
     }).catch(function(){
-      $("msg").textContent = "No se pudo abrir la ventana flotante. Deja esta ventana visible al lado de Meet.";
+      msgEl.textContent = "No se pudo abrir la ventana flotante. Deja esta ventana visible al lado de Meet.";
     });
   });
 
   document.addEventListener("visibilitychange", function(){
     if(!document.hidden){
-      $("msg").textContent = "";
+      msgEl.textContent = "";
       if(activo != null){ marcarVivo(); pedirWakeLock(); }
       return;
     }
     if(!pip && activo != null){
-      $("msg").textContent = "Esta ventana quedó tapada. Si se frena, dale al botón Flotante.";
+      msgEl.textContent = "Esta ventana quedó tapada. Si se frena, dale al botón Flotante.";
     }
   });
   window.addEventListener("focus", function(){ if(activo != null) marcarVivo(); });
