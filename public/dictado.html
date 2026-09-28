@@ -1,0 +1,324 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dictado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+  :root{
+    color-scheme: light;
+    --bg:#EDEDE8; --surface:#FBFBF8; --surface-2:#F3F3EE;
+    --ink:#16191B; --muted:#5C6366; --faint:#8A9194;
+    --line:#D6D6CE; --line-strong:#B9BAB0; --accent:#0E8C77; --rec:#C25A10;
+    --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+    --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme: dark;
+      --bg:#111416; --surface:#191D20; --surface-2:#22272A;
+      --ink:#ECEDE9; --muted:#9AA3A6; --faint:#6E7679;
+      --line:#2C3235; --line-strong:#3D4448; --accent:#17A88C; --rec:#E8845A;
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --bg:#111416; --surface:#191D20; --surface-2:#22272A;
+    --ink:#ECEDE9; --muted:#9AA3A6; --faint:#6E7679;
+    --line:#2C3235; --line-strong:#3D4448; --accent:#17A88C; --rec:#E8845A;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;padding:14px}
+  .wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+  .head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+  h1{font-size:15px;margin:0;font-weight:600;letter-spacing:-.01em}
+  .note{font-size:12px;color:var(--faint);margin:0}
+  .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px;
+        display:flex;flex-direction:column;gap:9px}
+  .card.live{border-color:var(--rec);box-shadow:0 0 0 2px rgba(194,90,16,.14)}
+  .card-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .idx{font-family:var(--mono);font-size:11px;color:var(--faint);min-width:18px}
+  input.title{flex:1;min-width:130px;font:inherit;font-size:13.5px;font-weight:500;color:var(--ink);
+              background:transparent;border:0;border-bottom:1px dashed var(--line-strong);padding:3px 2px}
+  input.title:focus{outline:none;border-bottom-color:var(--accent)}
+  button{font:inherit;font-size:13.5px;cursor:pointer;border-radius:5px;border:1px solid var(--line-strong);
+         background:var(--surface-2);color:var(--ink);padding:7px 13px}
+  button:hover{filter:brightness(.97)}
+  button.go{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  button.on{background:var(--rec);border-color:var(--rec);color:#fff;font-weight:600}
+  button.small{padding:5px 10px;font-size:12.5px}
+  .dot{width:8px;height:8px;border-radius:50%;background:#fff;display:inline-block;margin-right:7px;opacity:.5}
+  .dot.blink{opacity:1;animation:p 1.3s infinite}
+  @keyframes p{0%,100%{opacity:1}50%{opacity:.25}}
+  textarea{width:100%;font:inherit;font-size:14.5px;line-height:1.5;color:var(--ink);
+           background:var(--surface-2);border:1px solid var(--line);border-radius:5px;padding:10px;resize:vertical}
+  textarea::placeholder{color:var(--faint)}
+  .interim{font-family:var(--mono);font-size:12px;color:var(--muted);font-style:italic;min-height:16px}
+  .msg{font-size:12.5px;color:var(--rec);margin:0;min-height:16px}
+  .x{border:0;background:transparent;color:var(--faint);font-size:17px;line-height:1;padding:2px 6px}
+  .x:hover{color:var(--rec);background:transparent}
+  @media (prefers-reduced-motion:reduce){.dot.blink{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <h1>Dictado</h1>
+    <div class="row">
+      <button class="go" id="add">+ Nueva sección</button>
+      <button id="float">Flotante</button>
+      <button id="copyAll">Copiar todo</button>
+    </div>
+  </div>
+  <p class="note">Ventana aparte y visible, al lado de Meet. Bocinas, no audífonos, para que capte al otro.</p>
+  <p class="msg" id="msg"></p>
+
+  <div id="list"></div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var $ = function(i){ return document.getElementById(i); };
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var rec = null, activo = null, n = 0, cards = [];
+  var latido = null, ultimo = 0, reinicios = 0, wake = null;
+
+  function marcarVivo(){ ultimo = Date.now(); }
+
+  function relanzar(){
+    if(activo == null || !rec) return;
+    reinicios++;
+    try{ rec.start(); marcarVivo(); }
+    catch(e){ /* ya estaba corriendo: no lo tocamos */ marcarVivo(); }
+  }
+
+  function arrancarVigilante(){
+    if(latido) return;
+    marcarVivo();
+    latido = setInterval(function(){
+      if(activo == null) return;
+      // Solo si lleva mucho tiempo mudo de verdad, y sin abortar nada.
+      if(Date.now() - ultimo > 30000) relanzar();
+    }, 10000);
+  }
+  function pararVigilante(){
+    if(latido){ clearInterval(latido); latido = null; }
+  }
+
+  async function pedirWakeLock(){
+    try{
+      if("wakeLock" in navigator && !wake){
+        wake = await navigator.wakeLock.request("screen");
+        wake.addEventListener("release", function(){ wake = null; });
+      }
+    }catch(e){}
+  }
+  function soltarWakeLock(){
+    try{ if(wake){ wake.release(); wake = null; } }catch(e){}
+  }
+
+  if(!SR){ $("msg").textContent = "Este navegador no reconoce voz. Ábrelo en Google Chrome."; }
+
+  function stopSilencioso(){
+    if(activo == null) return;
+    var c = cards[activo]; activo = null;
+    if(rec){ try{ rec.abort(); }catch(e){} rec = null; }
+    if(c){ c.el.classList.remove("live"); }
+  }
+
+  function stop(){
+    if(activo == null) return;
+    pararVigilante(); soltarWakeLock();
+    var c = cards[activo]; activo = null;
+    if(rec){ try{ rec.stop(); }catch(e){} rec = null; }
+    if(c){
+      c.btn.classList.remove("on"); c.btn.classList.add("go");
+      c.btn.querySelector(".dot").classList.remove("blink");
+      c.btn.lastChild.textContent = "Escuchar";
+      c.interim.textContent = "";
+      c.el.classList.remove("live");
+    }
+  }
+
+  function start(i){
+    if(!SR) return;
+    stop();
+    activo = i;
+    var c = cards[i];
+    rec = new SR();
+    rec.lang = "es-MX"; rec.continuous = true; rec.interimResults = true;
+    rec.onresult = function(e){
+      marcarVivo();
+      var interim = "";
+      for(var k = e.resultIndex; k < e.results.length; k++){
+        var r = e.results[k];
+        if(r.isFinal){
+          var t = r[0].transcript.trim();
+          if(t){ c.ta.value += (c.ta.value ? " " : "") + t; c.ta.scrollTop = c.ta.scrollHeight; }
+        } else { interim += r[0].transcript; }
+      }
+      c.interim.textContent = interim;
+    };
+    rec.onaudiostart = marcarVivo;
+    rec.onspeechstart = marcarVivo;
+    rec.onsoundstart = marcarVivo;
+    rec.onstart = marcarVivo;
+    rec.onerror = function(e){
+      // Sin permiso no hay nada que hacer: eso sí detiene.
+      if(e.error === "not-allowed" || e.error === "service-not-allowed"){
+        $("msg").textContent = "Chrome bloqueó el micrófono. Dale permiso en el candado de la barra de direcciones.";
+        stop(); return;
+      }
+      // Todo lo demás (silencio, corte de red, aborto) se revive solo.
+      marcarVivo();
+      if(e.error === "network"){
+        $("msg").textContent = "Se cortó la conexión un momento; sigo reintentando.";
+      }
+    };
+    rec.onend = function(){
+      if(activo !== i) return;
+      setTimeout(function(){
+        if(activo !== i) return;
+        try{ rec.start(); marcarVivo(); }
+        catch(err){ stopSilencioso(); start(i); }
+      }, 120);
+    };
+    try{ rec.start(); }catch(err){}
+    arrancarVigilante();
+    pedirWakeLock();
+    c.btn.classList.add("on"); c.btn.classList.remove("go");
+    c.btn.querySelector(".dot").classList.add("blink");
+    c.btn.lastChild.textContent = "Detener";
+    c.el.classList.add("live");
+    $("msg").textContent = "";
+  }
+
+  function addCard(name, listen){
+    var i = cards.length; n++;
+    var el = document.createElement("section"); el.className = "card";
+
+    var top = document.createElement("div"); top.className = "card-top";
+    var idx = document.createElement("span"); idx.className = "idx"; idx.textContent = String(n).padStart(2,"0");
+    var title = document.createElement("input");
+    title.type = "text"; title.className = "title"; title.value = name || ("Sección " + n);
+    title.setAttribute("aria-label", "Nombre de la sección " + n);
+
+    var btn = document.createElement("button"); btn.className = "go";
+    var dot = document.createElement("span"); dot.className = "dot";
+    btn.appendChild(dot); btn.appendChild(document.createTextNode("Escuchar"));
+
+    var cp = document.createElement("button"); cp.className = "small"; cp.textContent = "Copiar";
+    var x = document.createElement("button"); x.className = "x"; x.textContent = "×"; x.title = "Quitar";
+
+    top.appendChild(idx); top.appendChild(title); top.appendChild(btn); top.appendChild(cp); top.appendChild(x);
+
+    var interim = document.createElement("div"); interim.className = "interim";
+    var ta = document.createElement("textarea"); ta.rows = 5;
+    ta.placeholder = "Aquí cae lo que se dicte en esta sección.";
+
+    el.appendChild(top); el.appendChild(interim); el.appendChild(ta);
+    $("list").appendChild(el);
+
+    var c = { el:el, btn:btn, ta:ta, interim:interim, title:title };
+    cards.push(c);
+
+    btn.addEventListener("click", function(){
+      var me = cards.indexOf(c);
+      if(activo === me) stop(); else start(me);
+    });
+    cp.addEventListener("click", function(){
+      var t = ta.value; if(!t) return;
+      var done = function(){ cp.textContent = "Copiado"; setTimeout(function(){ cp.textContent = "Copiar"; }, 1300); };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(t).then(done).catch(function(){ ta.select(); document.execCommand("copy"); done(); });
+      } else { ta.select(); document.execCommand("copy"); done(); }
+    });
+    x.addEventListener("click", function(){
+      var me = cards.indexOf(c);
+      if(activo === me) stop();
+      cards.splice(me, 1);
+      el.remove();
+    });
+
+    if(listen) start(cards.indexOf(c));
+    else title.focus();
+    el.scrollIntoView({ behavior:"smooth", block:"nearest" });
+  }
+
+  $("add").addEventListener("click", function(){ addCard(null, true); });
+
+  $("copyAll").addEventListener("click", function(){
+    var out = cards.map(function(c){
+      return "--- " + (c.title.value || "sección") + " ---\n" + c.ta.value;
+    }).filter(function(s){ return s.split("\n")[1]; }).join("\n\n");
+    if(!out) return;
+    var b = $("copyAll");
+    var done = function(){ b.textContent = "Copiado"; setTimeout(function(){ b.textContent = "Copiar todo"; }, 1300); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(out).then(done).catch(done);
+    } else { window.prompt("Copia esto:", out); }
+  });
+
+  /* Ventana flotante siempre encima: así ninguna otra ventana la tapa
+     y Chrome no frena el dictado. */
+  var pip = null;
+  function canFloat(){ return !!window.documentPictureInPicture; }
+  if(!canFloat()){ $("float").disabled = true; $("float").title = "Tu Chrome no soporta ventana flotante"; }
+
+  $("float").addEventListener("click", function(){
+    if(!canFloat()) return;
+    if(pip){ try{ pip.close(); }catch(e){} return; }
+    var wrap = document.querySelector(".wrap");
+    window.documentPictureInPicture.requestWindow({ width: 460, height: 520 }).then(function(w){
+      pip = w;
+      Array.prototype.forEach.call(document.styleSheets, function(ss){
+        try{
+          var rules = Array.prototype.map.call(ss.cssRules, function(r){ return r.cssText; }).join("");
+          var st = w.document.createElement("style"); st.textContent = rules;
+          w.document.head.appendChild(st);
+        }catch(e){
+          if(ss.href){
+            var lk = w.document.createElement("link");
+            lk.rel = "stylesheet"; lk.href = ss.href;
+            w.document.head.appendChild(lk);
+          }
+        }
+      });
+      w.document.body.append(wrap);
+      $("float").textContent = "Regresar";
+      $("msg").textContent = "";
+      w.addEventListener("pagehide", function(){
+        document.body.append(wrap);
+        $("float").textContent = "Flotante";
+        pip = null;
+      });
+    }).catch(function(){
+      $("msg").textContent = "No se pudo abrir la ventana flotante. Deja esta ventana visible al lado de Meet.";
+    });
+  });
+
+  document.addEventListener("visibilitychange", function(){
+    if(!document.hidden){
+      $("msg").textContent = "";
+      if(activo != null){ marcarVivo(); pedirWakeLock(); }
+      return;
+    }
+    if(!pip && activo != null){
+      $("msg").textContent = "Esta ventana quedó tapada. Si se frena, dale al botón Flotante.";
+    }
+  });
+  window.addEventListener("focus", function(){ if(activo != null) marcarVivo(); });
+
+  addCard("El enunciado", false);
+})();
+</script>
+</body>
+</html>
