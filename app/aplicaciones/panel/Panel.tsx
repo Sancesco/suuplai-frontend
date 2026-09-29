@@ -222,6 +222,16 @@ function Detalle({ id, hdr, onChange }: { id: string; hdr: Record<string, string
           {app.cv_url && <a href={app.cv_url} target="_blank" rel="noreferrer" className="text-sm text-emerald-700 underline">Ver CV cargado{app.cv_nombre ? ` · ${app.cv_nombre}` : ''}</a>}
         </div>
         <input className="w-full rounded border border-neutral-300 px-2 py-1.5 text-sm" placeholder="…o pega la URL del CV" defaultValue={app.cv_url ?? ''} onBlur={(e) => { if (e.target.value !== (app.cv_url ?? '')) patch({ cv_url: e.target.value.trim() }, 'cv') }} />
+        {app.slug && app.cv_url && (() => {
+          const cvLink = `${typeof window !== 'undefined' ? window.location.origin : ''}/aplicaciones/cv/${app.slug}`
+          return (
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="text-xs text-neutral-500">Link del CV (para mail, rastrea descargas):</span>
+              <span className="font-mono text-xs text-neutral-700 break-all">{cvLink}</span>
+              <button onClick={() => navigator.clipboard?.writeText(cvLink)} className="rounded border border-neutral-900 px-2 py-0.5 text-xs">Copiar</button>
+            </div>
+          )
+        })()}
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
