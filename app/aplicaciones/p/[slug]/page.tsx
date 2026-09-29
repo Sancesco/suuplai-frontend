@@ -72,7 +72,7 @@ export default async function Page({ params }: { params: { slug: string } }) {
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <ReadingBar />
       <Tracker slug={app.slug} />
-      <Toolbar slug={app.slug} cvUrl={app.cv_url} cvNombre={app.cv_nombre} />
+      <Toolbar />
 
       <article className="doc">
         <div data-section="encabezado">
@@ -109,8 +109,6 @@ export default async function Page({ params }: { params: { slug: string } }) {
           Este documento registra interacciones (aperturas, tiempo de lectura, descargas) para dar seguimiento a la aplicación. No se guarda tu dirección IP.
         </div>
       </article>
-
-      {app.cv_url && <div className="mobcv no-print"><CvButton slug={app.slug} cvUrl={app.cv_url} cvNombre={app.cv_nombre} full /></div>}
     </div>
   )
 }
