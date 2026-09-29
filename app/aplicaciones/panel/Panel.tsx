@@ -135,12 +135,20 @@ function Detalle({ id, hdr, onChange }: { id: string; hdr: Record<string, string
     try { const r = await fetch('/api/aplicaciones/letter', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error'); await load() }
     catch (e) { setMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')) } finally { setBusy('') }
   }
+  const subirCv = async (file: File | undefined) => {
+    if (!file) return
+    setBusy('cvup'); setMsg('')
+    try {
+      const fd = new FormData(); fd.append('file', file); fd.append('id', id); fd.append('nombre', file.name)
+      const r = await fetch('/api/aplicaciones/upload', { method: 'POST', headers: hdr, body: fd })
+      const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error'); await load()
+    } catch (e) { setMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')) } finally { setBusy('') }
+  }
 
   if (!app) return <div className="border-t border-neutral-200 p-4 text-sm text-neutral-500">Cargando…</div>
   const an = app.analysis
   const reqColor = (e: string) => e === 'cumple' ? { t: '✓', c: '#1E8E5A' } : e === 'parcial' ? { t: '≈', c: '#E8A317' } : { t: '✕', c: '#B4451A' }
   const url = app.slug ? `${typeof window !== 'undefined' ? window.location.origin : ''}/aplicaciones/p/${app.slug}` : null
-  const pubUrl = app.slug ? `https://aplicaciones.suuplai.com.mx/${app.slug}` : null
 
   return (
     <div className="flex flex-col gap-5 border-t border-neutral-200 p-4">
@@ -172,18 +180,24 @@ function Detalle({ id, hdr, onChange }: { id: string; hdr: Record<string, string
         <textarea className="w-full rounded border border-neutral-300 px-2 py-2 text-[13px] font-mono" rows={8} defaultValue={app.carta ?? ''} placeholder="La carta (HTML) — edítala aquí; se guarda al salir del campo." onBlur={(e) => { if (e.target.value !== (app.carta ?? '')) patch({ carta: e.target.value }, 'car') }} />
       </div>
 
-      {/* CV + publicar */}
-      <div className="grid gap-2 sm:grid-cols-2">
-        <input className="rounded border border-neutral-300 px-2 py-1.5 text-sm" placeholder="URL del CV (PDF)" defaultValue={app.cv_url ?? ''} onBlur={(e) => { if (e.target.value !== (app.cv_url ?? '')) patch({ cv_url: e.target.value.trim() }, 'cv') }} />
-        <input className="rounded border border-neutral-300 px-2 py-1.5 text-sm" placeholder="Nombre del CV (ej. CV español)" defaultValue={app.cv_nombre ?? ''} onBlur={(e) => { if (e.target.value !== (app.cv_nombre ?? '')) patch({ cv_nombre: e.target.value.trim() }, 'cvn') }} />
+      {/* CV: subir archivo o pegar URL */}
+      <div>
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <label className="cursor-pointer rounded-lg border border-neutral-900 bg-white px-3 py-1.5 text-sm font-semibold">
+            {busy === 'cvup' ? 'Subiendo…' : '📄 Subir CV (PDF)'}
+            <input type="file" accept="application/pdf" className="hidden" disabled={busy === 'cvup'} onChange={(e) => subirCv(e.target.files?.[0])} />
+          </label>
+          {app.cv_url && <a href={app.cv_url} target="_blank" rel="noreferrer" className="text-sm text-emerald-700 underline">Ver CV cargado{app.cv_nombre ? ` · ${app.cv_nombre}` : ''}</a>}
+        </div>
+        <input className="w-full rounded border border-neutral-300 px-2 py-1.5 text-sm" placeholder="…o pega la URL del CV" defaultValue={app.cv_url ?? ''} onBlur={(e) => { if (e.target.value !== (app.cv_url ?? '')) patch({ cv_url: e.target.value.trim() }, 'cv') }} />
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
         {!app.slug ? <button onClick={() => patch({ action: 'publicar' }, 'pub')} className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-bold text-lime-300">{busy === 'pub' ? 'Publicando…' : 'Publicar y generar link'}</button>
           : <>
             <a href={url!} target="_blank" rel="noreferrer" className="rounded-lg bg-lime-300 px-4 py-2 text-sm font-bold">Ver página →</a>
-            <button onClick={() => navigator.clipboard?.writeText(pubUrl!)} className="rounded-lg border border-neutral-900 px-3 py-2 text-sm">Copiar link</button>
-            <span className="font-mono text-xs text-neutral-500 break-all">{pubUrl}</span>
+            <button onClick={() => navigator.clipboard?.writeText(url!)} className="rounded-lg border border-neutral-900 px-3 py-2 text-sm">Copiar link</button>
+            <span className="font-mono text-xs text-neutral-500 break-all">{url}</span>
           </>}
       </div>
       {msg && <p className="text-sm text-red-700">{msg}</p>}
