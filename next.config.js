@@ -4,6 +4,13 @@ const nextConfig = {
   async rewrites() {
     return [{ source: '/dictado', destination: '/dictado.html' }]
   },
+  // Asegura que content/perfil.md quede en el bundle serverless (se lee con fs en runtime).
+  experimental: {
+    outputFileTracingIncludes: {
+      '/api/aplicaciones/**': ['./content/**'],
+      '/aplicaciones/**': ['./content/**'],
+    },
+  },
 }
 
 module.exports = nextConfig
