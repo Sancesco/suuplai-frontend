@@ -11,14 +11,15 @@ export async function GET(req: Request) {
   const { data: apps } = await sb.from('app_applications').select('*').order('created_at', { ascending: false })
   const list = (apps ?? []) as Application[]
   const ids = list.map((a) => a.id)
-  const stats = new Map<string, { opens: number; visitors: Set<string>; seconds: number; last: string | null }>()
+  const stats = new Map<string, { opens: number; visitors: Set<string>; seconds: number; cv: number; last: string | null }>()
   if (ids.length) {
     const { data: ev } = await sb.from('app_events').select('application_id,tipo,visitor_id,data,created_at').in('application_id', ids)
     for (const e of (ev ?? []) as { application_id: string; tipo: string; visitor_id: string | null; data: { seconds?: number } | null; created_at: string }[]) {
-      if (!stats.has(e.application_id)) stats.set(e.application_id, { opens: 0, visitors: new Set(), seconds: 0, last: null })
+      if (!stats.has(e.application_id)) stats.set(e.application_id, { opens: 0, visitors: new Set(), seconds: 0, cv: 0, last: null })
       const s = stats.get(e.application_id)!
       if (e.visitor_id) s.visitors.add(e.visitor_id)
       if (e.tipo === 'open') s.opens++
+      if (e.tipo === 'cv_download') s.cv++
       if (e.tipo === 'time_on_page') s.seconds += Number(e.data?.seconds || 0)
       if (!s.last || e.created_at > s.last) s.last = e.created_at
     }
@@ -28,7 +29,7 @@ export async function GET(req: Request) {
     return {
       id: a.id, empresa: a.empresa, puesto: a.puesto, persona: a.persona, slug: a.slug, estado: a.estado,
       match_pct: a.analysis?.match_pct ?? null, created_at: a.created_at,
-      opens: s?.opens ?? 0, visitors: s ? s.visitors.size : 0, seconds: s?.seconds ?? 0, last: s?.last ?? null,
+      opens: s?.opens ?? 0, visitors: s ? s.visitors.size : 0, seconds: s?.seconds ?? 0, cv: s?.cv ?? 0, last: s?.last ?? null,
     }
   })
   return NextResponse.json({ ok: true, applications: out })

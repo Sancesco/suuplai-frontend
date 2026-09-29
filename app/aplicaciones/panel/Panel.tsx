@@ -3,7 +3,16 @@
 import { useCallback, useEffect, useState } from 'react'
 
 type Estado = 'borrador' | 'enviada' | 'abierta' | 'leida' | 'compartida' | 'respondida' | 'rechazada'
-interface Row { id: string; empresa: string; puesto: string; persona: string | null; slug: string | null; estado: Estado; match_pct: number | null; created_at: string; opens: number; visitors: number; seconds: number; last: string | null }
+interface Row { id: string; empresa: string; puesto: string; persona: string | null; slug: string | null; estado: Estado; match_pct: number | null; created_at: string; opens: number; visitors: number; seconds: number; cv: number; last: string | null }
+function hace(iso: string | null): string {
+  if (!iso) return '—'
+  const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
+  if (s < 60) return 'hace un momento'
+  if (s < 3600) return `hace ${Math.floor(s / 60)} min`
+  if (s < 86400) return `hace ${Math.floor(s / 3600)} h`
+  return `hace ${Math.floor(s / 86400)} d`
+}
+function dur(sec: number): string { return sec >= 60 ? `${Math.floor(sec / 60)}m ${sec % 60}s` : `${sec}s` }
 interface Requisito { texto: string; estado: 'cumple' | 'parcial' | 'no_cumple'; evidencia: string }
 interface Analysis { requisitos: Requisito[]; match_pct: number; veredicto: string; argumentos: string[]; huecos: string[]; obligatoria: string | null }
 interface App { id: string; slug: string | null; empresa: string; puesto: string; persona: string | null; correo: string | null; vacante: string; analysis: Analysis | null; posicionamiento: string | null; carta: string | null; cv_url: string | null; cv_nombre: string | null; video_url: string | null; estado: Estado }
@@ -55,6 +64,29 @@ export function Panel() {
             </div>
 
             {showNew && <NuevaApp hdr={hdr} onCreated={(id) => { setShowNew(false); load(); setOpenId(id) }} />}
+
+            {rows && rows.length > 0 && (() => {
+              const pub = rows.filter((r) => r.slug).length
+              const abiertas = rows.filter((r) => r.opens > 0).length
+              const compartidas = rows.filter((r) => r.visitors > 1).length
+              const cv = rows.reduce((a, r) => a + r.cv, 0)
+              const tasa = pub ? Math.round((abiertas / pub) * 100) : 0
+              const tile = (n: string | number, l: string, hot?: boolean) => (
+                <div className="rounded-xl border border-neutral-200 bg-white px-3 py-2.5">
+                  <div className="text-xl font-extrabold" style={{ fontFamily: "'Syne',sans-serif", color: hot ? '#B4451A' : undefined }}>{n}</div>
+                  <div className="text-[11px] uppercase tracking-wide text-neutral-500">{l}</div>
+                </div>
+              )
+              return (
+                <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
+                  {tile(pub, 'Enviadas')}
+                  {tile(`${abiertas}`, 'Abiertas')}
+                  {tile(`${tasa}%`, 'Tasa apertura')}
+                  {tile(cv, 'CV descargados')}
+                  {tile(compartidas, '🔥 Compartidas', compartidas > 0)}
+                </div>
+              )
+            })()}
 
             {!rows ? <p className="text-neutral-500">Cargando…</p> : rows.length === 0 ? <p className="text-neutral-500">Aún no hay aplicaciones.</p> : (
               <div className="flex flex-col gap-2">
@@ -121,7 +153,7 @@ function NuevaApp({ hdr, onCreated }: { hdr: Record<string, string>; onCreated: 
 
 function Detalle({ id, hdr, onChange }: { id: string; hdr: Record<string, string>; onChange: () => void }) {
   const [app, setApp] = useState<App | null>(null); const [events, setEvents] = useState<Ev[]>([])
-  const [busy, setBusy] = useState(''); const [msg, setMsg] = useState('')
+  const [busy, setBusy] = useState(''); const [msg, setMsg] = useState(''); const [showRaw, setShowRaw] = useState(false)
   const load = useCallback(async () => { const r = await fetch(`/api/aplicaciones/applications/${id}`, { headers: hdr }); const j = await r.json(); if (j.ok) { setApp(j.app); setEvents(j.events) } }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { load() }, [load])
 
@@ -202,23 +234,73 @@ function Detalle({ id, hdr, onChange }: { id: string; hdr: Record<string, string
       </div>
       {msg && <p className="text-sm text-red-700">{msg}</p>}
 
-      {/* timeline */}
-      <div>
-        <b className="text-sm">Actividad ({events.length})</b>
-        {events.length === 0 ? <p className="text-sm text-neutral-400">Sin eventos todavía.</p> : (
-          <div className="mt-2 flex flex-col gap-1">
-            {events.slice(0, 30).map((e, i) => (
-              <div key={i} className="flex items-center gap-2 font-mono text-xs text-neutral-600">
-                <span className="text-neutral-400">{new Date(e.created_at).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
-                <span className="font-bold text-neutral-900">{e.tipo}</span>
-                {e.data?.seconds ? <span>+{String(e.data.seconds)}s</span> : null}
-                {e.device ? <span>· {e.device}</span> : null}
-                {e.visitor_id ? <span className="text-neutral-400">· {String(e.visitor_id).slice(0, 6)}</span> : null}
-              </div>
-            ))}
+      {/* métricas legibles */}
+      {(() => {
+        const aperturas = events.filter((e) => e.tipo === 'open').length
+        const visitantes = new Set(events.filter((e) => e.visitor_id).map((e) => e.visitor_id)).size
+        const leido = events.filter((e) => e.tipo === 'time_on_page').reduce((a, e) => a + Number(e.data?.seconds || 0), 0)
+        const cvs = events.filter((e) => e.tipo === 'cv_download').length
+        const ultima = events[0]?.created_at ?? null
+        const secc = new Map<string, number>()
+        for (const e of events) if (e.tipo === 'section_view') { const s = String(e.data?.section || 'x'); secc.set(s, (secc.get(s) || 0) + Number(e.data?.seconds || 0)) }
+        const seccArr = Array.from(secc.entries()).sort((a, b) => b[1] - a[1])
+        const maxSec = seccArr.length ? seccArr[0][1] : 1
+        const secLabel: Record<string, string> = { encabezado: 'Encabezado', carta: 'Carta', cv: 'CV', video: 'Video' }
+        const tile = (n: string | number, l: string, hot?: boolean) => (
+          <div className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
+            <div className="text-lg font-extrabold" style={{ fontFamily: "'Syne',sans-serif", color: hot ? '#B4451A' : undefined }}>{n}</div>
+            <div className="text-[10.5px] uppercase tracking-wide text-neutral-500">{l}</div>
           </div>
-        )}
-      </div>
+        )
+        const frase = aperturas === 0 ? 'Todavía nadie lo abre.'
+          : visitantes > 1 ? `🔥 Lo abrieron ${visitantes} personas distintas — lo compartieron internamente.`
+          : cvs > 0 ? `Lo abrió, leyó ${dur(leido)} y descargó tu CV.`
+          : leido >= 60 ? `Lo abrió y lleva ${dur(leido)} leyendo.`
+          : `Lo abrió (${dur(leido)} de lectura).`
+        return (
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <b className="text-sm">Actividad</b>
+              <span className="text-xs text-neutral-500">última: {hace(ultima)}</span>
+            </div>
+            <p className="mb-3 text-[13px] text-neutral-700">{frase}</p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {tile(aperturas, 'Aperturas')}
+              {tile(visitantes, 'Visitantes', visitantes > 1)}
+              {tile(dur(leido), 'Tiempo leído')}
+              {tile(cvs, 'Descargas CV')}
+            </div>
+            {seccArr.length > 0 && (
+              <div className="mt-3">
+                <div className="mb-1 text-[11px] uppercase tracking-wide text-neutral-500">Qué leyeron (tiempo por sección)</div>
+                <div className="flex flex-col gap-1.5">
+                  {seccArr.map(([s, sec]) => (
+                    <div key={s} className="flex items-center gap-2 text-xs">
+                      <span className="w-20 shrink-0 text-neutral-600">{secLabel[s] || s}</span>
+                      <div className="h-2.5 flex-1 overflow-hidden rounded bg-neutral-100"><div className="h-full rounded bg-neutral-800" style={{ width: `${Math.round((sec / maxSec) * 100)}%` }} /></div>
+                      <span className="w-12 text-right font-mono text-neutral-500">{dur(sec)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            <button onClick={() => setShowRaw((v) => !v)} className="mt-3 text-xs text-neutral-500 underline">{showRaw ? 'Ocultar' : `Ver eventos (${events.length})`}</button>
+            {showRaw && (
+              <div className="mt-2 flex flex-col gap-1">
+                {events.slice(0, 60).map((e, i) => (
+                  <div key={i} className="flex items-center gap-2 font-mono text-[11px] text-neutral-600">
+                    <span className="text-neutral-400">{new Date(e.created_at).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="font-bold text-neutral-900">{e.tipo}</span>
+                    {e.data?.seconds ? <span>+{String(e.data.seconds)}s</span> : null}
+                    {e.data?.section ? <span>· {String(e.data.section)}</span> : null}
+                    {e.device ? <span>· {e.device}</span> : null}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })()}
     </div>
   )
 }

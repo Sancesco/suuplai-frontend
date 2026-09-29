@@ -3,9 +3,53 @@ import type { Metadata } from 'next'
 import { getSupabaseAdmin, type Application } from '@/lib/aplicaciones'
 import { Tracker } from './Tracker'
 import { CvButton } from './CvButton'
+import { Toolbar } from './Toolbar'
+import { ReadingBar } from './ReadingBar'
 
 export const dynamic = 'force-dynamic'
 const NOMBRE = 'Santiago Céspedes'
+
+const CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=Space+Mono:wght@400;700&display=swap');
+.apx{--ink:#17140F;--muted:#6b6459;--faint:#9c948a;--line:#E4DECF;--paper:#FCFBF6;--accent:#B4451A;--bg:#232420;
+  --syne:'Syne',system-ui,sans-serif;--body:'DM Sans',system-ui,sans-serif;--mono:'Space Mono',ui-monospace,monospace}
+.apx{background:var(--bg);min-height:100dvh;font-family:var(--body);color:var(--ink);padding:20px 12px 48px}
+.apx *{box-sizing:border-box}
+.doc{max-width:680px;margin:0 auto;background:var(--paper);border-radius:16px;box-shadow:0 12px 40px rgba(0,0,0,.28);
+  padding:clamp(26px,5vw,52px)}
+.kick{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+.nm{font-family:var(--syne);font-weight:800;font-size:clamp(30px,7vw,44px);line-height:1.02;letter-spacing:-.02em;margin:6px 0 4px}
+.sub{font-size:16px;color:var(--muted)}
+.sub b{color:var(--ink)}
+.pos{font-size:15.5px;line-height:1.55;color:var(--ink);margin-top:14px;border-left:3px solid var(--accent);padding-left:12px}
+.rule{height:1px;background:var(--line);margin:26px 0}
+.carta{font-size:16.5px;line-height:1.75;color:#2a251d}
+.carta p{margin:0 0 15px}
+.carta strong{font-weight:600;color:var(--ink)}
+.firma{font-family:var(--syne);font-weight:700;font-size:17px;margin-top:22px}
+.cvcard{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:30px;
+  border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:#fff}
+.cvcard .t{font-family:var(--syne);font-weight:700;font-size:15px}
+.cvcard .s{font-size:12px;color:var(--muted)}
+.foot{margin-top:34px;border-top:1px solid var(--line);padding-top:14px;font-size:11px;line-height:1.5;color:var(--faint)}
+.vid{margin:22px 0;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#000}
+.vid video{width:100%;display:block}
+.doc{animation:apxUp .5s ease both}
+@keyframes apxUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.mobcv{display:none}
+@media(max-width:640px){
+  .apx{padding:14px 10px 88px}
+  .mobcv{position:fixed;left:0;right:0;bottom:0;z-index:40;display:flex;padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px));
+    background:rgba(35,36,32,.94);backdrop-filter:blur(8px);border-top:1px solid rgba(255,255,255,.08)}
+}
+@media print{
+  .no-print{display:none!important}
+  .apx{background:#fff;padding:0}
+  .doc{box-shadow:none;border-radius:0;max-width:none;padding:0;animation:none}
+  .mobcv{display:none!important}
+}
+@media(prefers-reduced-motion:reduce){.doc{animation:none}}
+`
 
 async function getApp(slug: string): Promise<Application | null> {
   const sb = getSupabaseAdmin(); if (!sb) return null
@@ -16,7 +60,7 @@ async function getApp(slug: string): Promise<Application | null> {
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const app = await getApp(params.slug)
   if (!app) return { title: 'Aplicación', robots: { index: false, follow: false } }
-  return { title: `${NOMBRE} — ${app.puesto} en ${app.empresa}`, description: app.posicionamiento || undefined, robots: { index: false, follow: false } }
+  return { title: `${NOMBRE} — ${app.puesto} · ${app.empresa}`, description: app.posicionamiento || undefined, robots: { index: false, follow: false } }
 }
 
 export default async function Page({ params }: { params: { slug: string } }) {
@@ -24,51 +68,49 @@ export default async function Page({ params }: { params: { slug: string } }) {
   if (!app || !app.slug) notFound()
 
   return (
-    <main className="min-h-screen bg-[#F4F2EC] text-neutral-900" style={{ fontFamily: "'DM Sans',system-ui,sans-serif" }}>
+    <div className="apx">
+      <style dangerouslySetInnerHTML={{ __html: CSS }} />
+      <ReadingBar />
       <Tracker slug={app.slug} />
-      <div className="mx-auto w-full max-w-[640px] px-5 py-10 md:py-14">
-        {/* encabezado */}
-        <header className="border-b border-neutral-300 pb-6">
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-neutral-500">Aplicación · {app.empresa}</p>
-          <h1 className="mt-2 text-3xl font-extrabold leading-tight tracking-tight md:text-4xl" style={{ fontFamily: "'Syne',system-ui,sans-serif" }}>
-            {NOMBRE}
-          </h1>
-          <p className="mt-1 text-lg text-neutral-700">Aplicando a <strong>{app.puesto}</strong></p>
-          {app.posicionamiento && <p className="mt-3 text-[15px] leading-relaxed text-neutral-600">{app.posicionamiento}</p>}
-        </header>
+      <Toolbar slug={app.slug} cvUrl={app.cv_url} cvNombre={app.cv_nombre} />
 
-        {/* video (opcional, se llena en pasos siguientes) */}
+      <article className="doc">
+        <div data-section="encabezado">
+          <p className="kick">Aplicación · {app.empresa}</p>
+          <h1 className="nm">{NOMBRE}</h1>
+          <p className="sub">Aplicando a <b>{app.puesto}</b>{app.persona ? <> · para {app.persona}</> : null}</p>
+          {app.posicionamiento && <p className="pos">{app.posicionamiento}</p>}
+        </div>
+
+        <div className="rule" />
+
         {app.video_url && (
-          <div className="mt-8 overflow-hidden rounded-xl border border-neutral-300 bg-black">
-            <video src={app.video_url} controls playsInline className="w-full" />
-          </div>
+          <div className="vid" data-section="video"><video src={app.video_url} controls playsInline /></div>
         )}
 
-        {/* carta */}
         {app.carta ? (
-          <article
-            className="mt-8 text-[16px] leading-[1.7] text-neutral-800 [&_p]:mb-4 [&_strong]:font-semibold"
-            style={{ fontFamily: "'DM Sans',system-ui,sans-serif" }}
-            dangerouslySetInnerHTML={{ __html: app.carta }}
-          />
-        ) : (
-          <p className="mt-8 text-neutral-500">…</p>
-        )}
+          <div data-section="carta">
+            <div className="carta" dangerouslySetInnerHTML={{ __html: app.carta }} />
+            <p className="firma">— {NOMBRE}</p>
+          </div>
+        ) : <p className="carta" style={{ color: 'var(--faint)' }}>…</p>}
 
-        {/* CV */}
         {app.cv_url && (
-          <div className="mt-8">
+          <div className="cvcard" data-section="cv">
+            <div>
+              <div className="t">Currículum</div>
+              <div className="s">{app.cv_nombre || 'CV en PDF'}</div>
+            </div>
             <CvButton slug={app.slug} cvUrl={app.cv_url} cvNombre={app.cv_nombre} />
           </div>
         )}
 
-        {/* pie */}
-        <footer className="mt-14 border-t border-neutral-300 pt-5">
-          <p className="text-[11px] leading-relaxed text-neutral-400">
-            Este documento registra interacciones (aperturas, tiempo de lectura, descargas) para dar seguimiento a la aplicación. No se guarda tu dirección IP.
-          </p>
-        </footer>
-      </div>
-    </main>
+        <div className="foot">
+          Este documento registra interacciones (aperturas, tiempo de lectura, descargas) para dar seguimiento a la aplicación. No se guarda tu dirección IP.
+        </div>
+      </article>
+
+      {app.cv_url && <div className="mobcv no-print"><CvButton slug={app.slug} cvUrl={app.cv_url} cvNombre={app.cv_nombre} full /></div>}
+    </div>
   )
 }

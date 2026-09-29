@@ -1,16 +1,13 @@
-// Envío de mensajes a Telegram. Envuelto en try/catch: si falla, solo console.error.
-// NUNCA lanza excepción ni retrasa nada (se llama sin await desde el redirect).
+// Envía un mensaje a Telegram (usa TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID). No bloquea.
 export async function sendTelegram(text: string): Promise<void> {
-  const token = process.env.TELEGRAM_BOT_TOKEN
-  const chatId = process.env.TELEGRAM_CHAT_ID
-  if (!token || !chatId) return
   try {
+    const token = process.env.TELEGRAM_BOT_TOKEN
+    const chat = process.env.TELEGRAM_CHAT_ID
+    if (!token || !chat) return
     await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+      body: JSON.stringify({ chat_id: chat, text, parse_mode: 'HTML', disable_web_page_preview: true }),
     })
-  } catch (err) {
-    console.error('[telegram] error:', err)
-  }
+  } catch { /* noop */ }
 }
