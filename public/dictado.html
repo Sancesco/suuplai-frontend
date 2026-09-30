@@ -95,6 +95,8 @@
   var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   var rec = null, activo = null, n = 0, cards = [];
   var latido = null, ultimo = 0, reinicios = 0, wake = null;
+  var deseado = false;   // ¿el usuario quiere seguir grabando esta sección?
+  var corriendo = false; // ¿hay una instancia de reconocimiento viva ahora mismo?
   // Referencias directas: en modo Flotante el panel vive en OTRO documento (PiP),
   // por lo que document.getElementById del documento principal devolvería null.
   var listEl = document.getElementById("list");
@@ -111,21 +113,19 @@
 
   function marcarVivo(){ ultimo = Date.now(); }
 
-  function relanzar(){
-    if(activo == null || !rec) return;
-    reinicios++;
-    try{ rec.start(); marcarVivo(); }
-    catch(e){ /* ya estaba corriendo: no lo tocamos */ marcarVivo(); }
-  }
-
   function arrancarVigilante(){
     if(latido) return;
     marcarVivo();
+    // Respaldo rápido: si el reconocimiento murió y no revivió solo, lo revivimos en frío.
     latido = setInterval(function(){
-      if(activo == null) return;
-      // Solo si lleva mucho tiempo mudo de verdad, y sin abortar nada.
-      if(Date.now() - ultimo > 30000) relanzar();
-    }, 10000);
+      if(!deseado || activo == null) return;
+      if(!corriendo && Date.now() - ultimo > 3000){
+        reiniciar(activo);           // se apagó y no volvió: instancia nueva ya.
+      } else if(corriendo && Date.now() - ultimo > 55000){
+        // Vivo pero 55s sin un solo evento: el servicio pudo colgarse. Lo reciclamos.
+        try{ if(rec) rec.stop(); }catch(e){}   // onend disparará reiniciar()
+      }
+    }, 3000);
   }
   function pararVigilante(){
     if(latido){ clearInterval(latido); latido = null; }
@@ -145,18 +145,12 @@
 
   if(!SR){ msgEl.textContent = "Este navegador no reconoce voz. Ábrelo en Google Chrome."; }
 
-  function stopSilencioso(){
-    if(activo == null) return;
-    var c = cards[activo]; activo = null;
-    if(rec){ try{ rec.abort(); }catch(e){} rec = null; }
-    if(c){ c.el.classList.remove("live"); }
-  }
-
   function stop(){
     if(activo == null) return;
+    deseado = false; corriendo = false;
     pararVigilante(); soltarWakeLock();
     var c = cards[activo]; activo = null;
-    if(rec){ try{ rec.stop(); }catch(e){} rec = null; }
+    if(rec){ try{ rec.onend = null; rec.stop(); }catch(e){} rec = null; }
     if(c){
       c.btn.classList.remove("on"); c.btn.classList.add("go");
       c.btn.querySelector(".dot").classList.remove("blink");
@@ -166,50 +160,66 @@
     }
   }
 
-  function start(i){
-    if(!SR) return;
-    stop();
-    activo = i;
+  // Crea una instancia nueva de reconocimiento para la sección i y la conecta.
+  function nuevaRec(i){
     var c = cards[i];
-    rec = new SR();
-    rec.lang = lang; rec.continuous = true; rec.interimResults = true;
-    rec.onresult = function(e){
+    var r = new SR();
+    r.lang = lang; r.continuous = true; r.interimResults = true;
+    r.onresult = function(e){
       marcarVivo();
       var interim = "";
       for(var k = e.resultIndex; k < e.results.length; k++){
-        var r = e.results[k];
-        if(r.isFinal){
-          var t = r[0].transcript.trim();
+        var rr = e.results[k];
+        if(rr.isFinal){
+          var t = rr[0].transcript.trim();
           if(t){ c.ta.value += (c.ta.value ? " " : "") + t; c.ta.scrollTop = c.ta.scrollHeight; }
-        } else { interim += r[0].transcript; }
+        } else { interim += rr[0].transcript; }
       }
       c.interim.textContent = interim;
     };
-    rec.onaudiostart = marcarVivo;
-    rec.onspeechstart = marcarVivo;
-    rec.onsoundstart = marcarVivo;
-    rec.onstart = marcarVivo;
-    rec.onerror = function(e){
+    r.onstart = function(){ corriendo = true; marcarVivo(); };
+    r.onaudiostart = marcarVivo;
+    r.onspeechstart = marcarVivo;
+    r.onsoundstart = marcarVivo;
+    r.onerror = function(e){
       // Sin permiso no hay nada que hacer: eso sí detiene.
       if(e.error === "not-allowed" || e.error === "service-not-allowed"){
         msgEl.textContent = "Chrome bloqueó el micrófono. Dale permiso en el candado de la barra de direcciones.";
         stop(); return;
       }
-      // Todo lo demás (silencio, corte de red, aborto) se revive solo.
+      // Todo lo demás (silencio, corte de red, aborto) se revive solo en onend.
       marcarVivo();
       if(e.error === "network"){
         msgEl.textContent = "Se cortó la conexión un momento; sigo reintentando.";
       }
     };
-    rec.onend = function(){
-      if(activo !== i) return;
-      setTimeout(function(){
-        if(activo !== i) return;
-        try{ rec.start(); marcarVivo(); }
-        catch(err){ stopSilencioso(); start(i); }
-      }, 120);
+    r.onend = function(){
+      corriendo = false;
+      if(deseado && activo === i) reiniciar(i);  // el corte de Chrome se revive de inmediato.
     };
-    try{ rec.start(); }catch(err){}
+    return r;
+  }
+
+  // Reinicia (o inicia) el reconocimiento de la sección i con una instancia limpia.
+  function reiniciar(i){
+    if(!deseado || activo !== i) return;
+    try{
+      rec = nuevaRec(i);
+      rec.start();
+      marcarVivo();
+    }catch(err){
+      // Chrome a veces rebota si arrancamos demasiado pronto: reintenta en frío.
+      corriendo = false; reinicios++;
+      setTimeout(function(){ reiniciar(i); }, 300);
+    }
+  }
+
+  function start(i){
+    if(!SR) return;
+    stop();
+    activo = i; deseado = true;
+    var c = cards[i];
+    reiniciar(i);
     arrancarVigilante();
     pedirWakeLock();
     c.btn.classList.add("on"); c.btn.classList.remove("go");
