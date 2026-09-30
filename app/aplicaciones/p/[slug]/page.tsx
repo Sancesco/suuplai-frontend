@@ -125,7 +125,7 @@ export default async function Page({ params }: { params: { slug: string } }) {
         )}
 
         <div className="foot">
-          Este documento registra interacciones (aperturas, tiempo de lectura, descargas) para dar seguimiento a la aplicación. No se guarda tu dirección IP.
+          {NOMBRE} · {app.empresa}
         </div>
       </article>
     </div>
