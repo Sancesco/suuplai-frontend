@@ -25,6 +25,7 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const patch: Record<string, unknown> = {}
   for (const k of ['posicionamiento', 'carta', 'cv_url', 'cv_nombre', 'video_url']) if (b?.[k] !== undefined) patch[k] = b[k]
+  if (b?.solo_cv !== undefined) patch.solo_cv = b.solo_cv === true
   if (b?.estado && ESTADOS.includes(String(b.estado))) patch.estado = b.estado
 
   // Reanalizar (si falló al crear o cambió la vacante)
@@ -35,7 +36,11 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   // Publicar: genera slug único y deja el link listo.
   if (b?.action === 'publicar') {
-    if (a.analysis?.obligatoria && !String(a.carta ?? '').trim() && !b?.forzar) {
+    const soloCv = patch.solo_cv !== undefined ? patch.solo_cv === true : a.solo_cv === true
+    if (soloCv) {
+      const cv = patch.cv_url !== undefined ? String(patch.cv_url ?? '').trim() : String(a.cv_url ?? '').trim()
+      if (!cv) return NextResponse.json({ ok: false, error: 'Sube el CV antes de publicar el link de solo CV.' }, { status: 400 })
+    } else if (a.analysis?.obligatoria && !String(a.carta ?? '').trim() && !b?.forzar) {
       return NextResponse.json({ ok: false, error: 'La vacante pide algo obligatorio: ' + a.analysis.obligatoria + '. Cúbrelo en la carta antes de publicar.' }, { status: 400 })
     }
     let slug = a.slug

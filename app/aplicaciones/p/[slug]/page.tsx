@@ -31,6 +31,11 @@ const CSS = `
   border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:#fff}
 .cvcard .t{font-family:var(--syne);font-weight:700;font-size:15px}
 .cvcard .s{font-size:12px;color:var(--muted)}
+.cvframe{margin-top:18px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff}
+.cvframe iframe{width:100%;height:min(78vh,900px);border:0;display:block}
+.cvhero{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;margin-top:8px}
+.cvhero .lead{font-size:15px;color:var(--muted);max-width:44ch}
+@media(max-width:640px){.cvframe iframe{height:62vh}}
 .foot{margin-top:34px;border-top:1px solid var(--line);padding-top:14px;font-size:11px;line-height:1.5;color:var(--faint)}
 .vid{margin:22px 0;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#000}
 .vid video{width:100%;display:block}
@@ -76,9 +81,9 @@ export default async function Page({ params }: { params: { slug: string } }) {
 
       <article className="doc">
         <div data-section="encabezado">
-          <p className="kick">Aplicación · {app.empresa}</p>
+          <p className="kick">{app.solo_cv ? 'Currículum' : 'Aplicación'} · {app.empresa}</p>
           <h1 className="nm">{NOMBRE}</h1>
-          <p className="sub">Aplicando a <b>{app.puesto}</b>{app.persona ? <> · para {app.persona}</> : null}</p>
+          <p className="sub">{app.solo_cv ? <>Currículum para <b>{app.puesto}</b></> : <>Aplicando a <b>{app.puesto}</b></>}{app.persona ? <> · para {app.persona}</> : null}</p>
           {app.posicionamiento && <p className="pos">{app.posicionamiento}</p>}
         </div>
 
@@ -88,21 +93,35 @@ export default async function Page({ params }: { params: { slug: string } }) {
           <div className="vid" data-section="video"><video src={app.video_url} controls playsInline /></div>
         )}
 
-        {app.carta ? (
-          <div data-section="carta">
-            <div className="carta" dangerouslySetInnerHTML={{ __html: app.carta }} />
-            <p className="firma">— {NOMBRE}</p>
-          </div>
-        ) : <p className="carta" style={{ color: 'var(--faint)' }}>…</p>}
-
-        {app.cv_url && (
-          <div className="cvcard" data-section="cv">
-            <div>
-              <div className="t">Currículum</div>
-              <div className="s">{app.cv_nombre || 'CV en PDF'}</div>
+        {app.solo_cv ? (
+          app.cv_url && (
+            <div data-section="cv">
+              <div className="cvhero">
+                {!app.posicionamiento && <p className="lead">Aquí está mi currículum. Puedes verlo abajo o descargarlo.</p>}
+                <CvButton slug={app.slug} cvUrl={app.cv_url} cvNombre={app.cv_nombre} />
+              </div>
+              <div className="cvframe"><iframe src={`${app.cv_url}#toolbar=0&view=FitH`} title="Currículum" /></div>
             </div>
-            <CvButton slug={app.slug} cvUrl={app.cv_url} cvNombre={app.cv_nombre} />
-          </div>
+          )
+        ) : (
+          <>
+            {app.carta ? (
+              <div data-section="carta">
+                <div className="carta" dangerouslySetInnerHTML={{ __html: app.carta }} />
+                <p className="firma">— {NOMBRE}</p>
+              </div>
+            ) : <p className="carta" style={{ color: 'var(--faint)' }}>…</p>}
+
+            {app.cv_url && (
+              <div className="cvcard" data-section="cv">
+                <div>
+                  <div className="t">Currículum</div>
+                  <div className="s">{app.cv_nombre || 'CV en PDF'}</div>
+                </div>
+                <CvButton slug={app.slug} cvUrl={app.cv_url} cvNombre={app.cv_nombre} />
+              </div>
+            )}
+          </>
         )}
 
         <div className="foot">

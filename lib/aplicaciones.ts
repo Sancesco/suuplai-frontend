@@ -25,6 +25,7 @@ export type Application = {
   id: string; slug: string | null; empresa: string; puesto: string; persona: string | null; correo: string | null
   vacante: string; analysis: Analysis | null; posicionamiento: string | null; carta: string | null
   cv_url: string | null; cv_nombre: string | null; video_url: string | null; estado: string; created_at: string
+  solo_cv: boolean
 }
 
 // ── Utilidades ──

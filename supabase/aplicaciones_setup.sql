@@ -15,6 +15,7 @@ create table if not exists app_applications (
   cv_url        text,                        -- CV para descargar
   cv_nombre     text,
   video_url     text,
+  solo_cv       boolean not null default false,  -- link que muestra solo el CV (sin carta)
   estado        text not null default 'borrador', -- borrador/enviada/abierta/leida/compartida/respondida/rechazada
   created_at    timestamptz not null default now()
 );

@@ -28,7 +28,7 @@ export async function GET(req: Request) {
     const s = stats.get(a.id)
     return {
       id: a.id, empresa: a.empresa, puesto: a.puesto, persona: a.persona, slug: a.slug, estado: a.estado,
-      match_pct: a.analysis?.match_pct ?? null, created_at: a.created_at,
+      match_pct: a.analysis?.match_pct ?? null, created_at: a.created_at, solo_cv: a.solo_cv === true,
       opens: s?.opens ?? 0, visitors: s ? s.visitors.size : 0, seconds: s?.seconds ?? 0, cv: s?.cv ?? 0, last: s?.last ?? null,
     }
   })
@@ -43,14 +43,17 @@ export async function POST(req: Request) {
   const empresa = String(b?.empresa ?? '').trim()
   const puesto = String(b?.puesto ?? '').trim()
   const vacante = String(b?.vacante ?? '').trim()
-  if (!empresa || !puesto || !vacante) return NextResponse.json({ ok: false, error: 'faltan empresa, puesto o vacante' }, { status: 400 })
+  const soloCv = b?.solo_cv === true
+  // Sin carta: la vacante es opcional (la cover letter ya va por otro lado, ej. el mail).
+  if (!empresa || !puesto || (!soloCv && !vacante)) return NextResponse.json({ ok: false, error: 'faltan empresa, puesto o vacante' }, { status: 400 })
 
   let analysis = null
-  try { analysis = await analizarVacante(empresa, puesto, vacante) } catch { /* se puede reintentar luego */ }
+  if (vacante) { try { analysis = await analizarVacante(empresa, puesto, vacante) } catch { /* se puede reintentar luego */ } }
 
   const { data, error } = await sb.from('app_applications').insert({
     empresa, puesto, persona: String(b?.persona ?? '').trim() || null, correo: String(b?.correo ?? '').trim() || null,
     vacante, analysis, estado: 'borrador',
+    ...(soloCv ? { solo_cv: true } : {}), // solo referimos la columna nueva cuando hace falta
   }).select('id').single()
   if (error || !data) return NextResponse.json({ ok: false, error: 'no se pudo crear', detail: error?.message }, { status: 500 })
   return NextResponse.json({ ok: true, id: data.id, analysis })

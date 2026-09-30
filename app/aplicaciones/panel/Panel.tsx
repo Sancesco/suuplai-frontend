@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 type Estado = 'borrador' | 'enviada' | 'abierta' | 'leida' | 'compartida' | 'respondida' | 'rechazada'
-interface Row { id: string; empresa: string; puesto: string; persona: string | null; slug: string | null; estado: Estado; match_pct: number | null; created_at: string; opens: number; visitors: number; seconds: number; cv: number; last: string | null }
+interface Row { id: string; empresa: string; puesto: string; persona: string | null; slug: string | null; estado: Estado; match_pct: number | null; created_at: string; opens: number; visitors: number; seconds: number; cv: number; last: string | null; solo_cv: boolean }
 function hace(iso: string | null): string {
   if (!iso) return '—'
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
@@ -15,7 +15,7 @@ function hace(iso: string | null): string {
 function dur(sec: number): string { return sec >= 60 ? `${Math.floor(sec / 60)}m ${sec % 60}s` : `${sec}s` }
 interface Requisito { texto: string; estado: 'cumple' | 'parcial' | 'no_cumple'; evidencia: string }
 interface Analysis { requisitos: Requisito[]; match_pct: number; veredicto: string; argumentos: string[]; huecos: string[]; obligatoria: string | null }
-interface App { id: string; slug: string | null; empresa: string; puesto: string; persona: string | null; correo: string | null; vacante: string; analysis: Analysis | null; posicionamiento: string | null; carta: string | null; cv_url: string | null; cv_nombre: string | null; video_url: string | null; estado: Estado }
+interface App { id: string; slug: string | null; empresa: string; puesto: string; persona: string | null; correo: string | null; vacante: string; analysis: Analysis | null; posicionamiento: string | null; carta: string | null; cv_url: string | null; cv_nombre: string | null; video_url: string | null; estado: Estado; solo_cv: boolean }
 interface Ev { tipo: string; visitor_id: string | null; data: Record<string, unknown> | null; device: string | null; created_at: string }
 
 const EST_LABEL: Record<Estado, string> = { borrador: 'Borrador', enviada: 'Enviada', abierta: 'Abierta', leida: 'Leída', compartida: '🔥 Compartida', respondida: 'Respondida', rechazada: 'Rechazada' }
@@ -100,6 +100,7 @@ export function Panel() {
                           <div className="flex items-center gap-2">
                             <b className="text-[15px]">{r.empresa}</b>
                             <span className="text-sm text-neutral-500">· {r.puesto}</span>
+                            {r.solo_cv && <span className="rounded bg-neutral-200 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-neutral-600">Solo CV</span>}
                           </div>
                           <div className="mt-0.5 flex items-center gap-2 text-xs text-neutral-500">
                             <span className="rounded px-1.5 py-0.5 font-mono" style={{ background: ic.bg, color: ic.c }}>{EST_LABEL[r.estado]}</span>
@@ -124,13 +125,15 @@ export function Panel() {
 
 function NuevaApp({ hdr, onCreated }: { hdr: Record<string, string>; onCreated: (id: string) => void }) {
   const [f, setF] = useState({ empresa: '', puesto: '', persona: '', correo: '', vacante: '' })
+  const [soloCv, setSoloCv] = useState(false)
   const [busy, setBusy] = useState(false); const [msg, setMsg] = useState('')
   const set = (k: string, v: string) => setF({ ...f, [k]: v })
   const crear = async () => {
-    if (!f.empresa.trim() || !f.puesto.trim() || !f.vacante.trim()) { setMsg('Faltan empresa, puesto o el texto de la vacante.'); return }
-    setBusy(true); setMsg('Analizando la vacante contra tu perfil…')
+    if (!f.empresa.trim() || !f.puesto.trim()) { setMsg('Faltan empresa o puesto.'); return }
+    if (!soloCv && !f.vacante.trim()) { setMsg('Pega el texto de la vacante, o activa “Sin carta (solo CV)”.'); return }
+    setBusy(true); setMsg(soloCv ? 'Creando…' : 'Analizando la vacante contra tu perfil…')
     try {
-      const r = await fetch('/api/aplicaciones/applications', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify(f) })
+      const r = await fetch('/api/aplicaciones/applications', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ ...f, solo_cv: soloCv }) })
       const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error')
       onCreated(j.id)
     } catch (e) { setMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')) } finally { setBusy(false) }
@@ -144,9 +147,14 @@ function NuevaApp({ hdr, onCreated }: { hdr: Record<string, string>; onCreated: 
         <input className={inp} placeholder="Persona destinataria (opcional)" value={f.persona} onChange={(e) => set('persona', e.target.value)} />
         <input className={inp} placeholder="Correo (opcional)" value={f.correo} onChange={(e) => set('correo', e.target.value)} />
       </div>
-      <textarea className={`${inp} mt-3`} rows={6} placeholder="Pega aquí el texto completo de la vacante…" value={f.vacante} onChange={(e) => set('vacante', e.target.value)} />
+      <label className="mt-3 flex cursor-pointer items-start gap-2 rounded-lg bg-neutral-50 px-3 py-2 text-sm">
+        <input type="checkbox" checked={soloCv} onChange={(e) => setSoloCv(e.target.checked)} className="mt-0.5" />
+        <span><b>Sin carta (solo CV)</b> · para cuando la cover letter ya va en el mail. Crea un link que solo muestra el CV y rastrea aperturas y descargas. La vacante es opcional.</span>
+      </label>
+      {!soloCv && <textarea className={`${inp} mt-3`} rows={6} placeholder="Pega aquí el texto completo de la vacante…" value={f.vacante} onChange={(e) => set('vacante', e.target.value)} />}
+      {soloCv && <textarea className={`${inp} mt-3`} rows={3} placeholder="Texto de la vacante (opcional, solo si quieres el análisis)…" value={f.vacante} onChange={(e) => set('vacante', e.target.value)} />}
       {msg && <p className="mt-2 text-sm text-neutral-600">{msg}</p>}
-      <button onClick={crear} disabled={busy} className="mt-3 rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-bold text-lime-300 disabled:opacity-50">{busy ? 'Analizando…' : 'Crear y analizar'}</button>
+      <button onClick={crear} disabled={busy} className="mt-3 rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-bold text-lime-300 disabled:opacity-50">{busy ? (soloCv ? 'Creando…' : 'Analizando…') : (soloCv ? 'Crear (solo CV)' : 'Crear y analizar')}</button>
     </div>
   )
 }
@@ -184,8 +192,14 @@ function Detalle({ id, hdr, onChange }: { id: string; hdr: Record<string, string
 
   return (
     <div className="flex flex-col gap-5 border-t border-neutral-200 p-4">
+      {/* modo */}
+      <label className="flex cursor-pointer items-center gap-2 self-start rounded-lg bg-neutral-50 px-3 py-1.5 text-sm">
+        <input type="checkbox" checked={app.solo_cv} onChange={(e) => patch({ solo_cv: e.target.checked }, 'modo')} disabled={busy === 'modo'} />
+        <span><b>Sin carta (solo CV)</b> — el link muestra solo el currículum</span>
+      </label>
+
       {/* análisis */}
-      {an ? (
+      {!app.solo_cv && (an ? (
         <div>
           <div className="mb-2 flex items-center gap-3">
             <span className="font-mono text-3xl font-extrabold" style={{ color: an.match_pct >= 70 ? '#1E8E5A' : an.match_pct >= 45 ? '#E8A317' : '#B4451A' }}>{an.match_pct}%</span>
@@ -200,9 +214,10 @@ function Detalle({ id, hdr, onChange }: { id: string; hdr: Record<string, string
           {an.argumentos.length > 0 && <p className="mt-3 text-[13px]"><b>Argumentos fuertes:</b> {an.argumentos.join(' · ')}</p>}
           {an.huecos.length > 0 && <p className="mt-1 text-[13px] text-[#B4451A]"><b>Huecos:</b> {an.huecos.join(' · ')}</p>}
         </div>
-      ) : <button onClick={() => patch({ action: 'reanalizar' }, 'rean')} className="self-start rounded-lg border border-neutral-900 px-3 py-1.5 text-sm">{busy === 'rean' ? 'Analizando…' : 'Analizar vacante'}</button>}
+      ) : <button onClick={() => patch({ action: 'reanalizar' }, 'rean')} className="self-start rounded-lg border border-neutral-900 px-3 py-1.5 text-sm">{busy === 'rean' ? 'Analizando…' : 'Analizar vacante'}</button>)}
 
-      {/* carta */}
+      {/* carta (no aplica en modo solo CV) */}
+      {!app.solo_cv && (
       <div>
         <div className="mb-2 flex items-center justify-between">
           <b className="text-sm">Carta</b>
@@ -211,6 +226,7 @@ function Detalle({ id, hdr, onChange }: { id: string; hdr: Record<string, string
         <input className="mb-2 w-full rounded border border-neutral-300 px-2 py-1.5 text-sm" placeholder="Línea de posicionamiento" defaultValue={app.posicionamiento ?? ''} onBlur={(e) => { if (e.target.value !== (app.posicionamiento ?? '')) patch({ posicionamiento: e.target.value }, 'pos') }} />
         <textarea className="w-full rounded border border-neutral-300 px-2 py-2 text-[13px] font-mono" rows={8} defaultValue={app.carta ?? ''} placeholder="La carta (HTML) — edítala aquí; se guarda al salir del campo." onBlur={(e) => { if (e.target.value !== (app.carta ?? '')) patch({ carta: e.target.value }, 'car') }} />
       </div>
+      )}
 
       {/* CV: subir archivo o pegar URL */}
       <div>
