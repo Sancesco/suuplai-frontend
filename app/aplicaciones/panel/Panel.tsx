@@ -262,11 +262,13 @@ function Detalle({ id, hdr, onChange }: { id: string; hdr: Record<string, string
             <div className="text-[10.5px] uppercase tracking-wide text-neutral-500">{l}</div>
           </div>
         )
+        const lugares = Array.from(new Set(events.filter((e) => e.tipo === 'open' && e.data?.geo).map((e) => String(e.data!.geo))))
         const frase = aperturas === 0 ? 'Todavía nadie lo abre.'
+          : lugares.length > 1 ? `📍🔥 Lo abrieron desde ${lugares.length} ciudades (${lugares.join(' · ')}) — señal de que lo compartieron a otro lado.`
           : visitantes > 1 ? `🔥 Lo abrieron ${visitantes} personas distintas — lo compartieron internamente.`
-          : cvs > 0 ? `Lo abrió, leyó ${dur(leido)} y descargó tu CV.`
-          : leido >= 60 ? `Lo abrió y lleva ${dur(leido)} leyendo.`
-          : `Lo abrió (${dur(leido)} de lectura).`
+          : cvs > 0 ? `Lo abrió, leyó ${dur(leido)} y descargó tu CV${lugares[0] ? ` desde ${lugares[0]}` : ''}.`
+          : leido >= 60 ? `Lo abrió y lleva ${dur(leido)} leyendo${lugares[0] ? ` desde ${lugares[0]}` : ''}.`
+          : `Lo abrió${lugares[0] ? ` desde ${lugares[0]}` : ''} (${dur(leido)} de lectura).`
         return (
           <div>
             <div className="mb-2 flex items-center justify-between">
@@ -280,6 +282,9 @@ function Detalle({ id, hdr, onChange }: { id: string; hdr: Record<string, string
               {tile(dur(leido), 'Tiempo leído')}
               {tile(cvs, 'Descargas CV')}
             </div>
+            {lugares.length > 0 && (
+              <div className="mt-2 text-[12px] text-neutral-700"><b>📍 Lugares:</b> {lugares.join(' · ')}{lugares.length > 1 && <span className="font-semibold text-[#B4451A]"> — abierto desde varias ciudades</span>}</div>
+            )}
             {seccArr.length > 0 && (
               <div className="mt-3">
                 <div className="mb-1 text-[11px] uppercase tracking-wide text-neutral-500">Qué leyeron (tiempo por sección)</div>
@@ -303,6 +308,7 @@ function Detalle({ id, hdr, onChange }: { id: string; hdr: Record<string, string
                     <span className="font-bold text-neutral-900">{e.tipo}</span>
                     {e.data?.seconds ? <span>+{String(e.data.seconds)}s</span> : null}
                     {e.data?.section ? <span>· {String(e.data.section)}</span> : null}
+                    {e.data?.geo ? <span>· 📍 {String(e.data.geo)}</span> : null}
                     {e.device ? <span>· {e.device}</span> : null}
                   </div>
                 ))}

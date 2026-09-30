@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { randomBytes } from 'crypto'
-import { getSupabaseAdmin, ipHash, deviceOf } from '@/lib/aplicaciones'
+import { getSupabaseAdmin, ipHash, deviceOf, geoOf } from '@/lib/aplicaciones'
 import { sendTelegram } from '@/lib/telegram'
 
 export const runtime = 'nodejs'
@@ -18,7 +18,8 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
   let setCookie: string | null = null
   if (!vid) { vid = randomBytes(16).toString('hex'); setCookie = `app_vid=${vid}; Path=/; Max-Age=31536000; SameSite=Lax` }
 
-  await sb.from('app_events').insert({ application_id: app.id, slug: app.slug, visitor_id: vid, tipo: 'cv_download', ip_hash: ipHash(req), device: deviceOf(req), data: { via: 'link' } })
+  const geo = geoOf(req)
+  await sb.from('app_events').insert({ application_id: app.id, slug: app.slug, visitor_id: vid, tipo: 'cv_download', ip_hash: ipHash(req), device: deviceOf(req), data: { via: 'link', ...(geo.label ? { geo: geo.label, ciudad: geo.ciudad } : {}) } })
 
   // alerta con anti-spam (2 min)
   const { data: ev } = await sb.from('app_events').select('tipo').eq('application_id', app.id)
@@ -26,7 +27,7 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
   const { data: last } = await sb.from('app_alerts').select('sent_at').eq('application_id', app.id).eq('tipo', 'cv_download').order('sent_at', { ascending: false }).limit(1).maybeSingle()
   if (!last || Date.now() - new Date(last.sent_at).getTime() > 2 * 60000) {
     await sb.from('app_alerts').insert({ application_id: app.id, tipo: 'cv_download' })
-    const et = `<b>${app.empresa}</b> · ${app.puesto}`
+    const et = `<b>${app.empresa}</b> · ${app.puesto}${geo.label ? ` · 📍 ${geo.label}` : ''}`
     await sendTelegram(cvCount <= 1 ? `📄 <b>Descargaron tu CV</b> (link directo)\n${et}` : `📄🔁 <b>Volvieron a descargar tu CV</b> (${cvCount}ª vez)\n${et}`)
   }
 

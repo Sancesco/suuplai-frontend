@@ -43,6 +43,16 @@ export function deviceOf(req: Request): string {
   return 'escritorio'
 }
 
+// Geo aproximada (ciudad/estado/país) desde las cabeceras de Vercel. NO usa ni guarda la IP.
+export function geoOf(req: Request): { ciudad: string; region: string; pais: string; label: string } {
+  const dec = (s: string | null) => { try { return s ? decodeURIComponent(s) : '' } catch { return s || '' } }
+  const ciudad = dec(req.headers.get('x-vercel-ip-city'))
+  const region = dec(req.headers.get('x-vercel-ip-country-region'))
+  const pais = dec(req.headers.get('x-vercel-ip-country'))
+  const label = [ciudad, region, pais].filter(Boolean).join(', ')
+  return { ciudad, region, pais, label }
+}
+
 // ── Análisis de vacante vs perfil (IA, honesto, sin inventar) ──
 const SYSTEM_ANALISIS = `Eres un analista de reclutamiento BRUTALMENTE HONESTO. Comparas una vacante contra el PERFIL de un candidato.
 REGLA DURA: solo usas lo que está en el perfil. NUNCA inventes ni infles experiencia, años, tecnologías ni números. Si algo no está en el perfil, es "no_cumple" o "parcial", no lo adornes.

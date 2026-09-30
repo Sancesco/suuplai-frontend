@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getSupabaseAdmin, ipHash, deviceOf } from '@/lib/aplicaciones'
+import { getSupabaseAdmin, ipHash, deviceOf, geoOf } from '@/lib/aplicaciones'
 import { sendTelegram } from '@/lib/telegram'
 
 export const runtime = 'nodejs'
@@ -38,15 +38,16 @@ export async function POST(req: Request) {
   const { data: app } = await sb.from('app_applications').select('id,estado,empresa,puesto').eq('slug', slug).maybeSingle()
   if (!app) return NextResponse.json({ ok: false }, { status: 404 })
 
+  const geo = geoOf(req)
   await sb.from('app_events').insert({
     application_id: app.id, slug, visitor_id: visitor, tipo,
-    data: (b?.data && typeof b.data === 'object') ? b.data : null,
+    data: { ...(b?.data && typeof b.data === 'object' ? b.data : {}), ...(geo.label ? { geo: geo.label, ciudad: geo.ciudad } : {}) },
     ip_hash: ipHash(req), referrer: String(b?.referrer ?? '').slice(0, 300) || null, device: deviceOf(req),
   })
 
   // Estado automático + alertas (sin bajar de respondida/rechazada; nunca por heartbeat).
   const { data: ev } = await sb.from('app_events').select('tipo,visitor_id,data').eq('application_id', app.id)
-  const rows = (ev ?? []) as { tipo: string; visitor_id: string | null; data: { seconds?: number } | null }[]
+  const rows = (ev ?? []) as { tipo: string; visitor_id: string | null; data: { seconds?: number; geo?: string; ciudad?: string } | null }[]
   const visitors = new Set(rows.filter((r) => r.visitor_id).map((r) => r.visitor_id))
   const seconds = rows.filter((r) => r.tipo === 'time_on_page').reduce((a, r) => a + Number(r.data?.seconds || 0), 0)
   const opensCount = rows.filter((r) => r.tipo === 'open').length
@@ -61,11 +62,16 @@ export async function POST(req: Request) {
     if ((RANK[nuevo] || 0) > (RANK[app.estado] || 0)) await sb.from('app_applications').update({ estado: nuevo }).eq('id', app.id)
   }
 
+  // Ciudades distintas desde donde se ha abierto (señal fuerte de que lo compartieron a otro lado).
+  const ciudades = new Set(rows.filter((r) => r.tipo === 'open' && r.data?.ciudad).map((r) => r.data!.ciudad as string))
+  const donde = geo.label ? ` · 📍 ${geo.label}` : ''
+
   // Aperturas y descargas avisan también en repetidas (con anti-spam de unos minutos).
   if (tipo === 'open') {
-    const texto = opensCount <= 1 ? `👀 <b>Abrieron</b> tu aplicación\n${et}\n<a href="${link}">ver</a>` : `🔁 <b>Volvieron a abrir</b> (${opensCount}ª vez)\n${et}\n<a href="${link}">ver</a>`
+    const texto = opensCount <= 1 ? `👀 <b>Abrieron</b> tu aplicación${donde}\n${et}\n<a href="${link}">ver</a>` : `🔁 <b>Volvieron a abrir</b> (${opensCount}ª vez)${donde}\n${et}\n<a href="${link}">ver</a>`
     await alertaThrottle(sb, app.id, 'open', texto, 3)
   }
+  if (ciudades.size >= 2) await alertaOnce(sb, app.id, 'otra_ciudad', `📍🔥 <b>Abrieron desde OTRA ciudad</b> (${Array.from(ciudades).join(' · ')})\nSeñal fuerte: probablemente lo compartieron.\n${et}\n<a href="${link}">ver</a>`)
   if (tipo === 'cv_download') {
     const texto = cvCount <= 1 ? `📄 <b>Descargaron tu CV</b>\n${et}` : `📄🔁 <b>Volvieron a descargar tu CV</b> (${cvCount}ª vez)\n${et}`
     await alertaThrottle(sb, app.id, 'cv_download', texto, 2)
