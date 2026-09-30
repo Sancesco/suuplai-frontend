@@ -55,6 +55,9 @@ export async function POST(req: Request) {
     vacante, analysis, estado: 'borrador',
     ...(soloCv ? { solo_cv: true } : {}), // solo referimos la columna nueva cuando hace falta
   }).select('id').single()
-  if (error || !data) return NextResponse.json({ ok: false, error: 'no se pudo crear', detail: error?.message }, { status: 500 })
+  if (error || !data) {
+    const falta = /solo_cv/.test(error?.message || '')
+    return NextResponse.json({ ok: false, error: falta ? 'Falta correr el SQL: agrega la columna solo_cv en Supabase (supabase/aplicaciones_solo_cv.sql).' : 'no se pudo crear', detail: error?.message }, { status: 500 })
+  }
   return NextResponse.json({ ok: true, id: data.id, analysis })
 }

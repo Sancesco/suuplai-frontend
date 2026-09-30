@@ -126,16 +126,32 @@ export function Panel() {
 function NuevaApp({ hdr, onCreated }: { hdr: Record<string, string>; onCreated: (id: string) => void }) {
   const [f, setF] = useState({ empresa: '', puesto: '', persona: '', correo: '', vacante: '' })
   const [soloCv, setSoloCv] = useState(false)
+  const [cv, setCv] = useState<File | null>(null)
   const [busy, setBusy] = useState(false); const [msg, setMsg] = useState('')
   const set = (k: string, v: string) => setF({ ...f, [k]: v })
   const crear = async () => {
     if (!f.empresa.trim() || !f.puesto.trim()) { setMsg('Faltan empresa o puesto.'); return }
     if (!soloCv && !f.vacante.trim()) { setMsg('Pega el texto de la vacante, o activa “Sin carta (solo CV)”.'); return }
-    setBusy(true); setMsg(soloCv ? 'Creando…' : 'Analizando la vacante contra tu perfil…')
+    if (soloCv && !cv) { setMsg('Adjunta el CV (PDF) — ese será el que se comparte.'); return }
+    setBusy(true)
     try {
+      // 1) crear la aplicación
+      setMsg(soloCv ? 'Creando…' : 'Analizando la vacante contra tu perfil…')
       const r = await fetch('/api/aplicaciones/applications', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ ...f, solo_cv: soloCv }) })
       const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error')
-      onCreated(j.id)
+      const id = j.id as string
+      if (soloCv && cv) {
+        // 2) subir el CV adjunto
+        setMsg('Subiendo el CV…')
+        const fd = new FormData(); fd.append('file', cv); fd.append('id', id); fd.append('nombre', cv.name)
+        const up = await fetch('/api/aplicaciones/upload', { method: 'POST', headers: hdr, body: fd })
+        const uj = await up.json(); if (!up.ok || !uj.ok) throw new Error(uj.error || 'No se pudo subir el CV')
+        // 3) publicar y dejar el link listo
+        setMsg('Publicando el link…')
+        const pub = await fetch(`/api/aplicaciones/applications/${id}`, { method: 'PATCH', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'publicar' }) })
+        const pj = await pub.json(); if (!pub.ok || !pj.ok) throw new Error(pj.error || 'No se pudo publicar')
+      }
+      onCreated(id)
     } catch (e) { setMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')) } finally { setBusy(false) }
   }
   const inp = 'w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900'
@@ -151,10 +167,17 @@ function NuevaApp({ hdr, onCreated }: { hdr: Record<string, string>; onCreated: 
         <input type="checkbox" checked={soloCv} onChange={(e) => setSoloCv(e.target.checked)} className="mt-0.5" />
         <span><b>Sin carta (solo CV)</b> · para cuando la cover letter ya va en el mail. Crea un link que solo muestra el CV y rastrea aperturas y descargas. La vacante es opcional.</span>
       </label>
+      {soloCv && (
+        <label className="mt-3 flex cursor-pointer items-center gap-3 rounded-lg border border-neutral-900 bg-white px-3 py-2.5 text-sm font-semibold">
+          <span className="rounded bg-neutral-900 px-3 py-1 text-lime-300">📄 Adjuntar CV (PDF)</span>
+          <span className="font-normal text-neutral-600">{cv ? cv.name : 'Este será el CV que se comparte.'}</span>
+          <input type="file" accept="application/pdf" className="hidden" onChange={(e) => setCv(e.target.files?.[0] ?? null)} />
+        </label>
+      )}
       {!soloCv && <textarea className={`${inp} mt-3`} rows={6} placeholder="Pega aquí el texto completo de la vacante…" value={f.vacante} onChange={(e) => set('vacante', e.target.value)} />}
       {soloCv && <textarea className={`${inp} mt-3`} rows={3} placeholder="Texto de la vacante (opcional, solo si quieres el análisis)…" value={f.vacante} onChange={(e) => set('vacante', e.target.value)} />}
       {msg && <p className="mt-2 text-sm text-neutral-600">{msg}</p>}
-      <button onClick={crear} disabled={busy} className="mt-3 rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-bold text-lime-300 disabled:opacity-50">{busy ? (soloCv ? 'Creando…' : 'Analizando…') : (soloCv ? 'Crear (solo CV)' : 'Crear y analizar')}</button>
+      <button onClick={crear} disabled={busy} className="mt-3 rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-bold text-lime-300 disabled:opacity-50">{busy ? 'Trabajando…' : (soloCv ? 'Crear link de CV' : 'Crear y analizar')}</button>
     </div>
   )
 }
