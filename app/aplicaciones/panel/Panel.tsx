@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 type Estado = 'borrador' | 'enviada' | 'abierta' | 'leida' | 'compartida' | 'respondida' | 'rechazada'
-interface Row { id: string; empresa: string; puesto: string; persona: string | null; slug: string | null; estado: Estado; match_pct: number | null; created_at: string; opens: number; visitors: number; seconds: number; cv: number; last: string | null; solo_cv: boolean }
+interface Row { id: string; empresa: string; puesto: string; persona: string | null; slug: string | null; estado: Estado; match_pct: number | null; created_at: string; opens: number; visitors: number; seconds: number; cv: number; last: string | null; solo_cv: boolean; idioma: string }
 function hace(iso: string | null): string {
   if (!iso) return '—'
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
@@ -15,7 +15,7 @@ function hace(iso: string | null): string {
 function dur(sec: number): string { return sec >= 60 ? `${Math.floor(sec / 60)}m ${sec % 60}s` : `${sec}s` }
 interface Requisito { texto: string; estado: 'cumple' | 'parcial' | 'no_cumple'; evidencia: string }
 interface Analysis { requisitos: Requisito[]; match_pct: number; veredicto: string; argumentos: string[]; huecos: string[]; obligatoria: string | null }
-interface App { id: string; slug: string | null; empresa: string; puesto: string; persona: string | null; correo: string | null; vacante: string; analysis: Analysis | null; posicionamiento: string | null; carta: string | null; cv_url: string | null; cv_nombre: string | null; video_url: string | null; estado: Estado; solo_cv: boolean }
+interface App { id: string; slug: string | null; empresa: string; puesto: string; persona: string | null; correo: string | null; vacante: string; analysis: Analysis | null; posicionamiento: string | null; carta: string | null; cv_url: string | null; cv_nombre: string | null; video_url: string | null; estado: Estado; solo_cv: boolean; idioma: string }
 interface Ev { tipo: string; visitor_id: string | null; data: Record<string, unknown> | null; device: string | null; created_at: string }
 
 const EST_LABEL: Record<Estado, string> = { borrador: 'Borrador', enviada: 'Enviada', abierta: 'Abierta', leida: 'Leída', compartida: '🔥 Compartida', respondida: 'Respondida', rechazada: 'Rechazada' }
@@ -101,6 +101,7 @@ export function Panel() {
                             <b className="text-[15px]">{r.empresa}</b>
                             <span className="text-sm text-neutral-500">· {r.puesto}</span>
                             {r.solo_cv && <span className="rounded bg-neutral-200 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-neutral-600">Solo CV</span>}
+                            {r.idioma === 'en' && <span className="rounded bg-blue-100 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-blue-700">EN</span>}
                           </div>
                           <div className="mt-0.5 flex items-center gap-2 text-xs text-neutral-500">
                             <span className="rounded px-1.5 py-0.5 font-mono" style={{ background: ic.bg, color: ic.c }}>{EST_LABEL[r.estado]}</span>
@@ -126,6 +127,7 @@ export function Panel() {
 function NuevaApp({ hdr, onCreated }: { hdr: Record<string, string>; onCreated: (id: string) => void }) {
   const [f, setF] = useState({ empresa: '', puesto: '', persona: '', correo: '', vacante: '' })
   const [soloCv, setSoloCv] = useState(false)
+  const [idioma, setIdioma] = useState<'es' | 'en'>('es')
   const [cv, setCv] = useState<File | null>(null)
   const [busy, setBusy] = useState(false); const [msg, setMsg] = useState('')
   const set = (k: string, v: string) => setF({ ...f, [k]: v })
@@ -137,7 +139,7 @@ function NuevaApp({ hdr, onCreated }: { hdr: Record<string, string>; onCreated: 
     try {
       // 1) crear la aplicación
       setMsg(soloCv ? 'Creando…' : 'Analizando la vacante contra tu perfil…')
-      const r = await fetch('/api/aplicaciones/applications', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ ...f, solo_cv: soloCv }) })
+      const r = await fetch('/api/aplicaciones/applications', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ ...f, solo_cv: soloCv, idioma }) })
       const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error')
       const id = j.id as string
       if (soloCv && cv) {
@@ -162,6 +164,13 @@ function NuevaApp({ hdr, onCreated }: { hdr: Record<string, string>; onCreated: 
         <input className={inp} placeholder="Puesto" value={f.puesto} onChange={(e) => set('puesto', e.target.value)} />
         <input className={inp} placeholder="Persona destinataria (opcional)" value={f.persona} onChange={(e) => set('persona', e.target.value)} />
         <input className={inp} placeholder="Correo (opcional)" value={f.correo} onChange={(e) => set('correo', e.target.value)} />
+      </div>
+      <div className="mt-3 flex items-center gap-2 text-sm">
+        <span className="text-neutral-500">Idioma del CV y perfil:</span>
+        <div className="inline-flex overflow-hidden rounded-lg border border-neutral-300">
+          <button type="button" onClick={() => setIdioma('es')} className={`px-3 py-1.5 ${idioma === 'es' ? 'bg-neutral-900 text-lime-300 font-bold' : 'bg-white'}`}>🇲🇽 Español</button>
+          <button type="button" onClick={() => setIdioma('en')} className={`px-3 py-1.5 ${idioma === 'en' ? 'bg-neutral-900 text-lime-300 font-bold' : 'bg-white'}`}>🇺🇸 English</button>
+        </div>
       </div>
       <label className="mt-3 flex cursor-pointer items-start gap-2 rounded-lg bg-neutral-50 px-3 py-2 text-sm">
         <input type="checkbox" checked={soloCv} onChange={(e) => setSoloCv(e.target.checked)} className="mt-0.5" />
@@ -215,11 +224,21 @@ function Detalle({ id, hdr, onChange }: { id: string; hdr: Record<string, string
 
   return (
     <div className="flex flex-col gap-5 border-t border-neutral-200 p-4">
-      {/* modo */}
-      <label className="flex cursor-pointer items-center gap-2 self-start rounded-lg bg-neutral-50 px-3 py-1.5 text-sm">
-        <input type="checkbox" checked={app.solo_cv} onChange={(e) => patch({ solo_cv: e.target.checked }, 'modo')} disabled={busy === 'modo'} />
-        <span><b>Sin carta (solo CV)</b> — el link muestra solo el currículum</span>
-      </label>
+      {/* modo + idioma */}
+      <div className="flex flex-wrap items-center gap-3">
+        <label className="flex cursor-pointer items-center gap-2 rounded-lg bg-neutral-50 px-3 py-1.5 text-sm">
+          <input type="checkbox" checked={app.solo_cv} onChange={(e) => patch({ solo_cv: e.target.checked }, 'modo')} disabled={busy === 'modo'} />
+          <span><b>Sin carta (solo CV)</b> — el link muestra solo el currículum</span>
+        </label>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-neutral-500">Idioma:</span>
+          <div className="inline-flex overflow-hidden rounded-lg border border-neutral-300">
+            <button onClick={() => app.idioma !== 'es' && patch({ idioma: 'es' }, 'idi')} disabled={busy === 'idi'} className={`px-2.5 py-1 ${app.idioma !== 'en' ? 'bg-neutral-900 text-lime-300 font-bold' : 'bg-white'}`}>🇲🇽 ES</button>
+            <button onClick={() => app.idioma !== 'en' && patch({ idioma: 'en' }, 'idi')} disabled={busy === 'idi'} className={`px-2.5 py-1 ${app.idioma === 'en' ? 'bg-neutral-900 text-lime-300 font-bold' : 'bg-white'}`}>🇺🇸 EN</button>
+          </div>
+        </div>
+      </div>
+      {app.idioma === 'en' && <p className="-mt-2 text-xs text-neutral-500">En inglés: la página, el análisis y la carta salen en inglés (perfil fuente: content/perfil.en.md). Sube el CV en inglés.</p>}
 
       {/* análisis */}
       {!app.solo_cv && (an ? (

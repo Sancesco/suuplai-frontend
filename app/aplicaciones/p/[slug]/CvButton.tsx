@@ -2,7 +2,7 @@
 
 import { track } from './track'
 
-export function CvButton({ slug, cvUrl, cvNombre, full }: { slug: string; cvUrl: string; cvNombre: string | null; full?: boolean }) {
+export function CvButton({ slug, cvUrl, cvNombre, full, en }: { slug: string; cvUrl: string; cvNombre: string | null; full?: boolean; en?: boolean }) {
   return (
     <a
       href={cvUrl}
@@ -11,7 +11,7 @@ export function CvButton({ slug, cvUrl, cvNombre, full }: { slug: string; cvUrl:
       onClick={() => track(slug, 'cv_download', { nombre: cvNombre || '' })}
       className={`inline-flex items-center justify-center gap-2 rounded-full bg-neutral-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-neutral-700 ${full ? 'w-full' : ''}`}
     >
-      ↓ Descargar CV{cvNombre ? ` · ${cvNombre}` : ''}
+      ↓ {en ? 'Download résumé' : 'Descargar CV'}{cvNombre ? ` · ${cvNombre}` : ''}
     </a>
   )
 }

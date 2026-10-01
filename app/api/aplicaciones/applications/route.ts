@@ -28,7 +28,7 @@ export async function GET(req: Request) {
     const s = stats.get(a.id)
     return {
       id: a.id, empresa: a.empresa, puesto: a.puesto, persona: a.persona, slug: a.slug, estado: a.estado,
-      match_pct: a.analysis?.match_pct ?? null, created_at: a.created_at, solo_cv: a.solo_cv === true,
+      match_pct: a.analysis?.match_pct ?? null, created_at: a.created_at, solo_cv: a.solo_cv === true, idioma: a.idioma === 'en' ? 'en' : 'es',
       opens: s?.opens ?? 0, visitors: s ? s.visitors.size : 0, seconds: s?.seconds ?? 0, cv: s?.cv ?? 0, last: s?.last ?? null,
     }
   })
@@ -44,20 +44,22 @@ export async function POST(req: Request) {
   const puesto = String(b?.puesto ?? '').trim()
   const vacante = String(b?.vacante ?? '').trim()
   const soloCv = b?.solo_cv === true
+  const idioma = b?.idioma === 'en' ? 'en' : 'es'
   // Sin carta: la vacante es opcional (la cover letter ya va por otro lado, ej. el mail).
   if (!empresa || !puesto || (!soloCv && !vacante)) return NextResponse.json({ ok: false, error: 'faltan empresa, puesto o vacante' }, { status: 400 })
 
   let analysis = null
-  if (vacante) { try { analysis = await analizarVacante(empresa, puesto, vacante) } catch { /* se puede reintentar luego */ } }
+  if (vacante) { try { analysis = await analizarVacante(empresa, puesto, vacante, idioma) } catch { /* se puede reintentar luego */ } }
 
   const { data, error } = await sb.from('app_applications').insert({
     empresa, puesto, persona: String(b?.persona ?? '').trim() || null, correo: String(b?.correo ?? '').trim() || null,
     vacante, analysis, estado: 'borrador',
-    ...(soloCv ? { solo_cv: true } : {}), // solo referimos la columna nueva cuando hace falta
+    ...(soloCv ? { solo_cv: true } : {}), // solo referimos las columnas nuevas cuando hace falta
+    ...(idioma === 'en' ? { idioma: 'en' } : {}),
   }).select('id').single()
   if (error || !data) {
-    const falta = /solo_cv/.test(error?.message || '')
-    return NextResponse.json({ ok: false, error: falta ? 'Falta correr el SQL: agrega la columna solo_cv en Supabase (supabase/aplicaciones_solo_cv.sql).' : 'no se pudo crear', detail: error?.message }, { status: 500 })
+    const falta = /solo_cv|idioma/.exec(error?.message || '')
+    return NextResponse.json({ ok: false, error: falta ? `Falta correr el SQL: agrega la columna ${falta[0]} en Supabase (carpeta supabase/).` : 'no se pudo crear', detail: error?.message }, { status: 500 })
   }
   return NextResponse.json({ ok: true, id: data.id, analysis })
 }

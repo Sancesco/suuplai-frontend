@@ -6,8 +6,10 @@ export { getSupabaseAdmin } from './supabaseAdmin'
 export { checkRh as checkPanel } from './interview' // reusa la contraseña de admin (x-admin-password)
 
 // ── Fuente de verdad ──
-export function getPerfil(): string {
-  try { return readFileSync(join(process.cwd(), 'content', 'perfil.md'), 'utf8') } catch { return '' }
+export function getPerfil(idioma: string = 'es'): string {
+  const file = idioma === 'en' ? 'perfil.en.md' : 'perfil.md'
+  try { return readFileSync(join(process.cwd(), 'content', file), 'utf8') }
+  catch { try { return readFileSync(join(process.cwd(), 'content', 'perfil.md'), 'utf8') } catch { return '' } }
 }
 
 // ── Tipos ──
@@ -26,6 +28,7 @@ export type Application = {
   vacante: string; analysis: Analysis | null; posicionamiento: string | null; carta: string | null
   cv_url: string | null; cv_nombre: string | null; video_url: string | null; estado: string; created_at: string
   solo_cv: boolean
+  idioma: string // 'es' | 'en'
 }
 
 // ── Utilidades ──
@@ -68,9 +71,10 @@ Devuelve SOLO JSON:
 }
 Sé conciso: cada evidencia y hueco máximo 18 palabras.`
 
-export async function analizarVacante(empresa: string, puesto: string, vacante: string): Promise<Analysis> {
-  const perfil = getPerfil()
-  const user = `PERFIL DEL CANDIDATO:\n${perfil}\n\nVACANTE (${empresa} — ${puesto}):\n${vacante.slice(0, 8000)}`
+export async function analizarVacante(empresa: string, puesto: string, vacante: string, idioma: string = 'es'): Promise<Analysis> {
+  const perfil = getPerfil(idioma)
+  const lang = idioma === 'en' ? '\nIMPORTANT: write every string value (veredicto, requisitos, evidencia, argumentos, huecos, obligatoria) in ENGLISH.' : ''
+  const user = `PERFIL DEL CANDIDATO:\n${perfil}\n\nVACANTE (${empresa} — ${puesto}):\n${vacante.slice(0, 8000)}${lang}`
   const raw = await aiRawJSON(SYSTEM_ANALISIS, user, 0.2, 1400)
   const p = parseJSON(raw) as Partial<Analysis>
   return {

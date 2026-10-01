@@ -26,11 +26,14 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const patch: Record<string, unknown> = {}
   for (const k of ['posicionamiento', 'carta', 'cv_url', 'cv_nombre', 'video_url']) if (b?.[k] !== undefined) patch[k] = b[k]
   if (b?.solo_cv !== undefined) patch.solo_cv = b.solo_cv === true
+  if (b?.idioma !== undefined) patch.idioma = b.idioma === 'en' ? 'en' : 'es'
   if (b?.estado && ESTADOS.includes(String(b.estado))) patch.estado = b.estado
+
+  const idiomaActual = patch.idioma !== undefined ? String(patch.idioma) : (a.idioma === 'en' ? 'en' : 'es')
 
   // Reanalizar (si falló al crear o cambió la vacante)
   if (b?.action === 'reanalizar') {
-    try { patch.analysis = await analizarVacante(a.empresa, a.puesto, a.vacante) }
+    try { patch.analysis = await analizarVacante(a.empresa, a.puesto, a.vacante, idiomaActual) }
     catch (e) { return NextResponse.json({ ok: false, error: 'no se pudo analizar', detail: e instanceof Error ? e.message : '' }, { status: 502 }) }
   }
 
