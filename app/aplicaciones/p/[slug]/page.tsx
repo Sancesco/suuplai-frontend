@@ -82,9 +82,9 @@ export default async function Page({ params }: { params: { slug: string } }) {
 
       <article className="doc">
         <div data-section="encabezado">
-          <p className="kick">{app.solo_cv ? (en ? 'Résumé' : 'Currículum') : (en ? 'Application' : 'Aplicación')} · {app.empresa}</p>
+          <p className="kick">{app.solo_cv ? (en ? 'Resume' : 'Currículum') : (en ? 'Application' : 'Aplicación')} · {app.empresa}</p>
           <h1 className="nm">{NOMBRE}</h1>
-          <p className="sub">{app.solo_cv ? <>{en ? 'Résumé for' : 'Currículum para'} <b>{app.puesto}</b></> : <>{en ? 'Applying for' : 'Aplicando a'} <b>{app.puesto}</b></>}{app.persona ? <> · {en ? 'for' : 'para'} {app.persona}</> : null}</p>
+          <p className="sub">{app.solo_cv ? <>{en ? 'Resume for' : 'Currículum para'} <b>{app.puesto}</b></> : <>{en ? 'Applying for' : 'Aplicando a'} <b>{app.puesto}</b></>}{app.persona ? <> · {en ? 'for' : 'para'} {app.persona}</> : null}</p>
           {app.posicionamiento && <p className="pos">{app.posicionamiento}</p>}
         </div>
 
@@ -98,10 +98,10 @@ export default async function Page({ params }: { params: { slug: string } }) {
           app.cv_url && (
             <div data-section="cv">
               <div className="cvhero">
-                {!app.posicionamiento && <p className="lead">{en ? "Here's my résumé. You can view it below or download it." : 'Aquí está mi currículum. Puedes verlo abajo o descargarlo.'}</p>}
+                {!app.posicionamiento && <p className="lead">{en ? "Here's my resume. You can view it below or download it." : 'Aquí está mi currículum. Puedes verlo abajo o descargarlo.'}</p>}
                 <CvButton slug={app.slug} cvUrl={app.cv_url} cvNombre={app.cv_nombre} en={en} />
               </div>
-              <div className="cvframe"><iframe src={`${app.cv_url}#toolbar=0&view=FitH`} title={en ? 'Résumé' : 'Currículum'} /></div>
+              <div className="cvframe"><iframe src={`${app.cv_url}#toolbar=0&view=FitH`} title={en ? 'Resume' : 'Currículum'} /></div>
             </div>
           )
         ) : (
@@ -116,8 +116,8 @@ export default async function Page({ params }: { params: { slug: string } }) {
             {app.cv_url && (
               <div className="cvcard" data-section="cv">
                 <div>
-                  <div className="t">{en ? 'Résumé' : 'Currículum'}</div>
-                  <div className="s">{app.cv_nombre || (en ? 'PDF résumé' : 'CV en PDF')}</div>
+                  <div className="t">{en ? 'Resume' : 'Currículum'}</div>
+                  <div className="s">{app.cv_nombre || (en ? 'PDF resume' : 'CV en PDF')}</div>
                 </div>
                 <CvButton slug={app.slug} cvUrl={app.cv_url} cvNombre={app.cv_nombre} en={en} />
               </div>
