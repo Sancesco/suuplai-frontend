@@ -57,9 +57,16 @@ const CSS = `
 `
 
 async function getApp(slug: string): Promise<Application | null> {
-  const sb = getSupabaseAdmin(); if (!sb) return null
-  const { data } = await sb.from('app_applications').select('*').eq('slug', slug).maybeSingle()
-  return (data as Application) || null
+  // Lectura directa a PostgREST con cache:'no-store' para evitar el Data Cache de Next
+  // (que podía servir una respuesta vieja de la base, sin columnas nuevas como idioma).
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!base || !key) return null
+  const url = `${base}/rest/v1/app_applications?slug=eq.${encodeURIComponent(slug)}&select=*&limit=1`
+  const r = await fetch(url, { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' })
+  if (!r.ok) return null
+  const rows = (await r.json()) as Application[]
+  return rows[0] || null
 }
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
