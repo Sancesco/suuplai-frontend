@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from 'react'
 
 type Estado = 'borrador' | 'enviada' | 'abierta' | 'leida' | 'compartida' | 'respondida' | 'rechazada'
-interface Row { id: string; empresa: string; puesto: string; persona: string | null; slug: string | null; estado: Estado; match_pct: number | null; created_at: string; opens: number; visitors: number; seconds: number; cv: number; last: string | null; solo_cv: boolean; idioma: string }
+interface Row { id: string; empresa: string; puesto: string; persona: string | null; slug: string | null; estado: Estado; match_pct: number | null; created_at: string; opens: number; visitors: number; seconds: number; cv: number; last: string | null; solo_cv: boolean; idioma: string; followups: number; lastFollowup: string | null }
 function hace(iso: string | null): string {
   if (!iso) return '—'
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
@@ -13,9 +13,19 @@ function hace(iso: string | null): string {
   return `hace ${Math.floor(s / 86400)} d`
 }
 function dur(sec: number): string { return sec >= 60 ? `${Math.floor(sec / 60)}m ${sec % 60}s` : `${sec}s` }
+function fecha(iso: string | null): string { return iso ? new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }) : '—' }
+function diasDesde(iso: string | null): number | null { return iso ? Math.floor((Date.now() - new Date(iso).getTime()) / 86400000) : null }
+const SEGUIMIENTO_DIAS = 5 // a los X días sin respuesta, toca mandar correo de seguimiento
+// ¿toca seguimiento? No respondida/rechazada, ya publicada, y pasaron X días desde el último toque (creación o último seguimiento).
+function tocaSeguimiento(estado: Estado, created: string, lastFollowup: string | null): { toca: boolean; dias: number } {
+  const base = lastFollowup && lastFollowup > created ? lastFollowup : created
+  const d = diasDesde(base) ?? 0
+  const activa = estado !== 'respondida' && estado !== 'rechazada' && estado !== 'borrador'
+  return { toca: activa && d >= SEGUIMIENTO_DIAS, dias: d }
+}
 interface Requisito { texto: string; estado: 'cumple' | 'parcial' | 'no_cumple'; evidencia: string }
 interface Analysis { requisitos: Requisito[]; match_pct: number; veredicto: string; argumentos: string[]; huecos: string[]; obligatoria: string | null }
-interface App { id: string; slug: string | null; empresa: string; puesto: string; persona: string | null; correo: string | null; vacante: string; analysis: Analysis | null; posicionamiento: string | null; carta: string | null; cv_url: string | null; cv_nombre: string | null; video_url: string | null; estado: Estado; solo_cv: boolean; idioma: string }
+interface App { id: string; slug: string | null; empresa: string; puesto: string; persona: string | null; correo: string | null; vacante: string; analysis: Analysis | null; posicionamiento: string | null; carta: string | null; cv_url: string | null; cv_nombre: string | null; video_url: string | null; estado: Estado; solo_cv: boolean; idioma: string; created_at: string }
 interface Ev { tipo: string; visitor_id: string | null; data: Record<string, unknown> | null; device: string | null; created_at: string }
 
 const EST_LABEL: Record<Estado, string> = { borrador: 'Borrador', enviada: 'Enviada', abierta: 'Abierta', leida: 'Leída', compartida: '🔥 Compartida', respondida: 'Respondida', rechazada: 'Rechazada' }
@@ -93,6 +103,7 @@ export function Panel() {
                 {rows.map((r) => {
                   const temp = Math.min(100, r.opens * 20 + Math.floor(r.seconds / 6) + (r.visitors > 1 ? 40 : 0))
                   const ic = estIcon(r.estado)
+                  const seg = tocaSeguimiento(r.estado, r.created_at, r.lastFollowup)
                   return (
                     <div key={r.id} className="overflow-hidden rounded-xl border border-neutral-900 bg-white">
                       <button onClick={() => setOpenId(openId === r.id ? null : r.id)} className="flex w-full items-center gap-3 px-4 py-3 text-left">
@@ -103,9 +114,13 @@ export function Panel() {
                             {r.solo_cv && <span className="rounded bg-neutral-200 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-neutral-600">Solo CV</span>}
                             {r.idioma === 'en' && <span className="rounded bg-blue-100 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-blue-700">EN</span>}
                           </div>
-                          <div className="mt-0.5 flex items-center gap-2 text-xs text-neutral-500">
+                          <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-neutral-500">
                             <span className="rounded px-1.5 py-0.5 font-mono" style={{ background: ic.bg, color: ic.c }}>{EST_LABEL[r.estado]}</span>
                             <span>{r.opens} aperturas · {r.visitors} visitantes · {fmt(r.seconds)}</span>
+                            <span className="text-neutral-400">· creada {fecha(r.created_at)}</span>
+                            {r.estado === 'respondida' && <span className="rounded bg-emerald-100 px-1.5 py-0.5 font-semibold text-emerald-700">✓ Respondió</span>}
+                            {r.estado === 'rechazada' && <span className="rounded bg-neutral-200 px-1.5 py-0.5 font-semibold text-neutral-600">✗ Sin respuesta</span>}
+                            {seg.toca && <span className="rounded bg-[#FFE1D6] px-1.5 py-0.5 font-semibold text-[#B4451A]">⏰ Toca seguimiento ({seg.dias}d)</span>}
                           </div>
                           <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded bg-neutral-100"><div className="h-full rounded" style={{ width: `${temp}%`, background: temp > 60 ? '#B4451A' : temp > 25 ? '#E8A317' : '#B9BAB0' }} /></div>
                         </div>
@@ -194,6 +209,7 @@ function NuevaApp({ hdr, onCreated }: { hdr: Record<string, string>; onCreated: 
 function Detalle({ id, hdr, onChange }: { id: string; hdr: Record<string, string>; onChange: () => void }) {
   const [app, setApp] = useState<App | null>(null); const [events, setEvents] = useState<Ev[]>([])
   const [busy, setBusy] = useState(''); const [msg, setMsg] = useState(''); const [showRaw, setShowRaw] = useState(false)
+  const [fmail, setFmail] = useState<{ asunto: string; cuerpo: string } | null>(null)
   const load = useCallback(async () => { const r = await fetch(`/api/aplicaciones/applications/${id}`, { headers: hdr }); const j = await r.json(); if (j.ok) { setApp(j.app); setEvents(j.events) } }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { load() }, [load])
 
@@ -207,6 +223,15 @@ function Detalle({ id, hdr, onChange }: { id: string; hdr: Record<string, string
     try { const r = await fetch('/api/aplicaciones/letter', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }); const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error'); await load() }
     catch (e) { setMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')) } finally { setBusy('') }
   }
+  const genFollowup = async () => {
+    setBusy('fup'); setMsg('')
+    try {
+      const r = await fetch('/api/aplicaciones/followup', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+      const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error')
+      setFmail({ asunto: j.asunto || '', cuerpo: j.cuerpo || '' })
+    } catch (e) { setMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')) } finally { setBusy('') }
+  }
+  const marcarSeguimiento = async () => { await patch({ action: 'seguimiento' }, 'segmark'); await load() }
   const subirCv = async (file: File | undefined) => {
     if (!file) return
     setBusy('cvup'); setMsg('')
@@ -301,6 +326,60 @@ function Detalle({ id, hdr, onChange }: { id: string; hdr: Record<string, string
           </>}
       </div>
       {msg && <p className="text-sm text-red-700">{msg}</p>}
+
+      {/* Respuesta + seguimiento */}
+      {(() => {
+        const lastFollowup = events.find((e) => e.tipo === 'followup')?.created_at ?? null
+        const seg = tocaSeguimiento(app.estado, app.created_at, lastFollowup)
+        const nFollowups = events.filter((e) => e.tipo === 'followup').length
+        return (
+          <div className="rounded-xl border border-neutral-200 bg-neutral-50 p-3">
+            <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+              <b className="text-sm">Respuesta y seguimiento</b>
+              <span className="text-xs text-neutral-500">Creada el {fecha(app.created_at)} · hace {diasDesde(app.created_at) ?? 0}d</span>
+            </div>
+
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <span className="text-sm text-neutral-600">¿Te respondieron?</span>
+              <button onClick={() => patch({ estado: 'respondida' }, 'resp')} disabled={busy === 'resp'}
+                className={`rounded-lg px-3 py-1.5 text-sm font-bold ${app.estado === 'respondida' ? 'bg-emerald-600 text-white' : 'border border-neutral-300 bg-white'}`}>✓ Sí, respondieron</button>
+              <button onClick={() => patch({ estado: 'rechazada' }, 'resp')} disabled={busy === 'resp'}
+                className={`rounded-lg px-3 py-1.5 text-sm font-bold ${app.estado === 'rechazada' ? 'bg-neutral-800 text-white' : 'border border-neutral-300 bg-white'}`}>✗ No / rechazaron</button>
+              {(app.estado === 'respondida' || app.estado === 'rechazada') && (
+                <button onClick={() => patch({ estado: app.slug ? 'enviada' : 'borrador' }, 'resp')} disabled={busy === 'resp'} className="text-xs text-neutral-500 underline">reabrir</button>
+              )}
+            </div>
+
+            {app.estado !== 'respondida' && app.estado !== 'rechazada' && (
+              <div>
+                <p className="mb-2 text-sm" style={{ color: seg.toca ? '#B4451A' : '#555' }}>
+                  {seg.toca
+                    ? `⏰ Llevan ${seg.dias} días sin responder — toca mandar un correo de seguimiento (recordatorio a los ${SEGUIMIENTO_DIAS}d).`
+                    : `Sin respuesta aún (${seg.dias}d). El recordatorio de seguimiento aparece a los ${SEGUIMIENTO_DIAS} días.`}
+                  {nFollowups > 0 && <span className="text-neutral-500"> · {nFollowups} seguimiento{nFollowups > 1 ? 's' : ''} enviado{nFollowups > 1 ? 's' : ''}</span>}
+                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button onClick={genFollowup} disabled={busy === 'fup'} className="rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-bold text-lime-300 disabled:opacity-50">{busy === 'fup' ? 'Generando…' : '✍️ Generar correo de seguimiento'}</button>
+                  <button onClick={marcarSeguimiento} disabled={busy === 'segmark'} className="rounded-lg border border-neutral-900 px-3 py-1.5 text-sm">{busy === 'segmark' ? 'Guardando…' : '✓ Marqué que ya di seguimiento'}</button>
+                </div>
+
+                {fmail && (
+                  <div className="mt-3 rounded-lg border border-neutral-300 bg-white p-3">
+                    {app.correo && <p className="mb-1 text-xs text-neutral-500">Para: {app.correo}</p>}
+                    <input className="mb-2 w-full rounded border border-neutral-300 px-2 py-1.5 text-sm font-semibold" value={fmail.asunto} onChange={(e) => setFmail({ ...fmail, asunto: e.target.value })} placeholder="Asunto" />
+                    <textarea className="w-full rounded border border-neutral-300 px-2 py-2 text-[13px]" rows={8} value={fmail.cuerpo} onChange={(e) => setFmail({ ...fmail, cuerpo: e.target.value })} />
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <button onClick={() => navigator.clipboard?.writeText(`${fmail.asunto}\n\n${fmail.cuerpo}`)} className="rounded-lg border border-neutral-900 px-3 py-1.5 text-xs">Copiar todo</button>
+                      {app.correo && <a href={`mailto:${app.correo}?subject=${encodeURIComponent(fmail.asunto)}&body=${encodeURIComponent(fmail.cuerpo)}`} className="rounded-lg bg-lime-300 px-3 py-1.5 text-xs font-bold">Abrir en correo</a>}
+                      <button onClick={() => { marcarSeguimiento(); setFmail(null) }} className="rounded-lg border border-neutral-900 px-3 py-1.5 text-xs">Lo mandé → marcar seguimiento</button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       {/* métricas legibles */}
       {(() => {

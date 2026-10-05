@@ -31,6 +31,13 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
 
   const idiomaActual = patch.idioma !== undefined ? String(patch.idioma) : (a.idioma === 'en' ? 'en' : 'es')
 
+  // Registrar un correo de seguimiento enviado (reinicia el contador de X días).
+  if (b?.action === 'seguimiento') {
+    await sb.from('app_events').insert({ application_id: a.id, slug: a.slug, tipo: 'followup', data: { via: 'panel' } })
+    const { data: fresh } = await sb.from('app_applications').select('*').eq('id', a.id).maybeSingle()
+    return NextResponse.json({ ok: true, app: fresh })
+  }
+
   // Reanalizar (si falló al crear o cambió la vacante)
   if (b?.action === 'reanalizar') {
     try { patch.analysis = await analizarVacante(a.empresa, a.puesto, a.vacante, idiomaActual) }
