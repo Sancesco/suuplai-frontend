@@ -4,7 +4,7 @@ import { getSupabaseAdmin, checkPanel, slugify, analizarVacante, type Applicatio
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const ESTADOS = ['borrador', 'enviada', 'abierta', 'leida', 'compartida', 'respondida', 'rechazada']
+const ESTADOS = ['borrador', 'enviada', 'abierta', 'leida', 'compartida', 'respondida', 'rechazada', 'sin_respuesta']
 
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   if (!checkPanel(req)) return NextResponse.json({ ok: false, error: 'no autorizado' }, { status: 401 })

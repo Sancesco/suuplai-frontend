@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 
-type Estado = 'borrador' | 'enviada' | 'abierta' | 'leida' | 'compartida' | 'respondida' | 'rechazada'
+type Estado = 'borrador' | 'enviada' | 'abierta' | 'leida' | 'compartida' | 'respondida' | 'rechazada' | 'sin_respuesta'
 interface Row { id: string; empresa: string; puesto: string; persona: string | null; slug: string | null; estado: Estado; match_pct: number | null; created_at: string; opens: number; visitors: number; seconds: number; cv: number; last: string | null; solo_cv: boolean; idioma: string; followups: number; lastFollowup: string | null }
 function hace(iso: string | null): string {
   if (!iso) return '—'
@@ -20,7 +20,7 @@ const SEGUIMIENTO_DIAS = 5 // a los X días sin respuesta, toca mandar correo de
 function tocaSeguimiento(estado: Estado, created: string, lastFollowup: string | null): { toca: boolean; dias: number } {
   const base = lastFollowup && lastFollowup > created ? lastFollowup : created
   const d = diasDesde(base) ?? 0
-  const activa = estado !== 'respondida' && estado !== 'rechazada' && estado !== 'borrador'
+  const activa = estado !== 'respondida' && estado !== 'rechazada' && estado !== 'sin_respuesta' && estado !== 'borrador'
   return { toca: activa && d >= SEGUIMIENTO_DIAS, dias: d }
 }
 interface Requisito { texto: string; estado: 'cumple' | 'parcial' | 'no_cumple'; evidencia: string }
@@ -28,8 +28,8 @@ interface Analysis { requisitos: Requisito[]; match_pct: number; veredicto: stri
 interface App { id: string; slug: string | null; empresa: string; puesto: string; persona: string | null; correo: string | null; vacante: string; analysis: Analysis | null; posicionamiento: string | null; carta: string | null; cv_url: string | null; cv_nombre: string | null; video_url: string | null; estado: Estado; solo_cv: boolean; idioma: string; created_at: string }
 interface Ev { tipo: string; visitor_id: string | null; data: Record<string, unknown> | null; device: string | null; created_at: string }
 
-const EST_LABEL: Record<Estado, string> = { borrador: 'Borrador', enviada: 'Enviada', abierta: 'Abierta', leida: 'Leída', compartida: '🔥 Compartida', respondida: 'Respondida', rechazada: 'Rechazada' }
-const estIcon = (e: Estado) => e === 'compartida' ? { bg: '#FFE1D6', c: '#B4451A' } : e === 'leida' ? { bg: '#D9F2E4', c: '#1E8E5A' } : e === 'abierta' ? { bg: '#E4ECFF', c: '#2456C9' } : { bg: '#EEE', c: '#666' }
+const EST_LABEL: Record<Estado, string> = { borrador: 'Borrador', enviada: 'Enviada', abierta: 'Abierta', leida: 'Leída', compartida: '🔥 Compartida', respondida: '✓ Respondió · interesado', rechazada: 'Respondió · no le interesó', sin_respuesta: 'No contestó' }
+const estIcon = (e: Estado) => e === 'compartida' ? { bg: '#FFE1D6', c: '#B4451A' } : e === 'respondida' ? { bg: '#D9F2E4', c: '#1E8E5A' } : e === 'leida' ? { bg: '#D9F2E4', c: '#1E8E5A' } : e === 'abierta' ? { bg: '#E4ECFF', c: '#2456C9' } : e === 'rechazada' ? { bg: '#F3D9D0', c: '#9B3412' } : { bg: '#EEE', c: '#666' }
 
 export function Panel() {
   const [pw, setPw] = useState(''); const [authed, setAuthed] = useState(false); const [err, setErr] = useState('')
@@ -118,8 +118,6 @@ export function Panel() {
                             <span className="rounded px-1.5 py-0.5 font-mono" style={{ background: ic.bg, color: ic.c }}>{EST_LABEL[r.estado]}</span>
                             <span>{r.opens} aperturas · {r.visitors} visitantes · {fmt(r.seconds)}</span>
                             <span className="text-neutral-400">· creada {fecha(r.created_at)}</span>
-                            {r.estado === 'respondida' && <span className="rounded bg-emerald-100 px-1.5 py-0.5 font-semibold text-emerald-700">✓ Respondió</span>}
-                            {r.estado === 'rechazada' && <span className="rounded bg-neutral-200 px-1.5 py-0.5 font-semibold text-neutral-600">✗ Sin respuesta</span>}
                             {seg.toca && <span className="rounded bg-[#FFE1D6] px-1.5 py-0.5 font-semibold text-[#B4451A]">⏰ Toca seguimiento ({seg.dias}d)</span>}
                           </div>
                           <div className="mt-1.5 h-1.5 w-full overflow-hidden rounded bg-neutral-100"><div className="h-full rounded" style={{ width: `${temp}%`, background: temp > 60 ? '#B4451A' : temp > 25 ? '#E8A317' : '#B9BAB0' }} /></div>
@@ -339,24 +337,29 @@ function Detalle({ id, hdr, onChange }: { id: string; hdr: Record<string, string
               <span className="text-xs text-neutral-500">Creada el {fecha(app.created_at)} · hace {diasDesde(app.created_at) ?? 0}d</span>
             </div>
 
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              <span className="text-sm text-neutral-600">¿Te respondieron?</span>
-              <button onClick={() => patch({ estado: 'respondida' }, 'resp')} disabled={busy === 'resp'}
-                className={`rounded-lg px-3 py-1.5 text-sm font-bold ${app.estado === 'respondida' ? 'bg-emerald-600 text-white' : 'border border-neutral-300 bg-white'}`}>✓ Sí, respondieron</button>
-              <button onClick={() => patch({ estado: 'rechazada' }, 'resp')} disabled={busy === 'resp'}
-                className={`rounded-lg px-3 py-1.5 text-sm font-bold ${app.estado === 'rechazada' ? 'bg-neutral-800 text-white' : 'border border-neutral-300 bg-white'}`}>✗ No / rechazaron</button>
-              {(app.estado === 'respondida' || app.estado === 'rechazada') && (
-                <button onClick={() => patch({ estado: app.slug ? 'enviada' : 'borrador' }, 'resp')} disabled={busy === 'resp'} className="text-xs text-neutral-500 underline">reabrir</button>
-              )}
+            <div className="mb-3">
+              <span className="mb-1.5 block text-sm text-neutral-600">¿Qué pasó con esta aplicación?</span>
+              <div className="flex flex-wrap items-center gap-2">
+                <button onClick={() => patch({ estado: 'respondida' }, 'resp')} disabled={busy === 'resp'}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-bold ${app.estado === 'respondida' ? 'bg-emerald-600 text-white' : 'border border-neutral-300 bg-white'}`}>✓ Respondió · interesado</button>
+                <button onClick={() => patch({ estado: 'rechazada' }, 'resp')} disabled={busy === 'resp'}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-bold ${app.estado === 'rechazada' ? 'bg-[#9B3412] text-white' : 'border border-neutral-300 bg-white'}`}>✗ Respondió · no le interesó</button>
+                <button onClick={() => patch({ estado: 'sin_respuesta' }, 'resp')} disabled={busy === 'resp'}
+                  className={`rounded-lg px-3 py-1.5 text-sm font-bold ${app.estado === 'sin_respuesta' ? 'bg-neutral-700 text-white' : 'border border-neutral-300 bg-white'}`}>🔇 Nunca contestó · darla por perdida</button>
+                {(app.estado === 'respondida' || app.estado === 'rechazada' || app.estado === 'sin_respuesta') && (
+                  <button onClick={() => patch({ estado: app.slug ? 'enviada' : 'borrador' }, 'resp')} disabled={busy === 'resp'} className="text-xs text-neutral-500 underline">reabrir</button>
+                )}
+              </div>
+              <p className="mt-1.5 text-xs text-neutral-500">Si <b>no han contestado</b>, no la marques — déjala abierta y dale seguimiento abajo. “Darla por perdida” es solo para cuando ya decidiste dejar de insistir.</p>
             </div>
 
-            {app.estado !== 'respondida' && app.estado !== 'rechazada' && (
-              <div>
-                <p className="mb-2 text-sm" style={{ color: seg.toca ? '#B4451A' : '#555' }}>
+            {app.estado !== 'respondida' && app.estado !== 'rechazada' && app.estado !== 'sin_respuesta' && (
+              <div className="rounded-lg border border-neutral-200 bg-white p-3">
+                <p className="mb-2 text-sm font-semibold" style={{ color: seg.toca ? '#B4451A' : '#111' }}>
                   {seg.toca
-                    ? `⏰ Llevan ${seg.dias} días sin responder — toca mandar un correo de seguimiento (recordatorio a los ${SEGUIMIENTO_DIAS}d).`
-                    : `Sin respuesta aún (${seg.dias}d). El recordatorio de seguimiento aparece a los ${SEGUIMIENTO_DIAS} días.`}
-                  {nFollowups > 0 && <span className="text-neutral-500"> · {nFollowups} seguimiento{nFollowups > 1 ? 's' : ''} enviado{nFollowups > 1 ? 's' : ''}</span>}
+                    ? `⏰ Llevan ${seg.dias} días sin contestar — dale seguimiento con otro correo.`
+                    : `Aún sin contestar (${seg.dias}d). El recordatorio aparece a los ${SEGUIMIENTO_DIAS} días, pero puedes dar seguimiento cuando quieras.`}
+                  {nFollowups > 0 && <span className="font-normal text-neutral-500"> · {nFollowups} seguimiento{nFollowups > 1 ? 's' : ''} enviado{nFollowups > 1 ? 's' : ''}</span>}
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                   <button onClick={genFollowup} disabled={busy === 'fup'} className="rounded-lg bg-neutral-900 px-3 py-1.5 text-sm font-bold text-lime-300 disabled:opacity-50">{busy === 'fup' ? 'Generando…' : '✍️ Generar correo de seguimiento'}</button>
