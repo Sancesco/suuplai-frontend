@@ -24,9 +24,21 @@ export async function GET(req: Request) {
   const list = (pros ?? []) as { slug: string | null; estado: string }[]
   const slugs = list.map((p) => p.slug).filter(Boolean) as string[]
   const clicksBySlug = new Map<string, number>()
+  let clicsTotales = 0
   if (slugs.length) {
     const { data: lk } = await sb.from('links').select('slug,clicks').in('slug', slugs)
-    for (const l of (lk ?? []) as { slug: string; clicks: number }[]) clicksBySlug.set(l.slug, l.clicks ?? 0)
+    for (const l of (lk ?? []) as { slug: string; clicks: number }[]) { clicksBySlug.set(l.slug, l.clicks ?? 0); clicsTotales += l.clicks ?? 0 }
+  }
+  // Señales de la página de CV (apertura, tiempo, descarga, chat)
+  let cvVisitas = 0, cvTiempo = 0, cvDescargas = 0, cvChat = 0
+  if (slugs.length) {
+    const { data: ev } = await sb.from('app_events').select('tipo,data').in('slug', slugs)
+    for (const e of (ev ?? []) as { tipo: string; data: { seconds?: number } | null }[]) {
+      if (e.tipo === 'open') cvVisitas++
+      else if (e.tipo === 'cv_download') cvDescargas++
+      else if (e.tipo === 'chat_message') cvChat++
+      else if (e.tipo === 'time_on_page') cvTiempo += Number(e.data?.seconds || 0)
+    }
   }
   let enviadas = 0, abiertas = 0, respondidas = 0, rebotadas = 0
   for (const p of list) {
@@ -36,12 +48,22 @@ export async function GET(req: Request) {
     if (p.estado === 'respondio') respondidas++
     if (p.estado === 'reboto') rebotadas++
   }
+  // En cola + envíos por toque
+  const { count: enCola } = await sb.from('outbound_prospecto').select('id', { count: 'exact', head: true }).eq('estado', 'listo')
+  const { data: envs } = await sb.from('outbound_envio').select('toque')
+  const porToque = { t1: 0, t2: 0, t3: 0 }
+  for (const e of (envs ?? []) as { toque: number }[]) { if (e.toque === 1) porToque.t1++; else if (e.toque === 2) porToque.t2++; else if (e.toque === 3) porToque.t3++ }
+
   const global = {
-    enviadas, abiertas, respondidas, rebotadas,
+    enviadas, abiertas, respondidas, rebotadas, clics_totales: clicsTotales, en_cola: enCola ?? 0,
     tasa_respuesta: enviadas ? Math.round((respondidas / enviadas) * 1000) / 10 : 0,
     tasa_apertura: enviadas ? Math.round((abiertas / enviadas) * 1000) / 10 : 0,
+    tasa_clic: enviadas ? Math.round((clicsTotales / enviadas) * 1000) / 10 : 0,
     abrio_no_contesto: Math.max(0, abiertas - respondidas), // el cuerpo es el problema
     nunca_abrio: Math.max(0, enviadas - abiertas),          // el asunto o la persona equivocada
+    cv_visitas: cvVisitas, cv_descargas: cvDescargas, cv_chat: cvChat,
+    cv_tiempo_prom: cvVisitas ? Math.round(cvTiempo / cvVisitas) : 0,
+    correos_1: porToque.t1, correos_recordatorios: porToque.t2 + porToque.t3,
   }
   return NextResponse.json({ ok: true, global, brazos })
 }

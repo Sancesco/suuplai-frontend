@@ -18,8 +18,9 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
   let setCookie: string | null = null
   if (!vid) { vid = randomBytes(16).toString('hex'); setCookie = `app_vid=${vid}; Path=/; Max-Age=31536000; SameSite=Lax` }
 
+  const esDueno = /(?:^|;\s*)suu_owner=1(?:;|$)/.test(req.headers.get('cookie') || '')
   const geo = geoOf(req)
-  await sb.from('app_events').insert({ application_id: app.id, slug: app.slug, visitor_id: vid, tipo: 'cv_download', ip_hash: ipHash(req), device: deviceOf(req), data: { via: 'link', ...(geo.label ? { geo: geo.label, ciudad: geo.ciudad } : {}) } })
+  if (!esDueno) await sb.from('app_events').insert({ application_id: app.id, slug: app.slug, visitor_id: vid, tipo: 'cv_download', ip_hash: ipHash(req), device: deviceOf(req), data: { via: 'link', ...(geo.label ? { geo: geo.label, ciudad: geo.ciudad } : {}) } })
 
   // alerta con anti-spam (2 min)
   const { data: ev } = await sb.from('app_events').select('tipo').eq('application_id', app.id)

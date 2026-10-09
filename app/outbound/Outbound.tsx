@@ -12,7 +12,7 @@ interface Row {
 }
 type Fila = { empresa: string; persona: string; puesto: string; email: string; sitio_web: string; linkedin: string }
 interface IntelBrazo { id: string; perilla: string; texto: string; es_control: boolean; activa: boolean; envios: number; maduros: number; clics: number; respuestas: number; tasa: number }
-interface Intel { global: { enviadas: number; abiertas: number; respondidas: number; rebotadas: number; tasa_respuesta: number; tasa_apertura: number; abrio_no_contesto: number; nunca_abrio: number }; brazos: IntelBrazo[] }
+interface Intel { global: { enviadas: number; abiertas: number; respondidas: number; rebotadas: number; clics_totales: number; en_cola: number; tasa_respuesta: number; tasa_apertura: number; tasa_clic: number; abrio_no_contesto: number; nunca_abrio: number; cv_visitas: number; cv_descargas: number; cv_chat: number; cv_tiempo_prom: number; correos_1: number; correos_recordatorios: number }; brazos: IntelBrazo[] }
 
 function dur(s: number) { return s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s` }
 function fecha(iso: string | null) { return iso ? new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) : '—' }
@@ -218,14 +218,28 @@ export function Outbound() {
                 </div>
                 {!intel ? <p className="text-sm text-neutral-500">Cargando…</p> : (
                   <>
-                    <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                      {[['Tasa respuesta', `${intel.global.tasa_respuesta}%`, true], ['Tasa apertura', `${intel.global.tasa_apertura}%`, false], ['Abrió, no contestó', intel.global.abrio_no_contesto, false], ['Nunca abrió', intel.global.nunca_abrio, false]].map(([l, n, hot], i) => (
-                        <div key={i} className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
-                          <div className="text-lg font-extrabold" style={{ fontFamily: "'Syne',sans-serif", color: hot ? '#1E8E5A' : undefined }}>{n}</div>
-                          <div className="text-[10.5px] uppercase tracking-wide text-neutral-500">{l}</div>
+                    {(() => {
+                      const g = intel.global
+                      const tiles: [string, string | number, boolean][] = [
+                        ['Enviados', g.enviadas, false], ['En cola', g.en_cola, false],
+                        ['Tasa respuesta', `${g.tasa_respuesta}%`, true], ['Respuestas', g.respondidas, true],
+                        ['Tasa apertura', `${g.tasa_apertura}%`, false], ['Clics totales', g.clics_totales, false],
+                        ['Abrió, no contestó', g.abrio_no_contesto, false], ['Nunca abrió', g.nunca_abrio, false],
+                        ['Vieron el CV', g.cv_visitas, false], ['Descargaron CV', g.cv_descargas, false],
+                        ['Tiempo prom. CV', `${g.cv_tiempo_prom}s`, false], ['Rebotes', g.rebotadas, false],
+                      ]
+                      return (
+                        <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+                          {tiles.map(([l, n, hot], i) => (
+                            <div key={i} className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
+                              <div className="text-lg font-extrabold" style={{ fontFamily: "'Syne',sans-serif", color: hot ? '#1E8E5A' : undefined }}>{n}</div>
+                              <div className="text-[10px] uppercase tracking-wide text-neutral-500">{l}</div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
+                      )
+                    })()}
+                    <p className="mb-3 text-[11px] text-neutral-500">Correos: <b>{intel.global.correos_1}</b> presentaciones · <b>{intel.global.correos_recordatorios}</b> recordatorios enviados.</p>
                     <p className="mb-1 text-[11px] uppercase tracking-wide text-neutral-500">Asuntos en prueba (bandit · señal = clic)</p>
                     <div className="mb-3 flex flex-col gap-1.5">
                       {intel.brazos.filter((b) => b.perilla === 'asunto').map((b) => (

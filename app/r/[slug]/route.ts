@@ -59,7 +59,8 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
   const myIps = (process.env.MY_IP || '').split(',').map((s) => s.trim()).filter(Boolean)
   const isMyIp = Boolean(ip) && myIps.includes(ip)
   const isBot = BOT_RE.test(ua)
-  const realClick = !isMyIp && !isBot
+  const isOwner = /(?:^|;\s*)suu_owner=1(?:;|$)/.test(req.headers.get('cookie') || '') // marcado con /api/outbound/soy-yo
+  const realClick = !isMyIp && !isBot && !isOwner
 
   if (realClick) {
     try {

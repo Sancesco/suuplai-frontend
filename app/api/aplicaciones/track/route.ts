@@ -29,6 +29,8 @@ async function alertaThrottle(sb: ReturnType<typeof getSupabaseAdmin>, appId: st
 // Registra un evento de una página pública. Público (autorizado por el slug). No guarda IP en claro.
 export async function POST(req: Request) {
   const sb = getSupabaseAdmin(); if (!sb) return NextResponse.json({ ok: false }, { status: 500 })
+  // Dueño marcado (/api/outbound/soy-yo): no ensuciar la data con tus propias aperturas.
+  if (/(?:^|;\s*)suu_owner=1(?:;|$)/.test(req.headers.get('cookie') || '')) return NextResponse.json({ ok: true, owner: true })
   const b = await req.json().catch(() => null)
   const slug = String(b?.slug ?? '').trim()
   const tipo = String(b?.tipo ?? '').trim()
