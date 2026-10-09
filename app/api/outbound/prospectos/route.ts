@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin, checkOutbound, prepararProspecto, type Prospecto } from '@/lib/outbound'
+import { gmailConectado } from '@/lib/gmail'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -11,6 +12,13 @@ export async function GET(req: Request) {
   const { data: pros } = await sb.from('outbound_prospecto').select('*').order('created_at', { ascending: false })
   const list = (pros ?? []) as Prospecto[]
   const slugs = list.map((p) => p.slug).filter(Boolean) as string[]
+
+  // envíos por prospecto (último toque + fecha)
+  const envios = new Map<string, { toque: number; enviado_en: string }>()
+  if (list.length) {
+    const { data: evs } = await sb.from('outbound_envio').select('prospecto_id,toque,enviado_en').in('prospecto_id', list.map((p) => p.id)).order('toque', { ascending: false })
+    for (const e of (evs ?? []) as { prospecto_id: string; toque: number; enviado_en: string }[]) if (!envios.has(e.prospecto_id)) envios.set(e.prospecto_id, { toque: e.toque, enviado_en: e.enviado_en })
+  }
 
   const clicks = new Map<string, number>()
   const ev = new Map<string, { open: number; seconds: number; cv: number; chat: number; last: string | null }>()
@@ -33,14 +41,17 @@ export async function GET(req: Request) {
 
   const out = list.map((p) => {
     const e = p.slug ? ev.get(p.slug) : undefined
+    const env = envios.get(p.id)
     return {
       id: p.id, empresa: p.empresa, persona: p.persona, puesto: p.puesto, email: p.email,
       sector: p.sector, idioma: p.idioma, slug: p.slug, estado: p.estado, pausado: p.pausado, created_at: p.created_at,
       clicks: p.slug ? (clicks.get(p.slug) ?? 0) : 0,
       abierto: e?.open ?? 0, seconds: e?.seconds ?? 0, cv: e?.cv ?? 0, chat: e?.chat ?? 0, last: e?.last ?? null,
+      toque: env?.toque ?? 0, enviado_en: env?.enviado_en ?? null,
     }
   })
-  return NextResponse.json({ ok: true, prospectos: out })
+  const gmail = await gmailConectado(sb)
+  return NextResponse.json({ ok: true, prospectos: out, gmail })
 }
 
 // Crea prospectos (bloque o uno) y les prepara el link de CV + /r. Dedup por correo.

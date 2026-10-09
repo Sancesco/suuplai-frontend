@@ -1,11 +1,12 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 interface Row {
   id: string; empresa: string; persona: string | null; puesto: string | null; email: string | null
   sector: string | null; idioma: string; slug: string | null; estado: string; created_at: string
   clicks: number; abierto: number; seconds: number; cv: number; chat: number; last: string | null
+  toque: number; enviado_en: string | null
 }
 type Fila = { empresa: string; persona: string; puesto: string; email: string; sitio_web: string; linkedin: string }
 
@@ -72,19 +73,35 @@ function parsear(texto: string): Fila[] {
 export function Outbound() {
   const [pw, setPw] = useState(''); const [authed, setAuthed] = useState(false); const [err, setErr] = useState('')
   const [rows, setRows] = useState<Row[] | null>(null)
+  const [gmail, setGmail] = useState<{ conectado: boolean; email: string | null }>({ conectado: false, email: null })
   const [texto, setTexto] = useState(''); const [idioma, setIdioma] = useState<'es' | 'en'>('es')
-  const [busy, setBusy] = useState(false); const [msg, setMsg] = useState('')
+  const [busy, setBusy] = useState(false); const [msg, setMsg] = useState(''); const [enviando, setEnviando] = useState('')
   const hdr = { 'x-admin-password': pw }
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
+
+  useEffect(() => {
+    const u = new URLSearchParams(window.location.search)
+    if (u.get('gmail') === 'ok') setMsg(`✓ Gmail conectado${u.get('email') ? ': ' + u.get('email') : ''}`)
+    else if (u.get('gmail') === 'error') setMsg('⚠ No se pudo conectar Gmail: ' + (u.get('msg') || 'revisa las credenciales'))
+  }, [])
 
   const load = useCallback(async () => {
     setErr('')
     try {
       const r = await fetch('/api/outbound/prospectos', { headers: hdr })
       const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error')
-      setRows(j.prospectos as Row[]); setAuthed(true)
+      setRows(j.prospectos as Row[]); setGmail(j.gmail || { conectado: false, email: null }); setAuthed(true)
     } catch (e) { setErr(e instanceof Error ? e.message : 'Error'); setAuthed(false) }
   }, [pw]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const enviar = async (id: string) => {
+    setEnviando(id); setMsg('')
+    try {
+      const r = await fetch('/api/outbound/enviar', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ prospectoId: id }) })
+      const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error')
+      setMsg('✓ Correo enviado'); load()
+    } catch (e) { setMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')) } finally { setEnviando('') }
+  }
 
   const crear = async () => {
     const filas = parsear(texto)
@@ -121,6 +138,19 @@ export function Outbound() {
 
         {authed && (
           <>
+            <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-neutral-200 bg-white px-4 py-2.5 text-sm">
+              <span className="font-semibold">Gmail:</span>
+              {gmail.conectado ? (
+                <>
+                  <span className="rounded bg-emerald-100 px-2 py-0.5 font-medium text-emerald-700">✓ conectado{gmail.email ? ` · ${gmail.email}` : ''}</span>
+                  <a href={`/api/outbound/gmail/auth?pw=${encodeURIComponent(pw)}`} className="text-xs text-neutral-500 underline">reconectar</a>
+                </>
+              ) : (
+                <a href={`/api/outbound/gmail/auth?pw=${encodeURIComponent(pw)}`} className="rounded-lg bg-neutral-900 px-3 py-1.5 text-xs font-bold text-lime-300">Conectar Gmail</a>
+              )}
+              <span className="ml-auto text-xs text-neutral-400">envío desde tu alias · recordatorios automáticos en el hilo</span>
+            </div>
+
             <div className="mb-5 rounded-2xl border-2 border-neutral-900 bg-white p-4">
               <div className="mb-2 flex flex-wrap items-center gap-2">
                 <b className="text-sm">Pegar prospectos</b>
@@ -153,7 +183,7 @@ export function Outbound() {
                   <thead>
                     <tr className="border-b border-neutral-200 text-left text-[11px] uppercase tracking-wide text-neutral-500">
                       <th className="px-3 py-2">Empresa / persona</th><th className="px-3 py-2">Estado</th>
-                      <th className="px-3 py-2">Señales</th><th className="px-3 py-2">Links</th><th className="px-3 py-2">Creada</th>
+                      <th className="px-3 py-2">Envío</th><th className="px-3 py-2">Señales</th><th className="px-3 py-2">Links</th><th className="px-3 py-2">Creada</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -170,6 +200,12 @@ export function Outbound() {
                             {r.email && <div className="font-mono text-[11px] text-neutral-400">{r.email}</div>}
                           </td>
                           <td className="px-3 py-2.5"><span className="rounded px-1.5 py-0.5 font-mono text-[11px]" style={{ background: est.bg, color: est.c }}>{est.t}</span></td>
+                          <td className="px-3 py-2.5">
+                            {r.toque > 0 && <div className="mb-1 font-mono text-[11px] text-neutral-500">toque {r.toque}</div>}
+                            {gmail.conectado && r.email && (r.estado === 'listo' || r.estado === 'nuevo') ? (
+                              <button onClick={() => enviar(r.id)} disabled={enviando === r.id} className="rounded-lg bg-neutral-900 px-2.5 py-1 text-[11px] font-bold text-lime-300 disabled:opacity-50">{enviando === r.id ? '…' : '✉️ Enviar'}</button>
+                            ) : r.estado === 'en_secuencia' ? <span className="text-[11px] text-neutral-400">en secuencia</span> : <span className="text-[11px] text-neutral-300">—</span>}
+                          </td>
                           <td className="px-3 py-2.5">
                             <div className="flex flex-wrap gap-1.5 text-[11px]">
                               <span title="clics en /r" className={r.clicks ? 'font-bold text-neutral-900' : 'text-neutral-400'}>🔗 {r.clicks}</span>
