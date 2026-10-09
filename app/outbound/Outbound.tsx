@@ -13,7 +13,7 @@ type Fila = { empresa: string; persona: string; puesto: string; email: string; s
 function dur(s: number) { return s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s` }
 function fecha(iso: string | null) { return iso ? new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) : '—' }
 const EST: Record<string, { t: string; bg: string; c: string }> = {
-  nuevo: { t: 'Nuevo', bg: '#EEE', c: '#666' }, listo: { t: 'Listo', bg: '#E4ECFF', c: '#2456C9' },
+  nuevo: { t: 'Nuevo', bg: '#EEE', c: '#666' }, listo: { t: 'En cola', bg: '#E4ECFF', c: '#2456C9' },
   en_secuencia: { t: 'En secuencia', bg: '#FFF3D6', c: '#9A6A00' }, respondio: { t: '✓ Respondió', bg: '#D9F2E4', c: '#1E8E5A' },
   reboto: { t: 'Rebotó', bg: '#F3D9D0', c: '#9B3412' }, descartado: { t: 'Descartado', bg: '#EEE', c: '#999' }, cerrado: { t: 'Cerrado', bg: '#EEE', c: '#999' },
 }
@@ -150,6 +150,9 @@ export function Outbound() {
               )}
               <span className="ml-auto text-xs text-neutral-400">envío desde tu alias · recordatorios automáticos en el hilo</span>
             </div>
+            {gmail.conectado && (
+              <p className="mb-4 -mt-2 text-xs text-neutral-500">Los que subes entran <b>en cola</b> y se mandan <b>solos</b> (envío diario 9am CDMX, con rampa de 5/día al inicio). No necesitas picar nada — <i>“Enviar ahora”</i> es solo para adelantar uno.</p>
+            )}
 
             <div className="mb-5 rounded-2xl border-2 border-neutral-900 bg-white p-4">
               <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -203,7 +206,7 @@ export function Outbound() {
                           <td className="px-3 py-2.5">
                             {r.toque > 0 && <div className="mb-1 font-mono text-[11px] text-neutral-500">toque {r.toque}</div>}
                             {gmail.conectado && r.email && (r.estado === 'listo' || r.estado === 'nuevo') ? (
-                              <button onClick={() => enviar(r.id)} disabled={enviando === r.id} className="rounded-lg bg-neutral-900 px-2.5 py-1 text-[11px] font-bold text-lime-300 disabled:opacity-50">{enviando === r.id ? '…' : '✉️ Enviar'}</button>
+                              <button onClick={() => enviar(r.id)} disabled={enviando === r.id} title="Opcional: se mandará solo con el envío diario" className="rounded-lg border border-neutral-300 px-2.5 py-1 text-[11px] font-semibold text-neutral-700 disabled:opacity-50">{enviando === r.id ? '…' : '✉️ Enviar ahora'}</button>
                             ) : r.estado === 'en_secuencia' ? <span className="text-[11px] text-neutral-400">en secuencia</span> : <span className="text-[11px] text-neutral-300">—</span>}
                           </td>
                           <td className="px-3 py-2.5">
