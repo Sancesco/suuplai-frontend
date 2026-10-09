@@ -17,17 +17,56 @@ const EST: Record<string, { t: string; bg: string; c: string }> = {
   reboto: { t: 'Rebotó', bg: '#F3D9D0', c: '#9B3412' }, descartado: { t: 'Descartado', bg: '#EEE', c: '#999' }, cerrado: { t: 'Cerrado', bg: '#EEE', c: '#999' },
 }
 
-// Parsea el pegado: una fila por línea, columnas separadas por TAB (hoja de cálculo) o coma.
+const EMAIL = /[\w.+-]+@[\w-]+\.[\w.-]+/
+const cap = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s
+const NOISE = /^(company logo|add to (list|sequence|list\+)|edit layout|contact information|primary|business|source:|mobile|work|direct|home|view|save|request|·|\d+ (connection|follower)|see more|message|connect|following)/i
+
+// Modo estructurado: una fila por línea con columnas (hoja/CSV).
 // Orden: empresa, persona, puesto, email, sitio_web, linkedin
-function parsear(texto: string): Fila[] {
+function parseEstructurado(lineas: string[], sep: '\t' | ','): Fila[] {
+  return lineas.map((l) => {
+    const c = l.split(sep).map((x) => x.trim())
+    return { empresa: c[0] || '', persona: c[1] || '', puesto: c[2] || '', email: c[3] || '', sitio_web: c[4] || '', linkedin: c[5] || '' }
+  }).filter((f) => f.empresa)
+}
+
+// Modo inteligente (pegado de Apollo/LinkedIn): ancla en el EMAIL, saca nombre,
+// "Puesto at Empresa" y, si falta empresa, la deriva del dominio del correo.
+function parseInteligente(lineas: string[]): Fila[] {
   const out: Fila[] = []
-  for (const linea of texto.split('\n')) {
-    const l = linea.trim(); if (!l) continue
-    const cols = (l.includes('\t') ? l.split('\t') : l.split(',')).map((c) => c.trim())
-    if (!cols[0]) continue
-    out.push({ empresa: cols[0] || '', persona: cols[1] || '', puesto: cols[2] || '', email: cols[3] || '', sitio_web: cols[4] || '', linkedin: cols[5] || '' })
+  let nombre = '', puesto = '', empresa = '', linkedin = ''
+  const flush = (email: string) => {
+    const dom = (email.split('@')[1] || '').split('.')[0]
+    out.push({ empresa: empresa || cap(dom), persona: nombre, puesto, email, sitio_web: '', linkedin })
+    nombre = ''; puesto = ''; empresa = ''; linkedin = ''
+  }
+  for (const raw of lineas) {
+    const l = raw.trim(); if (!l) continue
+    const em = l.match(EMAIL)
+    if (em) { flush(em[0]); continue }
+    if (/linkedin\.com\/in\//i.test(l)) { linkedin = l; continue }
+    if (NOISE.test(l) || /^[A-ZÁÉÍÓÚÑ]{1,3}$/.test(l)) continue
+    // "Puesto at Empresa" / "Puesto en Empresa"
+    const m = l.split(/\s+(?:at|en|@|\|)\s+/i)
+    if (m.length === 2 && m[0] && m[1] && !/,/.test(m[1])) { puesto = m[0].trim(); empresa = m[1].trim(); continue }
+    // Nombre: 2-4 palabras, sin coma ni dígitos (descarta ciudades tipo "Mexico City, Mexico")
+    if (!nombre && !/[,\d]/.test(l) && /^[A-Za-zÀ-ÿ'.-]+(?:\s+[A-Za-zÀ-ÿ'.-]+){1,3}$/.test(l)) { nombre = l; continue }
   }
   return out
+}
+
+// Autodetecta el formato del pegado.
+function parsear(texto: string): Fila[] {
+  const lineas = texto.split('\n').map((l) => l.trim()).filter(Boolean)
+  if (!lineas.length) return []
+  if (lineas.some((l) => l.includes('\t'))) return parseEstructurado(lineas.filter((l) => l.includes('\t')), '\t')
+  const conEmail = lineas.filter((l) => EMAIL.test(l))
+  // CSV: líneas con email y coma → una fila por línea
+  if (conEmail.length && conEmail.every((l) => l.includes(','))) return parseEstructurado(lineas, ',')
+  // Apollo/LinkedIn: emails en su propia línea → modo inteligente
+  if (conEmail.length) return parseInteligente(lineas)
+  // Sin emails: trata como CSV por si traen empresa/persona sin correo
+  return parseEstructurado(lineas, ',')
 }
 
 export function Outbound() {
@@ -61,6 +100,7 @@ export function Outbound() {
 
   const copiar = (s: string) => { navigator.clipboard?.writeText(s) }
   const inp = 'w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900'
+  const detectados = parsear(texto)
 
   return (
     <div className="min-h-screen bg-[#F4F2EC] text-neutral-900" style={{ fontFamily: "'DM Sans',system-ui,sans-serif" }}>
@@ -86,7 +126,14 @@ export function Outbound() {
                 <b className="text-sm">Pegar prospectos</b>
                 <span className="text-xs text-neutral-500">una fila por línea · columnas: empresa, persona, puesto, email, sitio, linkedin (tab o coma)</span>
               </div>
-              <textarea className={`${inp} font-mono text-[12.5px]`} rows={6} placeholder={'Anthropic\tDario Amodei\tLatam Lead\tdario@anthropic.com\tanthropic.com\nVambe\tNicolas Camhi\tCEO\tnicolas@vambe.ai'} value={texto} onChange={(e) => setTexto(e.target.value)} />
+              <textarea className={`${inp} font-mono text-[12.5px]`} rows={6} placeholder={'Pega de una hoja (tab), CSV, o directo de Apollo/LinkedIn.\nAnthropic\tDario Amodei\tLatam Lead\tdario@anthropic.com'} value={texto} onChange={(e) => setTexto(e.target.value)} />
+              {texto.trim() && (
+                <div className="mt-2 rounded-lg bg-neutral-50 px-3 py-2 text-xs">
+                  {detectados.length === 0 ? <span className="text-[#B4451A]">No detecté contactos (revisa que traiga empresa o correo).</span> : (
+                    <span className="text-neutral-700"><b>Detecté {detectados.length} contacto{detectados.length > 1 ? 's' : ''}:</b> {detectados.slice(0, 8).map((f) => f.persona || f.empresa || f.email).join(' · ')}{detectados.length > 8 ? ` · +${detectados.length - 8}` : ''}</span>
+                  )}
+                </div>
+              )}
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <div className="flex items-center gap-2 text-sm">
                   <span className="text-neutral-500">CV default:</span>
@@ -95,7 +142,7 @@ export function Outbound() {
                     <button onClick={() => setIdioma('en')} className={`px-3 py-1.5 ${idioma === 'en' ? 'bg-neutral-900 text-lime-300 font-bold' : 'bg-white'}`}>🇺🇸 English</button>
                   </div>
                 </div>
-                <button onClick={crear} disabled={busy} className="rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-bold text-lime-300 disabled:opacity-50">{busy ? 'Creando…' : 'Crear y preparar links'}</button>
+                <button onClick={crear} disabled={busy || detectados.length === 0} className="rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-bold text-lime-300 disabled:opacity-50">{busy ? 'Creando…' : `Crear y preparar ${detectados.length || ''} link${detectados.length === 1 ? '' : 's'}`}</button>
                 {msg && <span className="text-sm text-neutral-600">{msg}</span>}
               </div>
             </div>
