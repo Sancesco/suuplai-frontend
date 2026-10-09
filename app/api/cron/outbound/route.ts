@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
+import { elegirAsunto } from '@/lib/outbound'
 import { enviarCorreo, leerHilo, gmailConectado } from '@/lib/gmail'
 import { rellenar, primerNombre, diasHabilesEntre, topeRampa, horarioHabilCDMX } from '@/lib/outboundSend'
 
@@ -8,7 +9,7 @@ export const dynamic = 'force-dynamic'
 
 type SB = NonNullable<ReturnType<typeof getSupabaseAdmin>>
 type Envio = { id: string; toque: number; enviado_en: string; gmail_thread_id: string | null; gmail_message_id: string | null; asunto_final: string | null; rebotado: boolean; respondido: boolean }
-type Prospecto = { id: string; empresa: string; persona: string | null; email: string | null; slug: string | null; estado: string; gancho?: string | null }
+type Prospecto = { id: string; empresa: string; persona: string | null; email: string | null; slug: string | null; estado: string; gancho?: string | null; brazo_hora?: string | null }
 
 async function cfgMap(sb: SB) {
   const { data } = await sb.from('outbound_config').select('clave,valor')
@@ -41,12 +42,14 @@ export async function GET(req: Request) {
   const enviarToque = async (p: Prospecto, toque: number, prev: Envio | null) => {
     const vars = { nombre: primerNombre(p.persona), empresa: p.empresa, gancho: p.gancho || '', slug: p.slug || '' }
     const cuerpo = toque === 1 ? rellenar(tpl.cuerpo, vars) : rellenar(toque === 2 ? tpl.recordatorio_1 : tpl.recordatorio_2, vars)
-    const asunto = toque === 1 ? rellenar(tpl.asunto, vars) : `Re: ${prev?.asunto_final || rellenar(tpl.asunto, vars)}`
+    // Toque 1: el bandit elige el asunto; toques 2/3: respuesta en el mismo hilo.
+    const pick = toque === 1 ? await elegirAsunto(sb, vars) : { brazoId: null, asunto: null }
+    const asunto = toque === 1 ? (pick.asunto || rellenar(tpl.asunto, vars)) : `Re: ${prev?.asunto_final || rellenar(tpl.asunto, vars)}`
     const r = await enviarCorreo(sb, {
       from: cfg.from_email, fromNombre: cfg.from_nombre, to: p.email!, subject: asunto, text: cuerpo,
       threadId: prev?.gmail_thread_id || null, inReplyTo: prev?.gmail_message_id || null, references: prev?.gmail_message_id || null,
     })
-    await sb.from('outbound_envio').insert({ prospecto_id: p.id, toque, asunto_final: toque === 1 ? asunto : prev?.asunto_final, cuerpo_final: cuerpo, gmail_thread_id: r.threadId, gmail_message_id: r.messageId, plantilla_version: tpl.version })
+    await sb.from('outbound_envio').insert({ prospecto_id: p.id, toque, asunto_final: toque === 1 ? asunto : prev?.asunto_final, cuerpo_final: cuerpo, gmail_thread_id: r.threadId, gmail_message_id: r.messageId, plantilla_version: tpl.version, brazo_asunto: pick.brazoId, brazo_hora: toque === 1 ? (p.brazo_hora ?? null) : null })
     if (toque === 1) await sb.from('outbound_prospecto').update({ estado: 'en_secuencia' }).eq('id', p.id)
   }
 
@@ -73,21 +76,35 @@ export async function GET(req: Request) {
     } catch { /* un fallo no detiene el resto */ }
   }
 
-  // ── 2) Cola de nuevos (toque 1) con rampa/tope/horario ──
+  // ── 2) Cola: manda los 'listo' cuya hora programada ya llegó (o sin programar, respaldo) ──
   if (habil) {
-    const cdmx = new Date(now.getTime() - 6 * 3600000)
-    const inicioDiaUtc = new Date(Date.UTC(cdmx.getUTCFullYear(), cdmx.getUTCMonth(), cdmx.getUTCDate(), 6, 0, 0)).toISOString()
-    const { count } = await sb.from('outbound_envio').select('id', { count: 'exact', head: true }).eq('toque', 1).gte('enviado_en', inicioDiaUtc)
-    const restante = topeRampa(cfg.rampa_desde) - (count ?? 0)
-    if (restante > 0) {
-      // Reparte el restante del día entre las horas hábiles que quedan, para que no salgan todos juntos.
-      const horaCdmx = cdmx.getUTCHours()
-      const pingsRestantes = Math.max(1, 17 - horaCdmx)
-      const porPing = Math.max(1, Math.ceil(restante / pingsRestantes))
-      const { data: cola } = await sb.from('outbound_prospecto').select('*').eq('estado', 'listo').eq('pausado', false).not('email', 'is', null).order('created_at', { ascending: true }).limit(Math.min(restante, porPing))
-      for (const p of (cola ?? []) as Prospecto[]) { try { await enviarToque(p, 1, null); log.nuevos++ } catch { /* sigue */ } }
-    }
+    const nowIso = now.toISOString()
+    const { data: cola } = await sb.from('outbound_prospecto').select('*').eq('estado', 'listo').eq('pausado', false).not('email', 'is', null)
+      .or(`programado_en.lte.${nowIso},programado_en.is.null`).order('programado_en', { ascending: true, nullsFirst: true }).limit(10)
+    for (const p of (cola ?? []) as Prospecto[]) { try { await enviarToque(p, 1, null); log.nuevos++ } catch { /* sigue */ } }
   }
 
-  return NextResponse.json({ ok: true, ...log })
+  // ── 3) Madurar: a los 7 días, aprende qué asunto funcionó (señal = clic) ──
+  const hace7 = new Date(now.getTime() - 7 * 86400000).toISOString()
+  const { data: mad } = await sb.from('outbound_envio').select('id,prospecto_id,brazo_asunto,brazo_hora').eq('toque', 1).eq('maduro', false).lte('enviado_en', hace7).limit(40)
+  const madurarBrazo = async (brazoId: string | null, clicked: boolean, respondido: boolean) => {
+    if (!brazoId) return
+    const { data: b } = await sb.from('outbound_brazo').select('*').eq('id', brazoId).maybeSingle()
+    if (!b) return
+    await sb.from('outbound_brazo').update({
+      envios_maduros: (b.envios_maduros ?? 0) + 1, clics: (b.clics ?? 0) + (clicked ? 1 : 0), respuestas: (b.respuestas ?? 0) + (respondido ? 1 : 0),
+      alfa: (b.alfa ?? 1) + (clicked ? 1 : 0), beta: (b.beta ?? 4) + (clicked ? 0 : 1),
+    }).eq('id', b.id)
+  }
+  for (const e of (mad ?? []) as { id: string; prospecto_id: string; brazo_asunto: string | null; brazo_hora: string | null }[]) {
+    await sb.from('outbound_envio').update({ maduro: true }).eq('id', e.id)
+    const { data: pp } = await sb.from('outbound_prospecto').select('slug,estado').eq('id', e.prospecto_id).maybeSingle()
+    let clics = 0
+    if (pp?.slug) { const { data: lk } = await sb.from('links').select('clicks').eq('slug', pp.slug).maybeSingle(); clics = lk?.clicks ?? 0 }
+    const clicked = clics > 0, respondido = pp?.estado === 'respondio'
+    await madurarBrazo(e.brazo_asunto, clicked, respondido) // asunto aprende del clic
+    await madurarBrazo(e.brazo_hora, clicked, respondido)   // franja aprende del clic
+  }
+
+  return NextResponse.json({ ok: true, ...log, madurados: (mad ?? []).length })
 }

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getSupabaseAdmin, checkOutbound, type Prospecto } from '@/lib/outbound'
+import { getSupabaseAdmin, checkOutbound, elegirAsunto, type Prospecto } from '@/lib/outbound'
 import { enviarCorreo } from '@/lib/gmail'
 import { rellenar, primerNombre } from '@/lib/outboundSend'
 
@@ -32,11 +32,12 @@ export async function POST(req: Request) {
   const cfg = await config(sb)
 
   const vars = { nombre: primerNombre(p.persona), empresa: p.empresa, gancho: p.gancho || '', slug: p.slug }
-  const asunto = rellenar(tpl.asunto, vars)
+  const pick = await elegirAsunto(sb, vars)
+  const asunto = pick.asunto || rellenar(tpl.asunto, vars)
   const cuerpo = rellenar(tpl.cuerpo, vars)
   try {
     const r = await enviarCorreo(sb, { from: cfg.from_email, fromNombre: cfg.from_nombre, to: p.email, subject: asunto, text: cuerpo })
-    await sb.from('outbound_envio').insert({ prospecto_id: id, toque: 1, asunto_final: asunto, cuerpo_final: cuerpo, gmail_thread_id: r.threadId, gmail_message_id: r.messageId, plantilla_version: tpl.version })
+    await sb.from('outbound_envio').insert({ prospecto_id: id, toque: 1, asunto_final: asunto, cuerpo_final: cuerpo, gmail_thread_id: r.threadId, gmail_message_id: r.messageId, plantilla_version: tpl.version, brazo_asunto: pick.brazoId })
     await sb.from('outbound_prospecto').update({ estado: 'en_secuencia' }).eq('id', id)
     return NextResponse.json({ ok: true })
   } catch (e) {

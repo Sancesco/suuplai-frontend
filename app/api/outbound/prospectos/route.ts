@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getSupabaseAdmin, checkOutbound, prepararProspecto, type Prospecto } from '@/lib/outbound'
+import { getSupabaseAdmin, checkOutbound, prepararProspecto, programarEnvio, type Prospecto } from '@/lib/outbound'
 import { gmailConectado } from '@/lib/gmail'
 
 export const runtime = 'nodejs'
@@ -84,6 +84,8 @@ export async function POST(req: Request) {
       }).select('id').single()
       if (error || !ins) { errores.push(empresa + ': ' + (error?.message || '')); continue }
       creados++; ids.push(ins.id as string)
+      // Programa su envío (franja + día con cupo). Si la Fase 4 no está, el cron lo manda igual.
+      try { await programarEnvio(sb, ins.id as string) } catch { /* sin Fase 4 todavía */ }
     } catch (e) { errores.push(empresa + ': ' + (e instanceof Error ? e.message : 'error')) }
   }
   return NextResponse.json({ ok: true, creados, saltados, errores, ids })

@@ -11,6 +11,8 @@ interface Row {
   afirma_cifra: boolean; evidencia_url: string | null; auto_enviable: boolean
 }
 type Fila = { empresa: string; persona: string; puesto: string; email: string; sitio_web: string; linkedin: string }
+interface IntelBrazo { id: string; perilla: string; texto: string; es_control: boolean; activa: boolean; envios: number; maduros: number; clics: number; respuestas: number; tasa: number }
+interface Intel { global: { enviadas: number; abiertas: number; respondidas: number; rebotadas: number; tasa_respuesta: number; tasa_apertura: number; abrio_no_contesto: number; nunca_abrio: number }; brazos: IntelBrazo[] }
 
 function dur(s: number) { return s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s` }
 function fecha(iso: string | null) { return iso ? new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) : '—' }
@@ -80,8 +82,8 @@ export function Outbound() {
   const [gmail, setGmail] = useState<{ conectado: boolean; email: string | null }>({ conectado: false, email: null })
   const [texto, setTexto] = useState(''); const [idioma, setIdioma] = useState<'es' | 'en'>('es')
   const [busy, setBusy] = useState(false); const [msg, setMsg] = useState(''); const [enviando, setEnviando] = useState('')
-  const [preview, setPreview] = useState<{ id: string; from: string; to: string | null; asunto: string; cuerpo: string; estado: string; cuando: string | null; detalleCola: string | null; plan: { paso: string; fecha: string; hecho: boolean }[] } | null>(null)
-  const [cargandoPrev, setCargandoPrev] = useState('')
+  const [preview, setPreview] = useState<{ id: string; from: string; to: string | null; asunto: string; cuerpo: string; estado: string; cuando: string | null; detalleCola: string | null; plan: { paso: string; fecha: string; hecho: boolean }[]; correos: { paso: string; asunto: string; cuerpo: string }[] } | null>(null)
+  const [cargandoPrev, setCargandoPrev] = useState(''); const [correoIdx, setCorreoIdx] = useState(0)
   const hdr = { 'x-admin-password': pw }
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
 
@@ -142,12 +144,21 @@ export function Outbound() {
   const patchPros = async (id: string, body: Record<string, unknown>) => {
     await fetch('/api/outbound/prospectos', { method: 'PATCH', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ id, ...body }) }); load()
   }
+  const [intel, setIntel] = useState<Intel | null>(null); const [showIntel, setShowIntel] = useState(false); const [genHip, setGenHip] = useState(false)
+  const loadReporte = async () => { try { const r = await fetch('/api/outbound/reporte', { headers: hdr }); const j = await r.json(); if (j.ok) setIntel(j) } catch { /* noop */ } }
+  const abrirIntel = () => { const v = !showIntel; setShowIntel(v); if (v) loadReporte() }
+  const generarHipotesis = async () => {
+    setGenHip(true); setMsg('🧠 El agente está leyendo el desempeño…')
+    try { const r = await fetch('/api/outbound/hipotesis', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: '{}' }); const j = await r.json(); setMsg(j.ok ? `✨ ${j.creados} asunto(s) nuevo(s) a prueba` : '⚠ ' + (j.error || 'Error')); loadReporte() }
+    catch { setMsg('⚠ Error') } finally { setGenHip(false) }
+  }
   const verPreview = async (id: string) => {
     setCargandoPrev(id)
     try {
       const r = await fetch('/api/outbound/preview', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ prospectoId: id }) })
       const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error')
-      setPreview({ id, from: j.from, to: j.to, asunto: j.asunto, cuerpo: j.cuerpo, estado: j.estado, cuando: j.cuando, detalleCola: j.detalleCola, plan: j.plan || [] })
+      setCorreoIdx(0)
+      setPreview({ id, from: j.from, to: j.to, asunto: j.asunto, cuerpo: j.cuerpo, estado: j.estado, cuando: j.cuando, detalleCola: j.detalleCola, plan: j.plan || [], correos: j.correos || [] })
     } catch (e) { setMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')) } finally { setCargandoPrev('') }
   }
   const fechaHora = (iso: string | null) => iso ? new Date(iso).toLocaleString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'America/Mexico_City' }) : null
@@ -191,6 +202,47 @@ export function Outbound() {
             </div>
             {gmail.conectado && (
               <p className="mb-4 -mt-2 text-xs text-neutral-500">Los que subes entran <b>en cola</b> y se mandan <b>solos</b> (envío diario 9am CDMX, con rampa de 5/día al inicio). No necesitas picar nada — <i>“Enviar ahora”</i> es solo para adelantar uno.</p>
+            )}
+
+            <div className="mb-4">
+              <button onClick={abrirIntel} className="rounded-lg border border-neutral-900 bg-white px-3 py-1.5 text-sm font-bold">🧠 {showIntel ? 'Ocultar inteligencia' : 'Inteligencia'}</button>
+            </div>
+            {showIntel && (
+              <div className="mb-5 rounded-2xl border-2 border-neutral-900 bg-white p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <b style={{ fontFamily: "'Syne',sans-serif" }}>🧠 Inteligencia · el cerebro que aprende</b>
+                  <button onClick={generarHipotesis} disabled={genHip} className="rounded-lg bg-neutral-900 px-3 py-1.5 text-xs font-bold text-lime-300 disabled:opacity-50">{genHip ? 'Pensando…' : '✨ Generar hipótesis (agente)'}</button>
+                </div>
+                {!intel ? <p className="text-sm text-neutral-500">Cargando…</p> : (
+                  <>
+                    <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {[['Tasa respuesta', `${intel.global.tasa_respuesta}%`, true], ['Tasa apertura', `${intel.global.tasa_apertura}%`, false], ['Abrió, no contestó', intel.global.abrio_no_contesto, false], ['Nunca abrió', intel.global.nunca_abrio, false]].map(([l, n, hot], i) => (
+                        <div key={i} className="rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2">
+                          <div className="text-lg font-extrabold" style={{ fontFamily: "'Syne',sans-serif", color: hot ? '#1E8E5A' : undefined }}>{n}</div>
+                          <div className="text-[10.5px] uppercase tracking-wide text-neutral-500">{l}</div>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="mb-1 text-[11px] uppercase tracking-wide text-neutral-500">Asuntos en prueba (bandit · señal = clic)</p>
+                    <div className="mb-3 flex flex-col gap-1.5">
+                      {intel.brazos.filter((b) => b.perilla === 'asunto').map((b) => (
+                        <div key={b.id} className="flex items-center gap-2 text-xs">
+                          <span className="flex-1 truncate">{b.es_control && <span className="mr-1 rounded bg-neutral-200 px-1 text-[9px] uppercase">control</span>}“{b.texto}”</span>
+                          <div className="h-2 w-20 shrink-0 overflow-hidden rounded bg-neutral-100"><div className="h-full rounded bg-neutral-800" style={{ width: `${Math.round(b.tasa * 100)}%` }} /></div>
+                          <span className="w-24 shrink-0 text-right font-mono text-neutral-500">{b.clics}clic/{b.maduros}m · {b.respuestas}r</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="mb-1 text-[11px] uppercase tracking-wide text-neutral-500">Horario (franja · aprende sola)</p>
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      {intel.brazos.filter((b) => b.perilla === 'hora').map((b) => (
+                        <span key={b.id} className="rounded border border-neutral-200 px-2 py-1 font-mono">{b.texto}h: {b.clics}/{b.maduros} <span className="text-neutral-400">({Math.round(b.tasa * 100)}%)</span></span>
+                      ))}
+                    </div>
+                    <p className="mt-3 text-[11px] text-neutral-400">La señal rápida es el clic (3-5× más frecuente que la respuesta). El bandit mueve el tráfico al que más clics saca; el agente propone asuntos nuevos leyendo los datos.</p>
+                  </>
+                )}
+              </div>
             )}
 
             <div className="mb-5 rounded-2xl border-2 border-neutral-900 bg-white p-4">
@@ -320,8 +372,19 @@ export function Outbound() {
                     </div>
                   )}
                   <div className="rounded-xl border border-neutral-200">
-                    <div className="border-b border-neutral-100 px-3 py-2 text-xs text-neutral-500"><div><b>De:</b> {preview.from}</div><div><b>Para:</b> {preview.to || '—'}</div><div><b>Asunto:</b> {preview.asunto}</div></div>
-                    <pre className="max-h-[50vh] overflow-auto whitespace-pre-wrap px-3 py-3 text-[13px] leading-relaxed" style={{ fontFamily: "'DM Sans',sans-serif" }}>{preview.cuerpo}</pre>
+                    {preview.correos.length > 0 && (
+                      <div className="flex gap-1 border-b border-neutral-100 p-1.5">
+                        {preview.correos.map((_, i) => (
+                          <button key={i} onClick={() => setCorreoIdx(i)} className={`rounded px-2 py-1 text-[11px] font-semibold ${correoIdx === i ? 'bg-neutral-900 text-lime-300' : 'text-neutral-600 hover:bg-neutral-100'}`}>{i === 0 ? '1 · Presentación' : i === 1 ? '2 · Recordatorio' : '3 · Último'}</button>
+                        ))}
+                      </div>
+                    )}
+                    {(() => { const c = preview.correos[correoIdx] || { asunto: preview.asunto, cuerpo: preview.cuerpo }; return (
+                      <>
+                        <div className="border-b border-neutral-100 px-3 py-2 text-xs text-neutral-500"><div><b>De:</b> {preview.from}</div><div><b>Para:</b> {preview.to || '—'}</div><div><b>Asunto:</b> {c.asunto}</div></div>
+                        <pre className="max-h-[45vh] overflow-auto whitespace-pre-wrap px-3 py-3 text-[13px] leading-relaxed" style={{ fontFamily: "'DM Sans',sans-serif" }}>{c.cuerpo}</pre>
+                      </>
+                    ) })()}
                   </div>
                   {gmail.conectado && preview.to && (preview.estado === 'listo' || preview.estado === 'nuevo') && (
                     <button onClick={() => { enviar(preview.id); setPreview(null) }} className="mt-3 rounded-lg bg-neutral-900 px-4 py-2 text-sm font-bold text-lime-300">✉️ Enviar ahora</button>

@@ -81,5 +81,10 @@ export async function POST(req: Request) {
     ]
   }
 
-  return NextResponse.json({ ok: true, from, to: p.email, asunto, cuerpo, estado: p.estado, cuando, detalleCola, plan })
+  const correos = [
+    { paso: 'Correo 1 · presentación', asunto, cuerpo },
+    { paso: 'Recordatorio 2 · mismo hilo', asunto: `Re: ${asunto}`, cuerpo: rellenar(tpl.recordatorio_1 || '', vars) },
+    { paso: 'Recordatorio 3 · último', asunto: `Re: ${asunto}`, cuerpo: rellenar(tpl.recordatorio_2 || '', vars) },
+  ]
+  return NextResponse.json({ ok: true, from, to: p.email, asunto, cuerpo, estado: p.estado, cuando, detalleCola, plan, correos })
 }
