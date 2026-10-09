@@ -29,17 +29,19 @@ export async function GET(req: Request) {
     const { data: lk } = await sb.from('links').select('slug,clicks').in('slug', slugs)
     for (const l of (lk ?? []) as { slug: string; clicks: number }[]) { clicksBySlug.set(l.slug, l.clicks ?? 0); clicsTotales += l.clicks ?? 0 }
   }
-  // Señales de la página de CV (apertura, tiempo, descarga, chat)
-  let cvVisitas = 0, cvTiempo = 0, cvDescargas = 0, cvChat = 0
+  // Señales de la página de CV — por PROSPECTO ÚNICO (si uno lo abre 2 veces, cuenta 1).
+  const vistos = new Set<string>(), descargaron = new Set<string>(), conChat = new Set<string>()
+  let cvTiempo = 0
   if (slugs.length) {
-    const { data: ev } = await sb.from('app_events').select('tipo,data').in('slug', slugs)
-    for (const e of (ev ?? []) as { tipo: string; data: { seconds?: number } | null }[]) {
-      if (e.tipo === 'open') cvVisitas++
-      else if (e.tipo === 'cv_download') cvDescargas++
-      else if (e.tipo === 'chat_message') cvChat++
+    const { data: ev } = await sb.from('app_events').select('slug,tipo,data').in('slug', slugs)
+    for (const e of (ev ?? []) as { slug: string; tipo: string; data: { seconds?: number } | null }[]) {
+      if (e.tipo === 'open') vistos.add(e.slug)
+      else if (e.tipo === 'cv_download') descargaron.add(e.slug)
+      else if (e.tipo === 'chat_message') conChat.add(e.slug)
       else if (e.tipo === 'time_on_page') cvTiempo += Number(e.data?.seconds || 0)
     }
   }
+  const cvVisitas = vistos.size, cvDescargas = descargaron.size, cvChat = conChat.size
   let enviadas = 0, abiertas = 0, respondidas = 0, rebotadas = 0
   for (const p of list) {
     enviadas++
