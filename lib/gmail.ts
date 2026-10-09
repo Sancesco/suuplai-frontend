@@ -81,7 +81,7 @@ export async function enviarCorreo(sb: SB, o: {
 }): Promise<{ threadId: string; gmailId: string; messageId: string }> {
   const token = await getAccessToken(sb)
   const h = [
-    `From: ${o.fromNombre} <${o.from}>`, `To: ${o.to}`, `Subject: ${encSubject(o.subject)}`,
+    `From: ${encSubject(o.fromNombre)} <${o.from}>`, `To: ${o.to}`, `Subject: ${encSubject(o.subject)}`,
     'MIME-Version: 1.0', 'Content-Type: text/plain; charset="UTF-8"', 'Content-Transfer-Encoding: 8bit',
   ]
   if (o.inReplyTo) { h.push(`In-Reply-To: ${o.inReplyTo}`); h.push(`References: ${o.references || o.inReplyTo}`) }

@@ -215,7 +215,7 @@ export function Outbound() {
                           </td>
                           <td className="px-3 py-2.5"><span className="rounded px-1.5 py-0.5 font-mono text-[11px]" style={{ background: est.bg, color: est.c }}>{est.t}</span></td>
                           <td className="px-3 py-2.5">
-                            {r.toque > 0 && <div className="mb-1 font-mono text-[11px] text-neutral-500">toque {r.toque}</div>}
+                            {r.toque > 0 && <div className="mb-1 font-mono text-[11px] text-neutral-700">✓ enviado {r.enviado_en ? new Date(r.enviado_en).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'America/Mexico_City' }) : ''}{r.toque > 1 ? ` · toque ${r.toque}` : ''}</div>}
                             <div className="flex flex-col items-start gap-1">
                               <button onClick={() => verPreview(r.id)} disabled={cargandoPrev === r.id} className="text-[11px] text-blue-700 underline disabled:opacity-50">{cargandoPrev === r.id ? '…' : '👁 Preview'}</button>
                               {gmail.conectado && r.email && (r.estado === 'listo' || r.estado === 'nuevo') ? (
