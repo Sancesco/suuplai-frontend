@@ -27,7 +27,7 @@ const confColor = (c: string | null) => c === 'alta' ? { bg: '#D9F2E4', c: '#1E8
 
 const EMAIL = /[\w.+-]+@[\w-]+\.[\w.-]+/
 const cap = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s
-const NOISE = /^(company logo|add to (list|sequence|list\+)|edit layout|contact information|primary|business|source:|mobile|work|direct|home|view|save|request|·|\d+ (connection|follower)|see more|message|connect|following)/i
+const NOISE = /^(company logo|profile photo|profile|photo|add to (list|sequence|list\+)|edit layout|contact information|primary|business|source:|mobile|work|direct|home|view|save|request|·|\d+ (connection|follower)|see more|message|connect|following|mutual)/i
 
 // Modo estructurado: una fila por línea con columnas (hoja/CSV).
 // Orden: empresa, persona, puesto, email, sitio_web, linkedin
@@ -44,8 +44,11 @@ function parseInteligente(lineas: string[]): Fila[] {
   const out: Fila[] = []
   let nombre = '', puesto = '', empresa = '', linkedin = ''
   const flush = (email: string) => {
-    const dom = (email.split('@')[1] || '').split('.')[0]
-    out.push({ empresa: empresa || cap(dom), persona: nombre, puesto, email, sitio_web: '', linkedin })
+    const [local, domFull] = email.split('@')
+    const dom = (domFull || '').split('.')[0]
+    // si no se detectó nombre, derívalo del correo: javier.palafox → Javier Palafox
+    const nom = nombre || (local ? local.split(/[._-]+/).filter(Boolean).map(cap).join(' ') : '')
+    out.push({ empresa: empresa || cap(dom), persona: nom, puesto, email, sitio_web: '', linkedin })
     nombre = ''; puesto = ''; empresa = ''; linkedin = ''
   }
   for (const raw of lineas) {
@@ -53,7 +56,7 @@ function parseInteligente(lineas: string[]): Fila[] {
     const em = l.match(EMAIL)
     if (em) { flush(em[0]); continue }
     if (/linkedin\.com\/in\//i.test(l)) { linkedin = l; continue }
-    if (NOISE.test(l) || /^[A-ZÁÉÍÓÚÑ]{1,3}$/.test(l)) continue
+    if (NOISE.test(l) || /^[A-ZÁÉÍÓÚÑ]{1,3}$/.test(l) || /^(es|en|us|mx|uk)$/i.test(l)) continue
     // "Puesto at Empresa" / "Puesto en Empresa"
     const m = l.split(/\s+(?:at|en|@|\|)\s+/i)
     if (m.length === 2 && m[0] && m[1] && !/,/.test(m[1])) { puesto = m[0].trim(); empresa = m[1].trim(); continue }
@@ -147,7 +150,9 @@ export function Outbound() {
     const j = await r.json().catch(() => ({})); if (!r.ok || !j.ok) setMsg('⚠ ' + (j.error || 'Error'))
     load()
   }
-  const editarEmail = (id: string, actual: string | null) => { const nuevo = window.prompt('Correo del prospecto:', actual || ''); if (nuevo !== null) patchPros(id, { email: nuevo.trim() }) }
+  const [editProsp, setEditProsp] = useState<{ id: string; empresa: string; persona: string; puesto: string; email: string } | null>(null)
+  const abrirEdit = (r: Row) => setEditProsp({ id: r.id, empresa: r.empresa, persona: r.persona || '', puesto: r.puesto || '', email: r.email || '' })
+  const guardarEdit = async () => { if (!editProsp) return; const { id, ...f } = editProsp; await patchPros(id, f); setEditProsp(null) }
   const [intel, setIntel] = useState<Intel | null>(null); const [showIntel, setShowIntel] = useState(false); const [genHip, setGenHip] = useState(false)
   const loadReporte = async () => { try { const r = await fetch('/api/outbound/reporte', { headers: hdr }); const j = await r.json(); if (j.ok) setIntel(j) } catch { /* noop */ } }
   const abrirIntel = () => { const v = !showIntel; setShowIntel(v); if (v) loadReporte() }
@@ -307,9 +312,9 @@ export function Outbound() {
                       return (
                         <tr key={r.id} className={`border-b border-neutral-100 align-top ${resp ? 'bg-emerald-50' : ''}`}>
                           <td className="px-3 py-2.5">
-                            <div className="flex items-center gap-2"><b>{r.empresa}</b><span className="rounded bg-neutral-100 px-1 py-0.5 font-mono text-[9px] uppercase text-neutral-500">{r.idioma}</span></div>
+                            <div className="flex items-center gap-2"><b>{r.empresa}</b><span className="rounded bg-neutral-100 px-1 py-0.5 font-mono text-[9px] uppercase text-neutral-500">{r.idioma}</span><button onClick={() => abrirEdit(r)} className="text-neutral-400 hover:text-neutral-900" title="Editar nombre, empresa, puesto, correo">✏️</button></div>
                             <div className="text-xs text-neutral-500">{r.persona || '—'}{r.puesto ? ` · ${r.puesto}` : ''}</div>
-                            <div className="font-mono text-[11px] text-neutral-400">{r.email || <span className="text-[#B4451A]">(sin correo)</span>}<button onClick={() => editarEmail(r.id, r.email)} className="ml-1.5 text-neutral-400 hover:text-neutral-900" title="Editar correo">✏️</button></div>
+                            <div className="font-mono text-[11px] text-neutral-400">{r.email || <span className="text-[#B4451A]">(sin correo)</span>}</div>
                             {r.gancho && (
                               <div className="mt-1 flex items-start gap-1.5 text-[11px]">
                                 <span className="shrink-0 rounded px-1 py-0.5 font-mono uppercase" style={{ background: confColor(r.confianza).bg, color: confColor(r.confianza).c }}>{r.confianza || '?'}</span>
@@ -361,6 +366,23 @@ export function Outbound() {
                     })}
                   </tbody>
                 </table>
+              </div>
+            )}
+            {editProsp && (
+              <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4" onClick={() => setEditProsp(null)}>
+                <div className="mt-10 w-full max-w-[460px] rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+                  <div className="mb-3 flex items-center justify-between"><b style={{ fontFamily: "'Syne',sans-serif" }}>Editar prospecto</b><button onClick={() => setEditProsp(null)} className="text-neutral-400">✕</button></div>
+                  <div className="flex flex-col gap-2.5">
+                    <label className="text-xs text-neutral-500">Empresa<input className={`${inp} mt-1`} value={editProsp.empresa} onChange={(e) => setEditProsp({ ...editProsp, empresa: e.target.value })} /></label>
+                    <label className="text-xs text-neutral-500">Nombre<input className={`${inp} mt-1`} value={editProsp.persona} onChange={(e) => setEditProsp({ ...editProsp, persona: e.target.value })} /></label>
+                    <label className="text-xs text-neutral-500">Puesto<input className={`${inp} mt-1`} value={editProsp.puesto} onChange={(e) => setEditProsp({ ...editProsp, puesto: e.target.value })} /></label>
+                    <label className="text-xs text-neutral-500">Correo<input className={`${inp} mt-1`} value={editProsp.email} onChange={(e) => setEditProsp({ ...editProsp, email: e.target.value })} /></label>
+                  </div>
+                  <div className="mt-4 flex gap-2">
+                    <button onClick={guardarEdit} className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-bold text-lime-300">Guardar</button>
+                    <button onClick={() => setEditProsp(null)} className="rounded-lg border border-neutral-300 px-4 py-2 text-sm">Cancelar</button>
+                  </div>
+                </div>
               </div>
             )}
             {preview && (

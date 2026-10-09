@@ -102,6 +102,9 @@ export async function PATCH(req: Request) {
   const patch: Record<string, unknown> = {}
   const ESTADOS = ['nuevo', 'sin_gancho', 'listo', 'descartado', 'cerrado']
   if (b?.estado && ESTADOS.includes(String(b.estado))) patch.estado = b.estado
+  if (b?.empresa !== undefined) { const v = String(b.empresa ?? '').trim(); if (v) patch.empresa = v }
+  if (b?.persona !== undefined) patch.persona = String(b.persona ?? '').trim() || null
+  if (b?.puesto !== undefined) patch.puesto = String(b.puesto ?? '').trim() || null
   if (b?.gancho !== undefined) patch.gancho = String(b.gancho ?? '')
   if (b?.pausado !== undefined) patch.pausado = b.pausado === true
   if (b?.nota !== undefined) patch.nota = String(b.nota ?? '') || null
