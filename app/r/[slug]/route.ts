@@ -31,14 +31,16 @@ export async function GET(req: Request, { params }: { params: { slug: string } }
   const supabase = getSupabaseAdmin()
   if (!supabase) return NextResponse.redirect(home, 302)
 
-  const { data, error } = await supabase
-    .from('links')
-    .select('id,destination,clicks,archived,notify,label,first_click_at')
-    .eq('slug', slug)
-    .maybeSingle()
-
-  const link = data as LinkRow | null
-  if (error || !link || link.archived) return NextResponse.redirect(home, 302)
+  // Lectura sin caché (evita el Data Cache de Next que servía un destination viejo).
+  let link: LinkRow | null = null
+  try {
+    const base = process.env.NEXT_PUBLIC_SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (base && key) {
+      const r = await fetch(`${base}/rest/v1/links?slug=eq.${encodeURIComponent(slug)}&select=id,destination,clicks,archived,notify,label,first_click_at&limit=1`, { headers: { apikey: key, Authorization: `Bearer ${key}` }, cache: 'no-store' })
+      if (r.ok) link = ((await r.json()) as LinkRow[])[0] || null
+    }
+  } catch { /* cae al redirect de home */ }
+  if (!link || link.archived) return NextResponse.redirect(home, 302)
 
   const dest = new URL(link.destination, origin)
 
