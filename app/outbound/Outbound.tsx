@@ -10,6 +10,7 @@ interface Row {
   toque: number; enviado_en: string | null
   gancho: string | null; cita: string | null; confianza: string | null; angulo: string | null
   afirma_cifra: boolean; evidencia_url: string | null; auto_enviable: boolean
+  proximo: string | null; proximo_tipo: string | null
 }
 type Fila = { empresa: string; persona: string; puesto: string; email: string; sitio_web: string; linkedin: string }
 interface IntelBrazo { id: string; perilla: string; texto: string; es_control: boolean; activa: boolean; envios: number; maduros: number; clics: number; respuestas: number; tasa: number }
@@ -153,7 +154,7 @@ export function Outbound() {
   const [editProsp, setEditProsp] = useState<{ id: string; empresa: string; persona: string; puesto: string; email: string } | null>(null)
   const abrirEdit = (r: Row) => setEditProsp({ id: r.id, empresa: r.empresa, persona: r.persona || '', puesto: r.puesto || '', email: r.email || '' })
   const guardarEdit = async () => { if (!editProsp) return; const { id, ...f } = editProsp; await patchPros(id, f); setEditProsp(null) }
-  const [intel, setIntel] = useState<Intel | null>(null); const [showIntel, setShowIntel] = useState(false); const [genHip, setGenHip] = useState(false)
+  const [intel, setIntel] = useState<Intel | null>(null); const [showIntel, setShowIntel] = useState(false); const [genHip, setGenHip] = useState(false); const [showAgenda, setShowAgenda] = useState(false)
   const loadReporte = async () => { try { const r = await fetch('/api/outbound/reporte', { headers: hdr }); const j = await r.json(); if (j.ok) setIntel(j) } catch { /* noop */ } }
   const abrirIntel = () => { const v = !showIntel; setShowIntel(v); if (v) loadReporte() }
   const generarHipotesis = async () => {
@@ -213,9 +214,38 @@ export function Outbound() {
               <p className="mb-4 -mt-2 text-xs text-neutral-500">Los que subes entran <b>en cola</b> y se mandan <b>solos</b> (envío diario 9am CDMX, con rampa de 5/día al inicio). No necesitas picar nada — <i>“Enviar ahora”</i> es solo para adelantar uno.</p>
             )}
 
-            <div className="mb-4">
+            <div className="mb-4 flex flex-wrap gap-2">
               <button onClick={abrirIntel} className="rounded-lg border border-neutral-900 bg-white px-3 py-1.5 text-sm font-bold">🧠 {showIntel ? 'Ocultar inteligencia' : 'Inteligencia'}</button>
+              <button onClick={() => setShowAgenda((v) => !v)} className="rounded-lg border border-neutral-900 bg-white px-3 py-1.5 text-sm font-bold">📅 {showAgenda ? 'Ocultar próximos envíos' : 'Próximos envíos'}</button>
             </div>
+            {showAgenda && (() => {
+              const items = (rows || []).filter((r) => r.proximo).sort((a, b) => (a.proximo! < b.proximo! ? -1 : 1))
+              const groups = new Map<string, Row[]>()
+              for (const r of items) { const d = new Date(r.proximo!).toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'America/Mexico_City' }); if (!groups.has(d)) groups.set(d, []); groups.get(d)!.push(r) }
+              return (
+                <div className="mb-5 rounded-2xl border-2 border-neutral-900 bg-white p-4">
+                  <b style={{ fontFamily: "'Syne',sans-serif" }}>📅 Próximos envíos</b>
+                  {items.length === 0 ? <p className="mt-2 text-sm text-neutral-500">Nada programado todavía.</p> : (
+                    <div className="mt-3 flex flex-col gap-3">
+                      {Array.from(groups.entries()).map(([dia, arr]) => (
+                        <div key={dia}>
+                          <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-neutral-500">{dia}</div>
+                          <div className="flex flex-col gap-1">
+                            {arr.map((r) => (
+                              <div key={r.id + (r.proximo || '')} className="flex items-center gap-2 text-xs">
+                                <span className="w-14 shrink-0 font-mono text-neutral-500">{new Date(r.proximo!).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Mexico_City' })}</span>
+                                <span className="shrink-0 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] text-blue-700">{r.proximo_tipo}</span>
+                                <span className="truncate"><b>{r.empresa}</b> · {r.persona || '—'}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
             {showIntel && (
               <div className="mb-5 rounded-2xl border-2 border-neutral-900 bg-white p-4">
                 <div className="mb-3 flex items-center justify-between">
@@ -338,6 +368,7 @@ export function Outbound() {
                               ) : gmail.conectado && r.email && r.estado === 'listo' ? (
                                 <button onClick={() => enviar(r.id)} disabled={enviando === r.id} title="Opcional: se mandará solo" className="rounded-lg border border-neutral-300 px-2.5 py-1 text-[11px] font-semibold text-neutral-700 disabled:opacity-50">{enviando === r.id ? '…' : '✉️ Enviar ahora'}</button>
                               ) : r.estado === 'en_secuencia' ? <span className="text-[11px] text-neutral-400">en secuencia</span> : null}
+                              {r.proximo && <div className="text-[10.5px] font-semibold text-blue-700" title="próximo movimiento automático">➡ {r.proximo_tipo}: {fechaHora(r.proximo)}</div>}
                             </div>
                           </td>
                           <td className="px-3 py-2.5">

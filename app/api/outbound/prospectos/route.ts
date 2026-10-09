@@ -1,6 +1,22 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin, checkOutbound, prepararProspecto, programarEnvio, type Prospecto } from '@/lib/outbound'
 import { gmailConectado } from '@/lib/gmail'
+import { sumarDiasHabiles } from '@/lib/outboundSend'
+
+// Hora objetivo del recordatorio (misma fórmula que el cron) para estimar el próximo movimiento.
+function horaObj(seed: string): number { let h = 0; for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0; return 8 + (h % 9) }
+function aHoraCDMX(d: Date, hour: number): string { const c = new Date(d.getTime() - 6 * 3600000); return new Date(Date.UTC(c.getUTCFullYear(), c.getUTCMonth(), c.getUTCDate(), hour + 6, 0, 0)).toISOString() }
+// Próximo movimiento: para 'listo' = su hora programada; para 'en_secuencia' = el próximo recordatorio.
+function proximoMovimiento(id: string, estado: string, programado: string | null, env: { toque: number; enviado_en: string } | undefined): { proximo: string | null; tipo: string | null } {
+  if (estado === 'listo' || estado === 'nuevo') return { proximo: programado, tipo: 'Correo 1' }
+  if (estado === 'en_secuencia' && env) {
+    const base = new Date(env.enviado_en)
+    if (env.toque === 1) return { proximo: aHoraCDMX(sumarDiasHabiles(base, 5), horaObj(id + 't2')), tipo: 'Recordatorio 2' }
+    if (env.toque === 2) return { proximo: aHoraCDMX(sumarDiasHabiles(base, 7), horaObj(id + 't3')), tipo: 'Recordatorio 3' }
+    if (env.toque === 3) return { proximo: aHoraCDMX(sumarDiasHabiles(base, 7), 9), tipo: 'Se cierra' }
+  }
+  return { proximo: null, tipo: null }
+}
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -52,6 +68,7 @@ export async function GET(req: Request) {
       toque: env?.toque ?? 0, enviado_en: env?.enviado_en ?? null,
       gancho: p.gancho ?? null, cita: p.cita ?? null, confianza: p.confianza ?? null, angulo: p.angulo ?? null,
       afirma_cifra: p.afirma_cifra ?? false, evidencia_url: p.evidencia_url ?? null, auto_enviable: p.auto_enviable ?? false,
+      ...proximoMovimiento(p.id, p.estado, (p as { programado_en?: string | null }).programado_en ?? null, env),
     }
   })
   const gmail = await gmailConectado(sb)
