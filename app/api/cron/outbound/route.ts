@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
-import { elegirAsunto } from '@/lib/outbound'
+import { elegirAsunto, programarEnvio } from '@/lib/outbound'
 import { enviarCorreo, leerHilo, gmailConectado } from '@/lib/gmail'
 import { rellenar, primerNombre, diasHabilesEntre, topeRampa, horarioHabilCDMX } from '@/lib/outboundSend'
 
@@ -76,7 +76,11 @@ export async function GET(req: Request) {
     } catch { /* un fallo no detiene el resto */ }
   }
 
-  // ── 2) Cola: manda los 'listo' cuya hora programada ya llegó (o sin programar, respaldo) ──
+  // ── 2a) Programa franja/día a los 'listo' que aún no tienen hora (bandit de horarios) ──
+  const { data: sinProg } = await sb.from('outbound_prospecto').select('id').eq('estado', 'listo').eq('pausado', false).is('programado_en', null).limit(20)
+  for (const p of (sinProg ?? []) as { id: string }[]) { try { await programarEnvio(sb, p.id) } catch { break /* sin Fase 4 todavía */ } }
+
+  // ── 2b) Cola: manda los 'listo' cuya hora programada ya llegó (o sin programar, respaldo) ──
   if (habil) {
     const nowIso = now.toISOString()
     const { data: cola } = await sb.from('outbound_prospecto').select('*').eq('estado', 'listo').eq('pausado', false).not('email', 'is', null)

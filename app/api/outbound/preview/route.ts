@@ -48,9 +48,11 @@ export async function POST(req: Request) {
   // Estimación de cuándo sale (solo si está en cola)
   let cuando: string | null = null
   let detalleCola: string | null = null
+  const programado = (p as { programado_en?: string | null }).programado_en
   if (p.estado === 'listo' || p.estado === 'nuevo') {
     if (!p.email) { detalleCola = 'Sin correo — no se puede enviar.' }
     else if (pausa) { detalleCola = 'Envío en pausa global.' }
+    else if (programado) { cuando = programado; detalleCola = 'Hora elegida por el sistema (bandit de franjas).' }
     else {
       // posición en la cola (por antigüedad) y tope diario
       const { data: cola } = await sb.from('outbound_prospecto').select('id,created_at').in('estado', ['listo', 'nuevo']).not('email', 'is', null).order('created_at', { ascending: true })
