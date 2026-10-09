@@ -8,6 +8,13 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 type SB = NonNullable<ReturnType<typeof getSupabaseAdmin>>
+
+// Hora objetivo (8..16 CDMX) estable y variada por (prospecto, toque): los recordatorios
+// no salen todos a la misma hora. Determinista → no cambia entre corridas.
+function horaObjetivo(seed: string): number {
+  let h = 0; for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0
+  return 8 + (h % 9)
+}
 type Envio = { id: string; toque: number; enviado_en: string; gmail_thread_id: string | null; gmail_message_id: string | null; asunto_final: string | null; rebotado: boolean; respondido: boolean }
 type Prospecto = { id: string; empresa: string; persona: string | null; email: string | null; slug: string | null; estado: string; gancho?: string | null; brazo_hora?: string | null }
 
@@ -69,9 +76,11 @@ export async function GET(req: Request) {
     } catch { /* si falla la lectura, no bloquea */ }
     if (!habil) continue
     const dias = diasHabilesEntre(new Date(last.enviado_en), now)
+    const curH = new Date(now.getTime() - 6 * 3600000).getUTCHours() // hora CDMX
     try {
-      if (last.toque === 1 && dias >= 5) { await enviarToque(p, 2, last); log.recordatorios++ }
-      else if (last.toque === 2 && dias >= 7) { await enviarToque(p, 3, last); log.recordatorios++ }
+      // Cada recordatorio sale a su propia hora (variada por prospecto) el día que toca.
+      if (last.toque === 1 && dias >= 5 && curH >= horaObjetivo(p.id + 't2')) { await enviarToque(p, 2, last); log.recordatorios++ }
+      else if (last.toque === 2 && dias >= 7 && curH >= horaObjetivo(p.id + 't3')) { await enviarToque(p, 3, last); log.recordatorios++ }
       else if (last.toque === 3 && dias >= 7) { await sb.from('outbound_prospecto').update({ estado: 'cerrado' }).eq('id', p.id); log.cerrados++ }
     } catch { /* un fallo no detiene el resto */ }
   }
