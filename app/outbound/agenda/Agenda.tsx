@@ -46,7 +46,7 @@ export function Agenda() {
   for (const r of items) { const k = diaCDMX(r.proximo!); if (!dias.has(k)) dias.set(k, []); dias.get(k)!.push(r) }
   // resumen por semana
   const semanas = new Map<string, { c1: number; c2: number; c3: number; diasHabiles: Set<string> }>()
-  for (const [k, arr] of dias) { const s = semanaDe(k); if (!semanas.has(s)) semanas.set(s, { c1: 0, c2: 0, c3: 0, diasHabiles: new Set() }); const w = semanas.get(s)!; w.diasHabiles.add(k); for (const r of arr) { const t = tipoDe(r.proximo_tipo); if (t === 1) w.c1++; else if (t === 2) w.c2++; else w.c3++ } }
+  for (const [k, arr] of Array.from(dias)) { const s = semanaDe(k); if (!semanas.has(s)) semanas.set(s, { c1: 0, c2: 0, c3: 0, diasHabiles: new Set() }); const w = semanas.get(s)!; w.diasHabiles.add(k); for (const r of arr) { const t = tipoDe(r.proximo_tipo); if (t === 1) w.c1++; else if (t === 2) w.c2++; else w.c3++ } }
 
   return (
     <div className="min-h-screen bg-[#F4F2EC] text-neutral-900" style={{ fontFamily: "'DM Sans',system-ui,sans-serif" }}>
