@@ -4,6 +4,7 @@ import { rellenar, primerNombre, topeRampa } from '@/lib/outboundSend'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
 
 // Próxima corrida de envío: siguiente día hábil a las 9:00 CDMX (15:00 UTC) en el futuro.
 function proximaCorrida(): Date {

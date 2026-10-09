@@ -90,21 +90,30 @@ export function Agenda() {
               })}
             </div>
 
+            {/* Leyenda */}
+            <div className="mb-3 flex flex-wrap items-center gap-3 text-[11px] text-neutral-500">
+              <span className="font-semibold">Leyenda:</span>
+              <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded" style={{ background: '#2456C9' }} /> Correo 1 (presentación)</span>
+              <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded" style={{ background: '#E8A317' }} /> Recordatorio 2</span>
+              <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded" style={{ background: '#B4451A' }} /> Recordatorio 3</span>
+            </div>
+
             {/* Detalle por día */}
             <div className="flex flex-col gap-3">
               {Array.from(dias.entries()).map(([k, arr]) => {
                 const c1 = arr.filter((r) => tipoDe(r.proximo_tipo) === 1).length
+                const recs = arr.length - c1
                 return (
                   <div key={k} className="rounded-xl border border-neutral-900 bg-white p-3">
                     <div className="mb-2 flex items-center justify-between">
                       <b className="text-[13px] capitalize">{etiquetaDia(k)}</b>
-                      <span className="font-mono text-[11px] text-neutral-500">{c1}/{tope} primeros{c1 >= tope ? ' · lleno' : ''}</span>
+                      <span className="font-mono text-[11px] text-neutral-500">{c1}/{tope} primeros{recs ? ` · ${recs} recordatorio${recs > 1 ? 's' : ''}` : ''}{c1 >= tope ? ' · ✅' : ''}</span>
                     </div>
                     <div className="flex flex-col gap-1">
                       {arr.map((r) => { const t = tipoDe(r.proximo_tipo); return (
-                        <div key={r.id + (r.proximo || '')} className="flex items-center gap-2 text-xs">
+                        <div key={r.id + (r.proximo || '')} className="flex items-center gap-2 border-l-2 pl-2 text-xs" style={{ borderColor: t === 1 ? '#2456C9' : t === 2 ? '#E8A317' : '#B4451A' }}>
                           <span className="w-14 shrink-0 font-mono text-neutral-500">{horaCDMX(r.proximo!)}</span>
-                          <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px]" style={{ background: t === 1 ? '#E4ECFF' : '#FFF3D6', color: t === 1 ? '#2456C9' : '#9A6A00' }}>{t === 1 ? 'Correo 1' : t === 2 ? 'Record. 2' : 'Record. 3'}</span>
+                          <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold" style={{ background: t === 1 ? '#E4ECFF' : t === 2 ? '#FFF3D6' : '#F3D9D0', color: t === 1 ? '#2456C9' : t === 2 ? '#9A6A00' : '#B4451A' }}>{t === 1 ? 'Correo 1' : t === 2 ? 'Recordatorio 2' : 'Recordatorio 3'}</span>
                           <span className="truncate"><b>{r.empresa}</b> · {r.persona || '—'}</span>
                         </div>
                       ) })}

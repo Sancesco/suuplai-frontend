@@ -4,6 +4,7 @@ import { aiRawJSON, parseJSON } from '@/lib/ai'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
 export const maxDuration = 60
 
 type Brazo = { id: string; texto: string; es_control: boolean; envios_maduros: number; clics: number; respuestas: number }

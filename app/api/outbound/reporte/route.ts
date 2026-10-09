@@ -3,6 +3,7 @@ import { getSupabaseAdmin, checkOutbound } from '@/lib/outbound'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
 
 type Brazo = { id: string; perilla: string; texto: string; es_control: boolean; activa: boolean; envios: number; envios_maduros: number; clics: number; respuestas: number; alfa: number; beta: number }
 

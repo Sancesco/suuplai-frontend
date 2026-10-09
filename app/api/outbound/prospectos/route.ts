@@ -20,6 +20,7 @@ function proximoMovimiento(id: string, estado: string, programado: string | null
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store' // supabase-js cachea su fetch; esto lo fuerza a leer siempre fresco
 
 // Lista de prospectos + señales (clics del /r, aperturas/tiempo/descarga/chat de la página de CV).
 export async function GET(req: Request) {
