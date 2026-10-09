@@ -3,6 +3,9 @@ import { slugify } from './aplicaciones'
 export { getSupabaseAdmin } from './supabaseAdmin'
 export { checkRh as checkOutbound } from './interview' // misma contraseña de admin (x-admin-password)
 
+// A dónde lleva el link rastreado /r/<slug> ("mira lo que construí"): el proyecto Suuplai.
+export const PROYECTO_PATH = '/'
+
 // CVs default por idioma (ya subidos al bucket aplicaciones-cv). Editables aquí.
 export const CV_DEFAULT: Record<'es' | 'en', { url: string; nombre: string }> = {
   es: { url: 'https://umgienrvpnzoaaztkejd.supabase.co/storage/v1/object/public/aplicaciones-cv/38b17a84-ccc1-448e-a195-d1651045e2eb/1791299751822.pdf', nombre: 'Cespedes_Santiago_CV_2026.pdf' },
@@ -43,7 +46,7 @@ export async function prepararProspecto(
     solo_cv: true, idioma: p.idioma, cv_url: cv.url, cv_nombre: cv.nombre, slug, estado: 'enviada',
   }).select('id').single()
   if (ea || !app) throw new Error('no se pudo crear la página de CV: ' + (ea?.message || ''))
-  // Link rastreado /r/<slug> → página de CV
-  await sb.from('links').insert({ slug, destination: `/aplicaciones/p/${slug}`, label: p.empresa, notify: true, category: 'outbound' })
+  // Link rastreado /r/<slug> → el PROYECTO (Suuplai), para "mira lo que construí". El CV va aparte.
+  await sb.from('links').insert({ slug, destination: PROYECTO_PATH, label: p.empresa, notify: true, category: 'outbound' })
   return { slug, appId: app.id as string }
 }
