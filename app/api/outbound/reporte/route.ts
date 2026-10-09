@@ -31,10 +31,12 @@ export async function GET(req: Request) {
   }
   // Señales de la página de CV — por PROSPECTO ÚNICO (si uno lo abre 2 veces, cuenta 1).
   const vistos = new Set<string>(), descargaron = new Set<string>(), conChat = new Set<string>()
+  const visitantesPorSlug = new Map<string, Set<string>>()
   let cvTiempo = 0
   if (slugs.length) {
-    const { data: ev } = await sb.from('app_events').select('slug,tipo,data').in('slug', slugs)
-    for (const e of (ev ?? []) as { slug: string; tipo: string; data: { seconds?: number } | null }[]) {
+    const { data: ev } = await sb.from('app_events').select('slug,tipo,data,visitor_id').in('slug', slugs)
+    for (const e of (ev ?? []) as { slug: string; tipo: string; data: { seconds?: number } | null; visitor_id: string | null }[]) {
+      if (e.visitor_id) { if (!visitantesPorSlug.has(e.slug)) visitantesPorSlug.set(e.slug, new Set()); visitantesPorSlug.get(e.slug)!.add(e.visitor_id) }
       if (e.tipo === 'open') vistos.add(e.slug)
       else if (e.tipo === 'cv_download') descargaron.add(e.slug)
       else if (e.tipo === 'chat_message') conChat.add(e.slug)
@@ -42,6 +44,8 @@ export async function GET(req: Request) {
     }
   }
   const cvVisitas = vistos.size, cvDescargas = descargaron.size, cvChat = conChat.size
+  let compartidos = 0
+  for (const s of visitantesPorSlug.values()) if (s.size >= 2) compartidos++
   let enviadas = 0, abiertas = 0, respondidas = 0, rebotadas = 0
   for (const p of list) {
     enviadas++
@@ -63,7 +67,7 @@ export async function GET(req: Request) {
     tasa_clic: enviadas ? Math.round((clicsTotales / enviadas) * 1000) / 10 : 0,
     abrio_no_contesto: Math.max(0, abiertas - respondidas), // el cuerpo es el problema
     nunca_abrio: Math.max(0, enviadas - abiertas),          // el asunto o la persona equivocada
-    cv_visitas: cvVisitas, cv_descargas: cvDescargas, cv_chat: cvChat,
+    cv_visitas: cvVisitas, cv_descargas: cvDescargas, cv_chat: cvChat, compartidos,
     cv_tiempo_prom: cvVisitas ? Math.round(cvTiempo / cvVisitas) : 0,
     correos_1: porToque.t1, correos_recordatorios: porToque.t2 + porToque.t3,
   }

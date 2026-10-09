@@ -21,16 +21,17 @@ export async function GET(req: Request) {
   }
 
   const clicks = new Map<string, number>()
-  const ev = new Map<string, { open: number; seconds: number; cv: number; chat: number; last: string | null }>()
+  const ev = new Map<string, { open: number; seconds: number; cv: number; chat: number; last: string | null; visitors: Set<string> }>()
   if (slugs.length) {
     const [lk, events] = await Promise.all([
       sb.from('links').select('slug,clicks,last_click_at').in('slug', slugs),
-      sb.from('app_events').select('slug,tipo,data,created_at').in('slug', slugs),
+      sb.from('app_events').select('slug,tipo,data,created_at,visitor_id').in('slug', slugs),
     ])
     for (const l of (lk.data ?? []) as { slug: string; clicks: number }[]) clicks.set(l.slug, l.clicks ?? 0)
-    for (const e of (events.data ?? []) as { slug: string; tipo: string; data: { seconds?: number } | null; created_at: string }[]) {
-      if (!ev.has(e.slug)) ev.set(e.slug, { open: 0, seconds: 0, cv: 0, chat: 0, last: null })
+    for (const e of (events.data ?? []) as { slug: string; tipo: string; data: { seconds?: number } | null; created_at: string; visitor_id: string | null }[]) {
+      if (!ev.has(e.slug)) ev.set(e.slug, { open: 0, seconds: 0, cv: 0, chat: 0, last: null, visitors: new Set() })
       const s = ev.get(e.slug)!
+      if (e.visitor_id) s.visitors.add(e.visitor_id)
       if (e.tipo === 'open') s.open++
       else if (e.tipo === 'cv_download') s.cv++
       else if (e.tipo === 'chat_message') s.chat++
@@ -47,6 +48,7 @@ export async function GET(req: Request) {
       sector: p.sector, idioma: p.idioma, slug: p.slug, estado: p.estado, pausado: p.pausado, created_at: p.created_at,
       clicks: p.slug ? (clicks.get(p.slug) ?? 0) : 0,
       abierto: e?.open ?? 0, seconds: e?.seconds ?? 0, cv: e?.cv ?? 0, chat: e?.chat ?? 0, last: e?.last ?? null,
+      visitantes: e ? e.visitors.size : 0, compartido: e ? e.visitors.size >= 2 : false,
       toque: env?.toque ?? 0, enviado_en: env?.enviado_en ?? null,
       gancho: p.gancho ?? null, cita: p.cita ?? null, confianza: p.confianza ?? null, angulo: p.angulo ?? null,
       afirma_cifra: p.afirma_cifra ?? false, evidencia_url: p.evidencia_url ?? null, auto_enviable: p.auto_enviable ?? false,

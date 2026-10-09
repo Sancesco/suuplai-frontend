@@ -6,13 +6,14 @@ interface Row {
   id: string; empresa: string; persona: string | null; puesto: string | null; email: string | null
   sector: string | null; idioma: string; slug: string | null; estado: string; created_at: string
   clicks: number; abierto: number; seconds: number; cv: number; chat: number; last: string | null
+  visitantes: number; compartido: boolean
   toque: number; enviado_en: string | null
   gancho: string | null; cita: string | null; confianza: string | null; angulo: string | null
   afirma_cifra: boolean; evidencia_url: string | null; auto_enviable: boolean
 }
 type Fila = { empresa: string; persona: string; puesto: string; email: string; sitio_web: string; linkedin: string }
 interface IntelBrazo { id: string; perilla: string; texto: string; es_control: boolean; activa: boolean; envios: number; maduros: number; clics: number; respuestas: number; tasa: number }
-interface Intel { global: { enviadas: number; abiertas: number; respondidas: number; rebotadas: number; clics_totales: number; en_cola: number; tasa_respuesta: number; tasa_apertura: number; tasa_clic: number; abrio_no_contesto: number; nunca_abrio: number; cv_visitas: number; cv_descargas: number; cv_chat: number; cv_tiempo_prom: number; correos_1: number; correos_recordatorios: number }; brazos: IntelBrazo[] }
+interface Intel { global: { enviadas: number; abiertas: number; respondidas: number; rebotadas: number; clics_totales: number; en_cola: number; tasa_respuesta: number; tasa_apertura: number; tasa_clic: number; abrio_no_contesto: number; nunca_abrio: number; cv_visitas: number; cv_descargas: number; cv_chat: number; cv_tiempo_prom: number; compartidos: number; correos_1: number; correos_recordatorios: number }; brazos: IntelBrazo[] }
 
 function dur(s: number) { return s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s` }
 function fecha(iso: string | null) { return iso ? new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) : '—' }
@@ -226,7 +227,7 @@ export function Outbound() {
                         ['Tasa apertura', `${g.tasa_apertura}%`, false], ['Clics totales', g.clics_totales, false],
                         ['Abrió, no contestó', g.abrio_no_contesto, false], ['Nunca abrió', g.nunca_abrio, false],
                         ['Vieron el CV', g.cv_visitas, false], ['Descargaron CV', g.cv_descargas, false],
-                        ['Tiempo prom. CV', `${g.cv_tiempo_prom}s`, false], ['Rebotes', g.rebotadas, false],
+                        ['🔥 Compartido', g.compartidos, true], ['Tiempo prom. CV', `${g.cv_tiempo_prom}s`, false], ['Rebotes', g.rebotadas, false],
                       ]
                       return (
                         <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
@@ -335,12 +336,15 @@ export function Outbound() {
                             </div>
                           </td>
                           <td className="px-3 py-2.5">
-                            <div className="flex flex-wrap gap-1.5 text-[11px]">
-                              <span title="clics en /r" className={r.clicks ? 'font-bold text-neutral-900' : 'text-neutral-400'}>🔗 {r.clicks}</span>
-                              <span title="abrió el CV" className={r.abierto ? 'font-bold text-neutral-900' : 'text-neutral-400'}>👁 {r.abierto}</span>
-                              <span title="tiempo en CV" className={r.seconds ? 'font-bold text-neutral-900' : 'text-neutral-400'}>⏱ {dur(r.seconds)}</span>
-                              <span title="descargó CV" className={r.cv ? 'font-bold text-neutral-900' : 'text-neutral-400'}>📄 {r.cv}</span>
+                            <div className="flex flex-wrap items-center gap-1.5 text-[11px]">
+                              <span title="clics en el link /r" className={r.clicks ? 'font-bold text-neutral-900' : 'text-neutral-400'}>🔗 {r.clicks}</span>
+                              <span title="aperturas del CV (incluye re-aperturas)" className={r.abierto ? 'font-bold text-neutral-900' : 'text-neutral-400'}>👁 {r.abierto}</span>
+                              <span title="personas distintas que lo vieron" className={r.visitantes > 1 ? 'font-bold text-[#B4451A]' : r.visitantes ? 'font-bold text-neutral-900' : 'text-neutral-400'}>👤 {r.visitantes}</span>
+                              <span title="tiempo total en el CV" className={r.seconds ? 'font-bold text-neutral-900' : 'text-neutral-400'}>⏱ {dur(r.seconds)}</span>
+                              <span title="descargó el CV" className={r.cv ? 'font-bold text-neutral-900' : 'text-neutral-400'}>📄 {r.cv}</span>
                               <span title="chat" className={r.chat ? 'font-bold text-neutral-900' : 'text-neutral-400'}>💬 {r.chat}</span>
+                              {r.compartido && <span className="rounded bg-[#FFE1D6] px-1.5 py-0.5 font-bold text-[#B4451A]" title="lo abrieron 2+ personas distintas → lo compartieron/reenviaron">🔥 compartido</span>}
+                              {r.abierto > r.visitantes && r.visitantes > 0 && <span className="text-neutral-400" title="misma persona abrió más de una vez">· volvió a abrir</span>}
                             </div>
                           </td>
                           <td className="px-3 py-2.5">
