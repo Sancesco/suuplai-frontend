@@ -76,6 +76,8 @@ export function Outbound() {
   const [gmail, setGmail] = useState<{ conectado: boolean; email: string | null }>({ conectado: false, email: null })
   const [texto, setTexto] = useState(''); const [idioma, setIdioma] = useState<'es' | 'en'>('es')
   const [busy, setBusy] = useState(false); const [msg, setMsg] = useState(''); const [enviando, setEnviando] = useState('')
+  const [preview, setPreview] = useState<{ id: string; from: string; to: string | null; asunto: string; cuerpo: string; estado: string; cuando: string | null; detalleCola: string | null } | null>(null)
+  const [cargandoPrev, setCargandoPrev] = useState('')
   const hdr = { 'x-admin-password': pw }
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
 
@@ -115,6 +117,15 @@ export function Outbound() {
     } catch (e) { setMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')) } finally { setBusy(false) }
   }
 
+  const verPreview = async (id: string) => {
+    setCargandoPrev(id)
+    try {
+      const r = await fetch('/api/outbound/preview', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ prospectoId: id }) })
+      const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error')
+      setPreview({ id, from: j.from, to: j.to, asunto: j.asunto, cuerpo: j.cuerpo, estado: j.estado, cuando: j.cuando, detalleCola: j.detalleCola })
+    } catch (e) { setMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')) } finally { setCargandoPrev('') }
+  }
+  const fechaHora = (iso: string | null) => iso ? new Date(iso).toLocaleString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'America/Mexico_City' }) : null
   const copiar = (s: string) => { navigator.clipboard?.writeText(s) }
   const inp = 'w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none focus:border-neutral-900'
   const detectados = parsear(texto)
@@ -205,9 +216,12 @@ export function Outbound() {
                           <td className="px-3 py-2.5"><span className="rounded px-1.5 py-0.5 font-mono text-[11px]" style={{ background: est.bg, color: est.c }}>{est.t}</span></td>
                           <td className="px-3 py-2.5">
                             {r.toque > 0 && <div className="mb-1 font-mono text-[11px] text-neutral-500">toque {r.toque}</div>}
-                            {gmail.conectado && r.email && (r.estado === 'listo' || r.estado === 'nuevo') ? (
-                              <button onClick={() => enviar(r.id)} disabled={enviando === r.id} title="Opcional: se mandará solo con el envío diario" className="rounded-lg border border-neutral-300 px-2.5 py-1 text-[11px] font-semibold text-neutral-700 disabled:opacity-50">{enviando === r.id ? '…' : '✉️ Enviar ahora'}</button>
-                            ) : r.estado === 'en_secuencia' ? <span className="text-[11px] text-neutral-400">en secuencia</span> : <span className="text-[11px] text-neutral-300">—</span>}
+                            <div className="flex flex-col items-start gap-1">
+                              <button onClick={() => verPreview(r.id)} disabled={cargandoPrev === r.id} className="text-[11px] text-blue-700 underline disabled:opacity-50">{cargandoPrev === r.id ? '…' : '👁 Preview'}</button>
+                              {gmail.conectado && r.email && (r.estado === 'listo' || r.estado === 'nuevo') ? (
+                                <button onClick={() => enviar(r.id)} disabled={enviando === r.id} title="Opcional: se mandará solo" className="rounded-lg border border-neutral-300 px-2.5 py-1 text-[11px] font-semibold text-neutral-700 disabled:opacity-50">{enviando === r.id ? '…' : '✉️ Enviar ahora'}</button>
+                              ) : r.estado === 'en_secuencia' ? <span className="text-[11px] text-neutral-400">en secuencia</span> : null}
+                            </div>
                           </td>
                           <td className="px-3 py-2.5">
                             <div className="flex flex-wrap gap-1.5 text-[11px]">
@@ -232,6 +246,30 @@ export function Outbound() {
                     })}
                   </tbody>
                 </table>
+              </div>
+            )}
+            {preview && (
+              <div className="fixed inset-0 z-50 flex items-start justify-center overflow-auto bg-black/40 p-4" onClick={() => setPreview(null)}>
+                <div className="mt-6 w-full max-w-[640px] rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+                  <div className="mb-2 flex items-center justify-between">
+                    <b style={{ fontFamily: "'Syne',sans-serif" }}>Preview del correo</b>
+                    <button onClick={() => setPreview(null)} className="text-neutral-400">✕</button>
+                  </div>
+                  {preview.cuando ? (
+                    <div className="mb-3 rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">📅 Se enviará aprox. <b>{fechaHora(preview.cuando)}</b> (CDMX){preview.detalleCola ? ` · ${preview.detalleCola}` : ''}. Se reparte a lo largo del día.</div>
+                  ) : preview.detalleCola ? (
+                    <div className="mb-3 rounded-lg bg-neutral-100 px-3 py-2 text-sm text-neutral-600">{preview.detalleCola}</div>
+                  ) : (
+                    <div className="mb-3 rounded-lg bg-neutral-100 px-3 py-2 text-sm text-neutral-600">Ya está en secuencia (correo 1 enviado).</div>
+                  )}
+                  <div className="rounded-xl border border-neutral-200">
+                    <div className="border-b border-neutral-100 px-3 py-2 text-xs text-neutral-500"><div><b>De:</b> {preview.from}</div><div><b>Para:</b> {preview.to || '—'}</div><div><b>Asunto:</b> {preview.asunto}</div></div>
+                    <pre className="max-h-[50vh] overflow-auto whitespace-pre-wrap px-3 py-3 text-[13px] leading-relaxed" style={{ fontFamily: "'DM Sans',sans-serif" }}>{preview.cuerpo}</pre>
+                  </div>
+                  {gmail.conectado && preview.to && (preview.estado === 'listo' || preview.estado === 'nuevo') && (
+                    <button onClick={() => { enviar(preview.id); setPreview(null) }} className="mt-3 rounded-lg bg-neutral-900 px-4 py-2 text-sm font-bold text-lime-300">✉️ Enviar ahora</button>
+                  )}
+                </div>
               </div>
             )}
           </>

@@ -80,7 +80,11 @@ export async function GET(req: Request) {
     const { count } = await sb.from('outbound_envio').select('id', { count: 'exact', head: true }).eq('toque', 1).gte('enviado_en', inicioDiaUtc)
     const restante = topeRampa(cfg.rampa_desde) - (count ?? 0)
     if (restante > 0) {
-      const { data: cola } = await sb.from('outbound_prospecto').select('*').eq('estado', 'listo').eq('pausado', false).not('email', 'is', null).order('created_at', { ascending: true }).limit(Math.min(restante, 10))
+      // Reparte el restante del día entre las horas hábiles que quedan, para que no salgan todos juntos.
+      const horaCdmx = cdmx.getUTCHours()
+      const pingsRestantes = Math.max(1, 17 - horaCdmx)
+      const porPing = Math.max(1, Math.ceil(restante / pingsRestantes))
+      const { data: cola } = await sb.from('outbound_prospecto').select('*').eq('estado', 'listo').eq('pausado', false).not('email', 'is', null).order('created_at', { ascending: true }).limit(Math.min(restante, porPing))
       for (const p of (cola ?? []) as Prospecto[]) { try { await enviarToque(p, 1, null); log.nuevos++ } catch { /* sigue */ } }
     }
   }

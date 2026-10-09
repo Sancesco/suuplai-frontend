@@ -1,0 +1,20 @@
+name: outbound-cron
+
+# Pinchea el endpoint de envíos cada hora en horario hábil CDMX (gratis — reemplaza el
+# cron por hora de Vercel Pro). Los correos salen repartidos a distintas horas del día.
+on:
+  schedule:
+    - cron: '0 14-23 * * 1-5' # cada hora 8am-5pm CDMX (UTC-6), lun-vie
+  workflow_dispatch: {}        # permite dispararlo a mano desde la pestaña Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Disparar /api/cron/outbound
+        run: |
+          code=$(curl -sS -o /tmp/out.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://www.suuplai.com.mx/api/cron/outbound")
+          echo "HTTP $code"; cat /tmp/out.json; echo
+          test "$code" = "200"
