@@ -27,6 +27,7 @@ async function cfgMap(sb: SB) {
     from_email: String(m.get('from_email') || 'santiago@suups.com.mx'),
     from_nombre: String(m.get('from_nombre') || 'Santiago Céspedes'),
     rampa_desde: String(m.get('rampa_desde') || new Date().toISOString()),
+    no_antes_de: m.get('no_antes_de') ? new Date(String(m.get('no_antes_de'))) : null,
   }
 }
 
@@ -90,7 +91,8 @@ export async function GET(req: Request) {
   for (const p of (sinProg ?? []) as { id: string }[]) { try { await programarEnvio(sb, p.id) } catch { break /* sin Fase 4 todavía */ } }
 
   // ── 2b) Cola: manda los 'listo' cuya hora programada ya llegó (o sin programar, respaldo) ──
-  if (habil) {
+  const antesDeArranque = cfg.no_antes_de && now < cfg.no_antes_de
+  if (habil && !antesDeArranque) {
     const nowIso = now.toISOString()
     const { data: cola } = await sb.from('outbound_prospecto').select('*').eq('estado', 'listo').eq('pausado', false).not('email', 'is', null)
       .or(`programado_en.lte.${nowIso},programado_en.is.null`).order('programado_en', { ascending: true, nullsFirst: true }).limit(10)
