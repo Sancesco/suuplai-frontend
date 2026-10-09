@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 
 type SB = NonNullable<ReturnType<typeof getSupabaseAdmin>>
 type Envio = { id: string; toque: number; enviado_en: string; gmail_thread_id: string | null; gmail_message_id: string | null; asunto_final: string | null; rebotado: boolean; respondido: boolean }
-type Prospecto = { id: string; empresa: string; persona: string | null; email: string | null; slug: string | null; estado: string }
+type Prospecto = { id: string; empresa: string; persona: string | null; email: string | null; slug: string | null; estado: string; gancho?: string | null }
 
 async function cfgMap(sb: SB) {
   const { data } = await sb.from('outbound_config').select('clave,valor')
@@ -39,7 +39,7 @@ export async function GET(req: Request) {
   const habil = horarioHabilCDMX(now) && !cfg.pausa
 
   const enviarToque = async (p: Prospecto, toque: number, prev: Envio | null) => {
-    const vars = { nombre: primerNombre(p.persona), empresa: p.empresa, gancho: '', slug: p.slug || '' }
+    const vars = { nombre: primerNombre(p.persona), empresa: p.empresa, gancho: p.gancho || '', slug: p.slug || '' }
     const cuerpo = toque === 1 ? rellenar(tpl.cuerpo, vars) : rellenar(toque === 2 ? tpl.recordatorio_1 : tpl.recordatorio_2, vars)
     const asunto = toque === 1 ? rellenar(tpl.asunto, vars) : `Re: ${prev?.asunto_final || rellenar(tpl.asunto, vars)}`
     const r = await enviarCorreo(sb, {

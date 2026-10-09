@@ -48,6 +48,8 @@ export async function GET(req: Request) {
       clicks: p.slug ? (clicks.get(p.slug) ?? 0) : 0,
       abierto: e?.open ?? 0, seconds: e?.seconds ?? 0, cv: e?.cv ?? 0, chat: e?.chat ?? 0, last: e?.last ?? null,
       toque: env?.toque ?? 0, enviado_en: env?.enviado_en ?? null,
+      gancho: p.gancho ?? null, cita: p.cita ?? null, confianza: p.confianza ?? null, angulo: p.angulo ?? null,
+      afirma_cifra: p.afirma_cifra ?? false, evidencia_url: p.evidencia_url ?? null, auto_enviable: p.auto_enviable ?? false,
     }
   })
   const gmail = await gmailConectado(sb)
@@ -63,7 +65,7 @@ export async function POST(req: Request) {
   const filas = Array.isArray(b?.prospectos) ? b.prospectos : []
   if (!filas.length) return NextResponse.json({ ok: false, error: 'no hay prospectos' }, { status: 400 })
 
-  let creados = 0; const saltados: string[] = []; const errores: string[] = []
+  let creados = 0; const saltados: string[] = []; const errores: string[] = []; const ids: string[] = []
   for (const f of filas) {
     const empresa = String(f?.empresa ?? '').trim()
     const email = String(f?.email ?? '').trim().toLowerCase()
@@ -75,14 +77,32 @@ export async function POST(req: Request) {
     }
     try {
       const { slug, appId } = await prepararProspecto(sb, { empresa, persona: String(f?.persona ?? '').trim() || null, puesto: String(f?.puesto ?? '').trim() || null, idioma })
-      const { error } = await sb.from('outbound_prospecto').insert({
+      const { data: ins, error } = await sb.from('outbound_prospecto').insert({
         empresa, persona: String(f?.persona ?? '').trim() || null, puesto: String(f?.puesto ?? '').trim() || null,
         email: email || null, sitio_web: String(f?.sitio_web ?? '').trim() || null, linkedin: String(f?.linkedin ?? '').trim() || null,
-        idioma, slug, app_id: appId, estado: 'listo',
-      })
-      if (error) { errores.push(empresa + ': ' + error.message); continue }
-      creados++
+        idioma, slug, app_id: appId, estado: 'nuevo',
+      }).select('id').single()
+      if (error || !ins) { errores.push(empresa + ': ' + (error?.message || '')); continue }
+      creados++; ids.push(ins.id as string)
     } catch (e) { errores.push(empresa + ': ' + (e instanceof Error ? e.message : 'error')) }
   }
-  return NextResponse.json({ ok: true, creados, saltados, errores })
+  return NextResponse.json({ ok: true, creados, saltados, errores, ids })
+}
+
+// Edita un prospecto: aprobar (estado), editar gancho, pausar, descartar.
+export async function PATCH(req: Request) {
+  if (!checkOutbound(req)) return NextResponse.json({ ok: false, error: 'no autorizado' }, { status: 401 })
+  const sb = getSupabaseAdmin(); if (!sb) return NextResponse.json({ ok: false, error: 'no config' }, { status: 500 })
+  const b = await req.json().catch(() => null)
+  const id = String(b?.id ?? ''); if (!id) return NextResponse.json({ ok: false, error: 'falta id' }, { status: 400 })
+  const patch: Record<string, unknown> = {}
+  const ESTADOS = ['nuevo', 'sin_gancho', 'listo', 'descartado', 'cerrado']
+  if (b?.estado && ESTADOS.includes(String(b.estado))) patch.estado = b.estado
+  if (b?.gancho !== undefined) patch.gancho = String(b.gancho ?? '')
+  if (b?.pausado !== undefined) patch.pausado = b.pausado === true
+  if (b?.nota !== undefined) patch.nota = String(b.nota ?? '') || null
+  if (!Object.keys(patch).length) return NextResponse.json({ ok: false, error: 'nada que actualizar' }, { status: 400 })
+  const { error } = await sb.from('outbound_prospecto').update(patch).eq('id', id)
+  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+  return NextResponse.json({ ok: true })
 }

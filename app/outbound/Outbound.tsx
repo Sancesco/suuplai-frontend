@@ -7,16 +7,20 @@ interface Row {
   sector: string | null; idioma: string; slug: string | null; estado: string; created_at: string
   clicks: number; abierto: number; seconds: number; cv: number; chat: number; last: string | null
   toque: number; enviado_en: string | null
+  gancho: string | null; cita: string | null; confianza: string | null; angulo: string | null
+  afirma_cifra: boolean; evidencia_url: string | null; auto_enviable: boolean
 }
 type Fila = { empresa: string; persona: string; puesto: string; email: string; sitio_web: string; linkedin: string }
 
 function dur(s: number) { return s >= 60 ? `${Math.floor(s / 60)}m ${s % 60}s` : `${s}s` }
 function fecha(iso: string | null) { return iso ? new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }) : '—' }
 const EST: Record<string, { t: string; bg: string; c: string }> = {
-  nuevo: { t: 'Nuevo', bg: '#EEE', c: '#666' }, listo: { t: 'En cola', bg: '#E4ECFF', c: '#2456C9' },
+  nuevo: { t: 'Nuevo', bg: '#EEE', c: '#666' }, investigando: { t: 'Investigando…', bg: '#EEE', c: '#666' },
+  sin_gancho: { t: '⚠ Sin gancho', bg: '#FFE8CC', c: '#9A5B00' }, listo: { t: 'En cola', bg: '#E4ECFF', c: '#2456C9' },
   en_secuencia: { t: 'En secuencia', bg: '#FFF3D6', c: '#9A6A00' }, respondio: { t: '✓ Respondió', bg: '#D9F2E4', c: '#1E8E5A' },
   reboto: { t: 'Rebotó', bg: '#F3D9D0', c: '#9B3412' }, descartado: { t: 'Descartado', bg: '#EEE', c: '#999' }, cerrado: { t: 'Cerrado', bg: '#EEE', c: '#999' },
 }
+const confColor = (c: string | null) => c === 'alta' ? { bg: '#D9F2E4', c: '#1E8E5A' } : c === 'media' ? { bg: '#FFF3D6', c: '#9A6A00' } : { bg: '#F3D9D0', c: '#9B3412' }
 
 const EMAIL = /[\w.+-]+@[\w-]+\.[\w.-]+/
 const cap = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s
@@ -121,11 +125,26 @@ export function Outbound() {
     try {
       const r = await fetch('/api/outbound/prospectos', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ idioma, prospectos: filas }) })
       const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error')
-      setMsg(`✓ ${j.creados} creados${j.saltados?.length ? ` · ${j.saltados.length} duplicados` : ''}${j.errores?.length ? ` · ${j.errores.length} con error` : ''}`)
-      setTexto(''); load()
+      setTexto(''); await load()
+      const nuevos = (j.ids || []) as string[]
+      // Auto-investiga cada empresa (uno por uno) → arma el gancho y aplica la compuerta.
+      for (let i = 0; i < nuevos.length; i++) { setMsg(`🔎 Investigando empresas… ${i + 1}/${nuevos.length}`); await investigar(nuevos[i]) }
+      setMsg(`✓ ${j.creados} creados e investigados${j.saltados?.length ? ` · ${j.saltados.length} duplicados` : ''}. Los de alta confianza entran en cola; los demás quedan en “Sin gancho” para revisar.`)
     } catch (e) { setMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')) } finally { setBusy(false) }
   }
 
+  const [invId, setInvId] = useState<Set<string>>(new Set())
+  const marcarInv = (id: string, on: boolean) => setInvId((s) => { const n = new Set(s); if (on) n.add(id); else n.delete(id); return n })
+  const investigar = async (id: string) => {
+    marcarInv(id, true); setMsg('')
+    try {
+      const r = await fetch('/api/outbound/investigar', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) })
+      const j = await r.json(); if (!r.ok || !j.ok) setMsg('⚠ ' + (j.error || 'Error investigando'))
+    } catch { setMsg('⚠ Error investigando') } finally { marcarInv(id, false); load() }
+  }
+  const patchPros = async (id: string, body: Record<string, unknown>) => {
+    await fetch('/api/outbound/prospectos', { method: 'PATCH', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ id, ...body }) }); load()
+  }
   const verPreview = async (id: string) => {
     setCargandoPrev(id)
     try {
@@ -224,13 +243,27 @@ export function Outbound() {
                             <div className="flex items-center gap-2"><b>{r.empresa}</b><span className="rounded bg-neutral-100 px-1 py-0.5 font-mono text-[9px] uppercase text-neutral-500">{r.idioma}</span></div>
                             <div className="text-xs text-neutral-500">{r.persona || '—'}{r.puesto ? ` · ${r.puesto}` : ''}</div>
                             {r.email && <div className="font-mono text-[11px] text-neutral-400">{r.email}</div>}
+                            {r.gancho && (
+                              <div className="mt-1 flex items-start gap-1.5 text-[11px]">
+                                <span className="shrink-0 rounded px-1 py-0.5 font-mono uppercase" style={{ background: confColor(r.confianza).bg, color: confColor(r.confianza).c }}>{r.confianza || '?'}</span>
+                                <span className="italic text-neutral-600">“{r.gancho}”{r.afirma_cifra ? <span className="not-italic text-[#9B3412]"> · afirma cifra</span> : null}</span>
+                              </div>
+                            )}
                           </td>
                           <td className="px-3 py-2.5"><span className="rounded px-1.5 py-0.5 font-mono text-[11px]" style={{ background: est.bg, color: est.c }}>{est.t}</span></td>
                           <td className="px-3 py-2.5">
                             {r.toque > 0 && <div className="mb-1 font-mono text-[11px] text-neutral-700">✓ enviado {r.enviado_en ? new Date(r.enviado_en).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'America/Mexico_City' }) : ''}{r.toque > 1 ? ` · toque ${r.toque}` : ''}</div>}
                             <div className="flex flex-col items-start gap-1">
                               <button onClick={() => verPreview(r.id)} disabled={cargandoPrev === r.id} className="text-[11px] text-blue-700 underline disabled:opacity-50">{cargandoPrev === r.id ? '…' : '👁 Preview'}</button>
-                              {gmail.conectado && r.email && (r.estado === 'listo' || r.estado === 'nuevo') ? (
+                              {r.estado === 'nuevo' ? (
+                                <button onClick={() => investigar(r.id)} disabled={invId.has(r.id)} className="rounded-lg bg-neutral-900 px-2.5 py-1 text-[11px] font-bold text-lime-300 disabled:opacity-50">{invId.has(r.id) ? '🔎…' : '🔍 Investigar'}</button>
+                              ) : r.estado === 'sin_gancho' ? (
+                                <div className="flex flex-col items-start gap-1">
+                                  <button onClick={() => patchPros(r.id, { estado: 'listo' })} className="rounded bg-neutral-900 px-2 py-0.5 text-[11px] font-bold text-lime-300">✓ Aprobar gancho</button>
+                                  <button onClick={() => patchPros(r.id, { gancho: '', estado: 'listo' })} className="rounded border border-neutral-300 px-2 py-0.5 text-[11px]">Enviar sin gancho</button>
+                                  <button onClick={() => investigar(r.id)} disabled={invId.has(r.id)} className="text-[10px] text-neutral-500 underline">{invId.has(r.id) ? '…' : 'reinvestigar'}</button>
+                                </div>
+                              ) : gmail.conectado && r.email && r.estado === 'listo' ? (
                                 <button onClick={() => enviar(r.id)} disabled={enviando === r.id} title="Opcional: se mandará solo" className="rounded-lg border border-neutral-300 px-2.5 py-1 text-[11px] font-semibold text-neutral-700 disabled:opacity-50">{enviando === r.id ? '…' : '✉️ Enviar ahora'}</button>
                               ) : r.estado === 'en_secuencia' ? <span className="text-[11px] text-neutral-400">en secuencia</span> : null}
                             </div>

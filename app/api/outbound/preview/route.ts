@@ -41,7 +41,7 @@ export async function POST(req: Request) {
   const rampaDesde = String(cm.get('rampa_desde') || new Date().toISOString())
   const pausa = cm.get('pausa_global') === true || cm.get('pausa_global') === 'true'
 
-  const vars = { nombre: primerNombre(p.persona), empresa: p.empresa, gancho: '', slug: p.slug || 'SLUG' }
+  const vars = { nombre: primerNombre(p.persona), empresa: p.empresa, gancho: p.gancho || '', slug: p.slug || 'SLUG' }
   const asunto = rellenar(tpl.asunto, vars)
   const cuerpo = rellenar(tpl.cuerpo, vars)
 

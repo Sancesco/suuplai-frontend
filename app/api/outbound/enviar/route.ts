@@ -31,7 +31,7 @@ export async function POST(req: Request) {
   if (!tpl) return NextResponse.json({ ok: false, error: 'no hay plantilla activa' }, { status: 400 })
   const cfg = await config(sb)
 
-  const vars = { nombre: primerNombre(p.persona), empresa: p.empresa, gancho: '', slug: p.slug }
+  const vars = { nombre: primerNombre(p.persona), empresa: p.empresa, gancho: p.gancho || '', slug: p.slug }
   const asunto = rellenar(tpl.asunto, vars)
   const cuerpo = rellenar(tpl.cuerpo, vars)
   try {

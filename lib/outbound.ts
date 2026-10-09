@@ -16,6 +16,8 @@ export type Prospecto = {
   id: string; empresa: string; persona: string | null; puesto: string | null; email: string | null
   sitio_web: string | null; linkedin: string | null; sector: string | null; idioma: string
   slug: string | null; app_id: string | null; estado: string; pausado: boolean; nota: string | null; created_at: string
+  gancho?: string | null; cita?: string | null; confianza?: string | null; afirma_cifra?: boolean
+  angulo?: string | null; asunto_sugerido?: string | null; evidencia_url?: string | null; auto_enviable?: boolean
 }
 
 // Genera un slug único no usado en app_applications, links ni outbound_prospecto.
