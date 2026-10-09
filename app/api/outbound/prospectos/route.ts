@@ -103,6 +103,11 @@ export async function PATCH(req: Request) {
   if (b?.gancho !== undefined) patch.gancho = String(b.gancho ?? '')
   if (b?.pausado !== undefined) patch.pausado = b.pausado === true
   if (b?.nota !== undefined) patch.nota = String(b.nota ?? '') || null
+  if (b?.email !== undefined) {
+    const em = String(b.email ?? '').trim().toLowerCase()
+    if (em && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) return NextResponse.json({ ok: false, error: 'correo inválido' }, { status: 400 })
+    patch.email = em || null
+  }
   if (!Object.keys(patch).length) return NextResponse.json({ ok: false, error: 'nada que actualizar' }, { status: 400 })
   const { error } = await sb.from('outbound_prospecto').update(patch).eq('id', id)
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })

@@ -142,8 +142,11 @@ export function Outbound() {
     } catch { setMsg('⚠ Error investigando') } finally { marcarInv(id, false); load() }
   }
   const patchPros = async (id: string, body: Record<string, unknown>) => {
-    await fetch('/api/outbound/prospectos', { method: 'PATCH', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ id, ...body }) }); load()
+    const r = await fetch('/api/outbound/prospectos', { method: 'PATCH', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ id, ...body }) })
+    const j = await r.json().catch(() => ({})); if (!r.ok || !j.ok) setMsg('⚠ ' + (j.error || 'Error'))
+    load()
   }
+  const editarEmail = (id: string, actual: string | null) => { const nuevo = window.prompt('Correo del prospecto:', actual || ''); if (nuevo !== null) patchPros(id, { email: nuevo.trim() }) }
   const [intel, setIntel] = useState<Intel | null>(null); const [showIntel, setShowIntel] = useState(false); const [genHip, setGenHip] = useState(false)
   const loadReporte = async () => { try { const r = await fetch('/api/outbound/reporte', { headers: hdr }); const j = await r.json(); if (j.ok) setIntel(j) } catch { /* noop */ } }
   const abrirIntel = () => { const v = !showIntel; setShowIntel(v); if (v) loadReporte() }
@@ -291,7 +294,7 @@ export function Outbound() {
                           <td className="px-3 py-2.5">
                             <div className="flex items-center gap-2"><b>{r.empresa}</b><span className="rounded bg-neutral-100 px-1 py-0.5 font-mono text-[9px] uppercase text-neutral-500">{r.idioma}</span></div>
                             <div className="text-xs text-neutral-500">{r.persona || '—'}{r.puesto ? ` · ${r.puesto}` : ''}</div>
-                            {r.email && <div className="font-mono text-[11px] text-neutral-400">{r.email}</div>}
+                            <div className="font-mono text-[11px] text-neutral-400">{r.email || <span className="text-[#B4451A]">(sin correo)</span>}<button onClick={() => editarEmail(r.id, r.email)} className="ml-1.5 text-neutral-400 hover:text-neutral-900" title="Editar correo">✏️</button></div>
                             {r.gancho && (
                               <div className="mt-1 flex items-start gap-1.5 text-[11px]">
                                 <span className="shrink-0 rounded px-1 py-0.5 font-mono uppercase" style={{ background: confColor(r.confianza).bg, color: confColor(r.confianza).c }}>{r.confianza || '?'}</span>
