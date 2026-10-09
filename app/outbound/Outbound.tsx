@@ -87,14 +87,23 @@ export function Outbound() {
     else if (u.get('gmail') === 'error') setMsg('⚠ No se pudo conectar Gmail: ' + (u.get('msg') || 'revisa las credenciales'))
   }, [])
 
-  const load = useCallback(async () => {
+  const guardarAuth = (p: string) => { try { localStorage.setItem('outbound_auth', JSON.stringify({ pw: p, exp: Date.now() + 30 * 86400000 })) } catch { /* modo privado */ } }
+  const cerrarSesion = () => { try { localStorage.removeItem('outbound_auth') } catch {} setPw(''); setAuthed(false); setRows(null) }
+
+  const load = useCallback(async (pwArg?: string) => {
+    const p = pwArg ?? pw
     setErr('')
     try {
-      const r = await fetch('/api/outbound/prospectos', { headers: hdr })
+      const r = await fetch('/api/outbound/prospectos', { headers: { 'x-admin-password': p } })
       const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error')
-      setRows(j.prospectos as Row[]); setGmail(j.gmail || { conectado: false, email: null }); setAuthed(true)
+      setRows(j.prospectos as Row[]); setGmail(j.gmail || { conectado: false, email: null }); setAuthed(true); guardarAuth(p)
     } catch (e) { setErr(e instanceof Error ? e.message : 'Error'); setAuthed(false) }
   }, [pw]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Recuerda la compu por 30 días: auto-login si hay sesión guardada y no venció.
+  useEffect(() => {
+    try { const raw = localStorage.getItem('outbound_auth'); if (raw) { const s = JSON.parse(raw); if (s?.pw && s.exp > Date.now()) { setPw(s.pw); load(s.pw) } } } catch { /* ignore */ }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const enviar = async (id: string) => {
     setEnviando(id); setMsg('')
@@ -135,7 +144,10 @@ export function Outbound() {
       <div className="mx-auto w-full max-w-[1000px] px-4 py-8">
         <div className="mb-6 flex items-baseline justify-between gap-3">
           <h1 className="text-2xl font-extrabold tracking-tight" style={{ fontFamily: "'Syne',sans-serif" }}>Outbound</h1>
-          <span className="font-mono text-[11px] uppercase tracking-wider text-neutral-500">Prospectos · búsqueda de trabajo</span>
+          <div className="flex items-center gap-3">
+            <span className="font-mono text-[11px] uppercase tracking-wider text-neutral-500">Prospectos · búsqueda de trabajo</span>
+            {authed && <button onClick={cerrarSesion} className="text-xs text-neutral-400 underline">cerrar sesión</button>}
+          </div>
         </div>
 
         {!authed && (
