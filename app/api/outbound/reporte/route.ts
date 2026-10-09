@@ -45,7 +45,7 @@ export async function GET(req: Request) {
   }
   const cvVisitas = vistos.size, cvDescargas = descargaron.size, cvChat = conChat.size
   let compartidos = 0
-  for (const s of visitantesPorSlug.values()) if (s.size >= 2) compartidos++
+  for (const s of Array.from(visitantesPorSlug.values())) if (s.size >= 2) compartidos++
   let enviadas = 0, abiertas = 0, respondidas = 0, rebotadas = 0
   for (const p of list) {
     enviadas++
