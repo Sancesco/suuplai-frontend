@@ -125,11 +125,8 @@ export function Outbound() {
     try {
       const r = await fetch('/api/outbound/prospectos', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ idioma, prospectos: filas }) })
       const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error')
-      setTexto(''); await load()
-      const nuevos = (j.ids || []) as string[]
-      // Auto-investiga cada empresa (uno por uno) → arma el gancho y aplica la compuerta.
-      for (let i = 0; i < nuevos.length; i++) { setMsg(`🔎 Investigando empresas… ${i + 1}/${nuevos.length}`); await investigar(nuevos[i]) }
-      setMsg(`✓ ${j.creados} creados e investigados${j.saltados?.length ? ` · ${j.saltados.length} duplicados` : ''}. Los de alta confianza entran en cola; los demás quedan en “Sin gancho” para revisar.`)
+      setMsg(`✓ ${j.creados} creados y en cola${j.saltados?.length ? ` · ${j.saltados.length} duplicados` : ''}${j.errores?.length ? ` · ${j.errores.length} con error` : ''}`)
+      setTexto(''); load()
     } catch (e) { setMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')) } finally { setBusy(false) }
   }
 

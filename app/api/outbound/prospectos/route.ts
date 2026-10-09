@@ -80,7 +80,7 @@ export async function POST(req: Request) {
       const { data: ins, error } = await sb.from('outbound_prospecto').insert({
         empresa, persona: String(f?.persona ?? '').trim() || null, puesto: String(f?.puesto ?? '').trim() || null,
         email: email || null, sitio_web: String(f?.sitio_web ?? '').trim() || null, linkedin: String(f?.linkedin ?? '').trim() || null,
-        idioma, slug, app_id: appId, estado: 'nuevo',
+        idioma, slug, app_id: appId, estado: 'listo',
       }).select('id').single()
       if (error || !ins) { errores.push(empresa + ': ' + (error?.message || '')); continue }
       creados++; ids.push(ins.id as string)
