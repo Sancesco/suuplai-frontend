@@ -80,7 +80,7 @@ export async function GET(req: Request) {
     const { count } = await sb.from('outbound_envio').select('id', { count: 'exact', head: true }).eq('toque', 1).gte('enviado_en', inicioDiaUtc)
     const restante = topeRampa(cfg.rampa_desde) - (count ?? 0)
     if (restante > 0) {
-      const { data: cola } = await sb.from('outbound_prospecto').select('*').eq('estado', 'listo').eq('pausado', false).not('email', 'is', null).order('created_at', { ascending: true }).limit(Math.min(restante, 3))
+      const { data: cola } = await sb.from('outbound_prospecto').select('*').eq('estado', 'listo').eq('pausado', false).not('email', 'is', null).order('created_at', { ascending: true }).limit(Math.min(restante, 10))
       for (const p of (cola ?? []) as Prospecto[]) { try { await enviarToque(p, 1, null); log.nuevos++ } catch { /* sigue */ } }
     }
   }
