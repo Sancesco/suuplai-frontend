@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseAdmin, checkOutbound, prepararProspecto, programarEnvio, type Prospecto } from '@/lib/outbound'
 import { gmailConectado } from '@/lib/gmail'
-import { sumarDiasHabiles } from '@/lib/outboundSend'
+import { sumarDiasHabiles, topeRampa } from '@/lib/outboundSend'
 
 // Hora objetivo del recordatorio (misma fórmula que el cron) para estimar el próximo movimiento.
 function horaObj(seed: string): number { let h = 0; for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0; return 8 + (h % 9) }
@@ -72,7 +72,9 @@ export async function GET(req: Request) {
     }
   })
   const gmail = await gmailConectado(sb)
-  return NextResponse.json({ ok: true, prospectos: out, gmail })
+  const { data: cfgR } = await sb.from('outbound_config').select('valor').eq('clave', 'rampa_desde').maybeSingle()
+  const tope = topeRampa(cfgR?.valor ? String(cfgR.valor) : new Date().toISOString())
+  return NextResponse.json({ ok: true, prospectos: out, gmail, tope })
 }
 
 // Crea prospectos (bloque o uno) y les prepara el link de CV + /r. Dedup por correo.
