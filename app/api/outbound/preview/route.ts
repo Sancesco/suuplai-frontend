@@ -63,5 +63,23 @@ export async function POST(req: Request) {
     }
   }
 
-  return NextResponse.json({ ok: true, from, to: p.email, asunto, cuerpo, estado: p.estado, cuando, detalleCola })
+  // Árbol de la secuencia: correo 1, recordatorio 2 (+5 háb), 3 (+7 háb), cierre (+7 háb).
+  const { data: evs } = await sb.from('outbound_envio').select('toque,enviado_en').eq('prospecto_id', id).order('toque', { ascending: true })
+  const porToque = new Map((evs ?? []).map((e: { toque: number; enviado_en: string }) => [e.toque, e.enviado_en]))
+  const baseT1 = porToque.get(1) ? new Date(porToque.get(1)!) : (cuando ? new Date(cuando) : null)
+  let plan: { paso: string; fecha: string; hecho: boolean }[] = []
+  if (baseT1) {
+    const t2 = porToque.get(2) ? new Date(porToque.get(2)!) : sumarHabiles(baseT1, 5)
+    const t3 = porToque.get(3) ? new Date(porToque.get(3)!) : sumarHabiles(t2, 7)
+    const cierre = sumarHabiles(t3, 7)
+    const detenida = p.estado === 'respondio' || p.estado === 'rechazada' || p.estado === 'cerrado' || p.estado === 'reboto'
+    plan = [
+      { paso: 'Correo 1 (presentación)', fecha: baseT1.toISOString(), hecho: porToque.has(1) },
+      { paso: 'Recordatorio 2 (mismo hilo)', fecha: t2.toISOString(), hecho: porToque.has(2) },
+      { paso: 'Recordatorio 3 (último)', fecha: t3.toISOString(), hecho: porToque.has(3) },
+      { paso: detenida ? 'Secuencia terminada' : 'Se cierra si no responde', fecha: cierre.toISOString(), hecho: detenida },
+    ]
+  }
+
+  return NextResponse.json({ ok: true, from, to: p.email, asunto, cuerpo, estado: p.estado, cuando, detalleCola, plan })
 }

@@ -76,7 +76,7 @@ export function Outbound() {
   const [gmail, setGmail] = useState<{ conectado: boolean; email: string | null }>({ conectado: false, email: null })
   const [texto, setTexto] = useState(''); const [idioma, setIdioma] = useState<'es' | 'en'>('es')
   const [busy, setBusy] = useState(false); const [msg, setMsg] = useState(''); const [enviando, setEnviando] = useState('')
-  const [preview, setPreview] = useState<{ id: string; from: string; to: string | null; asunto: string; cuerpo: string; estado: string; cuando: string | null; detalleCola: string | null } | null>(null)
+  const [preview, setPreview] = useState<{ id: string; from: string; to: string | null; asunto: string; cuerpo: string; estado: string; cuando: string | null; detalleCola: string | null; plan: { paso: string; fecha: string; hecho: boolean }[] } | null>(null)
   const [cargandoPrev, setCargandoPrev] = useState('')
   const hdr = { 'x-admin-password': pw }
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
@@ -131,7 +131,7 @@ export function Outbound() {
     try {
       const r = await fetch('/api/outbound/preview', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ prospectoId: id }) })
       const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error')
-      setPreview({ id, from: j.from, to: j.to, asunto: j.asunto, cuerpo: j.cuerpo, estado: j.estado, cuando: j.cuando, detalleCola: j.detalleCola })
+      setPreview({ id, from: j.from, to: j.to, asunto: j.asunto, cuerpo: j.cuerpo, estado: j.estado, cuando: j.cuando, detalleCola: j.detalleCola, plan: j.plan || [] })
     } catch (e) { setMsg('⚠ ' + (e instanceof Error ? e.message : 'Error')) } finally { setCargandoPrev('') }
   }
   const fechaHora = (iso: string | null) => iso ? new Date(iso).toLocaleString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'America/Mexico_City' }) : null
@@ -154,7 +154,7 @@ export function Outbound() {
           <div className="flex max-w-md flex-wrap gap-2">
             <input type="password" value={pw} onChange={(e) => setPw(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && load()} placeholder="Contraseña"
               className="min-w-[200px] flex-1 rounded-lg border border-neutral-900 bg-white px-3.5 py-2.5 text-sm outline-none" />
-            <button onClick={load} disabled={!pw} className="rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-bold text-lime-300">Entrar</button>
+            <button onClick={() => load()} disabled={!pw} className="rounded-lg bg-neutral-900 px-5 py-2.5 text-sm font-bold text-lime-300">Entrar</button>
           </div>
         )}
         {err && <p className="mt-2 text-sm text-red-700">⚠ {err}</p>}
@@ -273,6 +273,21 @@ export function Outbound() {
                     <div className="mb-3 rounded-lg bg-neutral-100 px-3 py-2 text-sm text-neutral-600">{preview.detalleCola}</div>
                   ) : (
                     <div className="mb-3 rounded-lg bg-neutral-100 px-3 py-2 text-sm text-neutral-600">Ya está en secuencia (correo 1 enviado).</div>
+                  )}
+                  {preview.plan.length > 0 && (
+                    <div className="mb-3 rounded-lg border border-neutral-200 p-3">
+                      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-neutral-500">Qué va a pasar</div>
+                      <div className="flex flex-col gap-2">
+                        {preview.plan.map((s, i) => (
+                          <div key={i} className="flex items-center gap-2 text-sm">
+                            <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] ${s.hecho ? 'bg-emerald-600 text-white' : 'border border-neutral-300 text-neutral-400'}`}>{s.hecho ? '✓' : i + 1}</span>
+                            <span className={s.hecho ? 'text-neutral-500 line-through' : 'font-medium'}>{s.paso}</span>
+                            <span className="ml-auto font-mono text-[11px] text-neutral-500">{fechaHora(s.fecha)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="mt-2 text-[11px] text-neutral-400">Si responde en cualquier momento, la secuencia se detiene sola.</p>
+                    </div>
                   )}
                   <div className="rounded-xl border border-neutral-200">
                     <div className="border-b border-neutral-100 px-3 py-2 text-xs text-neutral-500"><div><b>De:</b> {preview.from}</div><div><b>Para:</b> {preview.to || '—'}</div><div><b>Asunto:</b> {preview.asunto}</div></div>
