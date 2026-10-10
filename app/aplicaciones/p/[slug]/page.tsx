@@ -75,9 +75,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   const en = app.idioma === 'en'
   const dest = app.persona || app.puesto
   const title = en ? `${NOMBRE} — Resume` : `CV de ${NOMBRE}`
-  const desc = en
-    ? `Made for ${dest}${app.empresa ? ` · ${app.empresa}` : ''}. Read it and download the PDF in one tap.`
-    : `Hecho para ${dest}${app.empresa ? ` · ${app.empresa}` : ''}. Ábrelo, léelo y descarga el PDF en un tap.`
+  const desc = app.posicionamiento || (en
+    ? `Resume of ${NOMBRE}${dest ? `, for ${dest}` : ''}${app.empresa ? ` · ${app.empresa}` : ''}.`
+    : `Currículum de ${NOMBRE}${dest ? `, para ${dest}` : ''}${app.empresa ? ` · ${app.empresa}` : ''}.`)
   return {
     title, description: desc, robots: { index: false, follow: false },
     openGraph: { title, description: desc, type: 'profile', siteName: 'Suuplai', locale: en ? 'en_US' : 'es_MX' },
