@@ -82,14 +82,19 @@ export function Agenda() {
                   <div key={s} className="rounded-xl border-2 border-neutral-900 bg-white p-4">
                     <div className="mb-1 flex items-center justify-between">
                       <b style={{ fontFamily: "'Syne',sans-serif" }}>{label}</b>
-                      <span className="text-xs text-neutral-500">{w.c1 >= cupoSemana ? '✅ semana llena' : `${cupoSemana - w.c1} lugares libres`}</span>
+                      <span className="text-xs text-neutral-500">{w.c1 >= cupoSemana ? '✅ cupo lleno' : `${cupoSemana - w.c1} primeros libres`}</span>
                     </div>
-                    <div className="mb-2 flex flex-wrap gap-4 text-sm">
+                    {/* El cupo (25) limita SOLO primeros correos. Recordatorios 2 y 3 van encima y suben el volumen total. */}
+                    <div className="mb-1 flex items-baseline justify-between text-sm">
                       <span><b className="text-lg">{w.c1}</b> primeros correos <span className="text-neutral-400">/ {cupoSemana} cupo</span></span>
-                      <span><b className="text-lg">{w.c2}</b> recordatorio 2</span>
-                      <span><b className="text-lg">{w.c3}</b> recordatorio 3</span>
+                      <span className="text-xs text-neutral-500">envíos totales: <b className="text-sm text-neutral-800">{w.c1 + w.c2 + w.c3}</b></span>
                     </div>
                     <div className="h-2 w-full overflow-hidden rounded bg-neutral-100"><div className="h-full rounded" style={{ width: `${pct}%`, background: pct >= 100 ? '#1E8E5A' : '#2456C9' }} /></div>
+                    <div className="mt-2 flex flex-wrap gap-4 text-xs text-neutral-600">
+                      <span>+ <b style={{ color: '#9A6A00' }}>{w.c2}</b> recordatorio 2</span>
+                      <span>+ <b style={{ color: '#B4451A' }}>{w.c3}</b> recordatorio 3</span>
+                      <span className="text-neutral-400">(los recordatorios no ocupan cupo — suben el ritmo)</span>
+                    </div>
                   </div>
                 )
               })}
