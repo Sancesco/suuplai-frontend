@@ -72,7 +72,17 @@ async function getApp(slug: string): Promise<Application | null> {
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const app = await getApp(params.slug)
   if (!app) return { title: 'Aplicación', robots: { index: false, follow: false } }
-  return { title: `${NOMBRE} — ${app.puesto} · ${app.empresa}`, description: app.posicionamiento || undefined, robots: { index: false, follow: false } }
+  const en = app.idioma === 'en'
+  const dest = app.persona || app.puesto
+  const title = en ? `${NOMBRE} — Resume` : `CV de ${NOMBRE}`
+  const desc = en
+    ? `Made for ${dest}${app.empresa ? ` · ${app.empresa}` : ''}. Read it and download the PDF in one tap.`
+    : `Hecho para ${dest}${app.empresa ? ` · ${app.empresa}` : ''}. Ábrelo, léelo y descarga el PDF en un tap.`
+  return {
+    title, description: desc, robots: { index: false, follow: false },
+    openGraph: { title, description: desc, type: 'profile', siteName: 'Suuplai', locale: en ? 'en_US' : 'es_MX' },
+    twitter: { card: 'summary_large_image', title, description: desc },
+  }
 }
 
 export default async function Page({ params }: { params: { slug: string } }) {
