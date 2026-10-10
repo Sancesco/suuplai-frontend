@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 
-interface Row { id: string; empresa: string; persona: string | null; estado: string; proximo: string | null; proximo_tipo: string | null }
+interface Mov { fecha: string; tipo: string }
+interface Row { id: string; empresa: string; persona: string | null; estado: string; movimientos?: Mov[] }
+interface Item { id: string; empresa: string; persona: string | null; fecha: string; tipo: string }
 
 // clave del día en CDMX (YYYY-MM-DD) para agrupar
 function diaCDMX(iso: string): string {
@@ -40,13 +42,16 @@ export function Agenda() {
 
   useEffect(() => { try { const raw = localStorage.getItem('outbound_auth'); if (raw) { const s = JSON.parse(raw); if (s?.pw && s.exp > Date.now()) { setPw(s.pw); load(s.pw) } } } catch { /* noop */ } }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const items = (rows || []).filter((r) => r.proximo).sort((a, b) => (a.proximo! < b.proximo! ? -1 : 1))
+  // aplana TODA la secuencia proyectada de cada prospecto (correo 1, recordatorio 2 y 3)
+  const items: Item[] = []
+  for (const r of rows || []) for (const m of r.movimientos || []) items.push({ id: r.id, empresa: r.empresa, persona: r.persona, fecha: m.fecha, tipo: m.tipo })
+  items.sort((a, b) => (a.fecha < b.fecha ? -1 : 1))
   // agrupa por día
-  const dias = new Map<string, Row[]>()
-  for (const r of items) { const k = diaCDMX(r.proximo!); if (!dias.has(k)) dias.set(k, []); dias.get(k)!.push(r) }
+  const dias = new Map<string, Item[]>()
+  for (const r of items) { const k = diaCDMX(r.fecha); if (!dias.has(k)) dias.set(k, []); dias.get(k)!.push(r) }
   // resumen por semana
   const semanas = new Map<string, { c1: number; c2: number; c3: number; diasHabiles: Set<string> }>()
-  for (const [k, arr] of Array.from(dias)) { const s = semanaDe(k); if (!semanas.has(s)) semanas.set(s, { c1: 0, c2: 0, c3: 0, diasHabiles: new Set() }); const w = semanas.get(s)!; w.diasHabiles.add(k); for (const r of arr) { const t = tipoDe(r.proximo_tipo); if (t === 1) w.c1++; else if (t === 2) w.c2++; else w.c3++ } }
+  for (const [k, arr] of Array.from(dias)) { const s = semanaDe(k); if (!semanas.has(s)) semanas.set(s, { c1: 0, c2: 0, c3: 0, diasHabiles: new Set() }); const w = semanas.get(s)!; w.diasHabiles.add(k); for (const r of arr) { const t = tipoDe(r.tipo); if (t === 1) w.c1++; else if (t === 2) w.c2++; else w.c3++ } }
 
   return (
     <div className="min-h-screen bg-[#F4F2EC] text-neutral-900" style={{ fontFamily: "'DM Sans',system-ui,sans-serif" }}>
@@ -101,7 +106,7 @@ export function Agenda() {
             {/* Detalle por día */}
             <div className="flex flex-col gap-3">
               {Array.from(dias.entries()).map(([k, arr]) => {
-                const c1 = arr.filter((r) => tipoDe(r.proximo_tipo) === 1).length
+                const c1 = arr.filter((r) => tipoDe(r.tipo) === 1).length
                 const recs = arr.length - c1
                 return (
                   <div key={k} className="rounded-xl border border-neutral-900 bg-white p-3">
@@ -110,9 +115,9 @@ export function Agenda() {
                       <span className="font-mono text-[11px] text-neutral-500">{c1}/{tope} primeros{recs ? ` · ${recs} recordatorio${recs > 1 ? 's' : ''}` : ''}{c1 >= tope ? ' · ✅' : ''}</span>
                     </div>
                     <div className="flex flex-col gap-1">
-                      {arr.map((r) => { const t = tipoDe(r.proximo_tipo); return (
-                        <div key={r.id + (r.proximo || '')} className="flex items-center gap-2 border-l-2 pl-2 text-xs" style={{ borderColor: t === 1 ? '#2456C9' : t === 2 ? '#E8A317' : '#B4451A' }}>
-                          <span className="w-14 shrink-0 font-mono text-neutral-500">{horaCDMX(r.proximo!)}</span>
+                      {arr.map((r) => { const t = tipoDe(r.tipo); return (
+                        <div key={r.id + r.fecha} className="flex items-center gap-2 border-l-2 pl-2 text-xs" style={{ borderColor: t === 1 ? '#2456C9' : t === 2 ? '#E8A317' : '#B4451A' }}>
+                          <span className="w-14 shrink-0 font-mono text-neutral-500">{horaCDMX(r.fecha)}</span>
                           <span className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold" style={{ background: t === 1 ? '#E4ECFF' : t === 2 ? '#FFF3D6' : '#F3D9D0', color: t === 1 ? '#2456C9' : t === 2 ? '#9A6A00' : '#B4451A' }}>{t === 1 ? 'Correo 1' : t === 2 ? 'Recordatorio 2' : 'Recordatorio 3'}</span>
                           <span className="truncate"><b>{r.empresa}</b> · {r.persona || '—'}</span>
                         </div>
