@@ -81,7 +81,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   return {
     title, description: desc, robots: { index: false, follow: false },
     openGraph: { title, description: desc, type: 'profile', siteName: 'Suuplai', locale: en ? 'en_US' : 'es_MX' },
-    twitter: { card: 'summary_large_image', title, description: desc },
+    twitter: { card: 'summary', title, description: desc },
   }
 }
 
