@@ -29,7 +29,7 @@ const spaceMono = Space_Mono({
   display: 'swap',
 })
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://suuplai.com'
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.suuplai.com.mx'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
