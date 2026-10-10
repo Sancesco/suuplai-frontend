@@ -69,7 +69,7 @@ export const PROYECTO_PATH = '/'
 
 // CVs default por idioma (ya subidos al bucket aplicaciones-cv). Editables aquí.
 export const CV_DEFAULT: Record<'es' | 'en', { url: string; nombre: string }> = {
-  es: { url: 'https://umgienrvpnzoaaztkejd.supabase.co/storage/v1/object/public/aplicaciones-cv/38b17a84-ccc1-448e-a195-d1651045e2eb/1791299751822.pdf', nombre: 'Cespedes_Santiago_CV_2026.pdf' },
+  es: { url: 'https://umgienrvpnzoaaztkejd.supabase.co/storage/v1/object/public/aplicaciones-cv/38b17a84-ccc1-448e-a195-d1651045e2eb/cv-2026-10-09.pdf', nombre: 'Cespedes_Santiago_CV_2026.pdf' },
   en: { url: 'https://umgienrvpnzoaaztkejd.supabase.co/storage/v1/object/public/aplicaciones-cv/3c90249c-b05c-43ee-b133-2c3edf2aa885/1791222653530.pdf', nombre: 'Santiago_Cespedes_CV_EN.pdf' },
 }
 
