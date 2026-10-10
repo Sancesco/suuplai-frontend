@@ -91,7 +91,7 @@ export default async function Page({ params }: { params: { slug: string } }) {
         <div data-section="encabezado">
           <p className="kick">{app.solo_cv ? (en ? 'Resume' : 'Currículum') : (en ? 'Application' : 'Aplicación')} · {app.empresa}</p>
           <h1 className="nm">{NOMBRE}</h1>
-          <p className="sub">{app.solo_cv ? <>{en ? 'Resume for' : 'Currículum para'} <b>{app.puesto}</b></> : <>{en ? 'Applying for' : 'Aplicando a'} <b>{app.puesto}</b></>}{app.persona ? <> · {en ? 'for' : 'para'} {app.persona}</> : null}</p>
+          <p className="sub">{app.solo_cv ? (en ? 'Resume for' : 'Currículum para') : (en ? 'Applying for' : 'Aplicando a')} <b>{app.persona || app.puesto}</b></p>
           {app.posicionamiento && <p className="pos">{app.posicionamiento}</p>}
         </div>
 
