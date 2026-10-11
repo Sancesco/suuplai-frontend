@@ -1,8 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Sirve el archivo estático public/dictado.html en la ruta limpia /dictado.
+  // Sirve archivos estáticos de public/ en rutas limpias.
   async rewrites() {
-    return [{ source: '/dictado', destination: '/dictado.html' }]
+    return [
+      { source: '/dictado', destination: '/dictado.html' },
+      { source: '/jime', destination: '/jime.html' },
+    ]
   },
   // Asegura que content/perfil.md quede en el bundle serverless (se lee con fs en runtime).
   experimental: {
