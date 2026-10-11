@@ -28,17 +28,17 @@ export function diasHabilesEntre(a: Date, b: Date): number {
 }
 
 // Calentamiento (warm-up) del correo: sube poco a poco para que Gmail/Outlook confíen en el
-// dominio y no mande a spam. Arranca en BASE y suma PASO por cada día hábil, hasta TOPE.
-// Ej.: día hábil 0→5, 1 sem→10, 2 sem→15, 3 sem→20, 4 sem→25, ~5 sem→30.
-// Ritmo conservador a propósito: dominio nuevo (suups.com.mx) + correo en frío = poca señal de
-// engagement, así que subimos despacio. El calentamiento depende de respuestas y rebotes, no solo
-// del volumen; por eso el tope se queda en 30 (máximo sano por buzón aunque ya esté caliente).
-export const RAMPA_BASE = 5      // envíos/día al arrancar
-export const RAMPA_PASO = 1      // +envíos por cada día hábil
+// dominio y no mande a spam. Arranca en BASE y suma PASO por cada SEMANA cumplida, hasta TOPE.
+// Ritmo atado a lo que se puede llenar con prospectos buenos: semana 1→5, semana 2→6, semana 3→7…
+// Dominio nuevo (suups.com.mx) + correo en frío: subir lento es lo seguro. El cap es un techo que
+// protege (solo manda lo que haya en cola) y evita picos si un día cargas muchos de golpe.
+export const RAMPA_BASE = 5      // envíos/día la primera semana
+export const RAMPA_PASO = 1      // +envíos por cada semana cumplida
 export const RAMPA_TOPE = 30     // tope diario
 export function topeRampa(rampaDesde: string | Date): number {
-  const habiles = diasHabilesEntre(new Date(rampaDesde), new Date())
-  return Math.min(RAMPA_TOPE, RAMPA_BASE + RAMPA_PASO * Math.max(0, habiles))
+  const ms = Date.now() - new Date(rampaDesde).getTime()
+  const semanas = Math.max(0, Math.floor(ms / (7 * 24 * 3600 * 1000)))
+  return Math.min(RAMPA_TOPE, RAMPA_BASE + RAMPA_PASO * semanas)
 }
 
 // ¿Es horario hábil en CDMX (lun-vie, 8am-5pm)? Usa offset fijo -6.
