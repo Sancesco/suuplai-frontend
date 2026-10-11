@@ -27,14 +27,16 @@ export function diasHabilesEntre(a: Date, b: Date): number {
   return c
 }
 
-// Tope diario por semana de rampa: 1-2→5, 3-4→10, 5-6→20, después→25.
+// Calentamiento (warm-up) del correo: sube poco a poco para que Gmail/Outlook confíen en el
+// dominio y no mande a spam. Arranca en BASE y suma PASO por cada día hábil, hasta TOPE.
+// Ej.: día hábil 0→5, 1 sem→15, 2 sem→25, 3 sem→35, ~3.5-4 sem→40.
+// Ojo: el calentamiento real también depende de respuestas (engagement), no solo del volumen.
+export const RAMPA_BASE = 5      // envíos/día al arrancar
+export const RAMPA_PASO = 2      // +envíos por cada día hábil
+export const RAMPA_TOPE = 40     // tope diario (cold outreach personalizado + con respuestas)
 export function topeRampa(rampaDesde: string | Date): number {
-  const dias = Math.floor((Date.now() - new Date(rampaDesde).getTime()) / 86400000)
-  const semana = Math.floor(dias / 7) + 1
-  if (semana <= 2) return 5
-  if (semana <= 4) return 10
-  if (semana <= 6) return 20
-  return 25
+  const habiles = diasHabilesEntre(new Date(rampaDesde), new Date())
+  return Math.min(RAMPA_TOPE, RAMPA_BASE + RAMPA_PASO * Math.max(0, habiles))
 }
 
 // ¿Es horario hábil en CDMX (lun-vie, 8am-5pm)? Usa offset fijo -6.
