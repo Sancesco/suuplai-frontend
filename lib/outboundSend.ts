@@ -29,11 +29,13 @@ export function diasHabilesEntre(a: Date, b: Date): number {
 
 // Calentamiento (warm-up) del correo: sube poco a poco para que Gmail/Outlook confíen en el
 // dominio y no mande a spam. Arranca en BASE y suma PASO por cada día hábil, hasta TOPE.
-// Ej.: día hábil 0→5, 1 sem→15, 2 sem→25, 3 sem→35, ~3.5-4 sem→40.
-// Ojo: el calentamiento real también depende de respuestas (engagement), no solo del volumen.
+// Ej.: día hábil 0→5, 1 sem→10, 2 sem→15, 3 sem→20, 4 sem→25, ~5 sem→30.
+// Ritmo conservador a propósito: dominio nuevo (suups.com.mx) + correo en frío = poca señal de
+// engagement, así que subimos despacio. El calentamiento depende de respuestas y rebotes, no solo
+// del volumen; por eso el tope se queda en 30 (máximo sano por buzón aunque ya esté caliente).
 export const RAMPA_BASE = 5      // envíos/día al arrancar
-export const RAMPA_PASO = 2      // +envíos por cada día hábil
-export const RAMPA_TOPE = 40     // tope diario (cold outreach personalizado + con respuestas)
+export const RAMPA_PASO = 1      // +envíos por cada día hábil
+export const RAMPA_TOPE = 30     // tope diario
 export function topeRampa(rampaDesde: string | Date): number {
   const habiles = diasHabilesEntre(new Date(rampaDesde), new Date())
   return Math.min(RAMPA_TOPE, RAMPA_BASE + RAMPA_PASO * Math.max(0, habiles))
