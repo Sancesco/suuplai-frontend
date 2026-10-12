@@ -68,7 +68,7 @@ export function Vacantes() {
   const lista = (rows || []).filter((v) => {
     if (fEstado && v.estado !== fEstado) return false
     if ((v.puntaje || 0) < fMin) return false
-    if (ocultarIngles && v.ingles) return false
+    if (ocultarIngles && v.ingles && v.estado === 'nueva') return false // solo esconde inglés en triage; las que ya trabajaste siempre se ven
     if (soloObjetivo && !v.ats) return false
     if (fTexto) { const t = `${v.titulo} ${v.empresa || ''} ${v.ubicacion || ''}`.toLowerCase(); if (!t.includes(fTexto.toLowerCase())) return false }
     return true
