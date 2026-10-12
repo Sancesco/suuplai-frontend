@@ -6,7 +6,7 @@ import Link from 'next/link'
 interface Vacante {
   id: string; titulo: string; empresa: string | null; ubicacion: string | null; sueldo: string | null
   link: string | null; fuente: string | null; puntaje: number; ingles: boolean; estado: string
-  fecha_publicada: string | null; creada_en: string
+  fecha_publicada: string | null; creada_en: string; ats: string | null; preguntas: unknown | null
 }
 
 const ESTADOS = ['nueva', 'interesa', 'preparada', 'aplicada', 'contacto_enviado', 'entrevista', 'descartada']
@@ -23,7 +23,7 @@ export function Vacantes() {
   const [pw, setPw] = useState(''); const [authed, setAuthed] = useState(false); const [err, setErr] = useState('')
   const [rows, setRows] = useState<Vacante[] | null>(null)
   const [buscando, setBuscando] = useState(false); const [aviso, setAviso] = useState('')
-  const [fEstado, setFEstado] = useState(''); const [fMin, setFMin] = useState(0); const [fTexto, setFTexto] = useState(''); const [ocultarIngles, setOcultarIngles] = useState(false)
+  const [fEstado, setFEstado] = useState(''); const [fMin, setFMin] = useState(0); const [fTexto, setFTexto] = useState(''); const [ocultarIngles, setOcultarIngles] = useState(false); const [soloObjetivo, setSoloObjetivo] = useState(false)
   const [abrirForm, setAbrirForm] = useState(false)
   const [nv, setNv] = useState({ titulo: '', empresa: '', ubicacion: '', sueldo: '', link: '', descripcion: '' })
 
@@ -68,6 +68,7 @@ export function Vacantes() {
     if (fEstado && v.estado !== fEstado) return false
     if ((v.puntaje || 0) < fMin) return false
     if (ocultarIngles && v.ingles) return false
+    if (soloObjetivo && !v.ats) return false
     if (fTexto) { const t = `${v.titulo} ${v.empresa || ''} ${v.ubicacion || ''}`.toLowerCase(); if (!t.includes(fTexto.toLowerCase())) return false }
     return true
   })
@@ -90,7 +91,9 @@ export function Vacantes() {
       <span className="w-28 truncate text-neutral-600">{v.empresa || '—'}</span>
       <span className="w-28 truncate text-xs text-neutral-500">{v.ubicacion || '—'}</span>
       <span className="w-24 font-mono text-xs text-neutral-500">{v.sueldo || '—'}</span>
-      {v.ingles && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">🇬🇧 inglés</span>}
+      {v.ingles && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">🇬🇧</span>}
+      {v.ats && <span className="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold text-purple-800">{v.ats}</span>}
+      {v.preguntas ? <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800">preguntas ✓</span> : null}
       <span className="w-10 text-right font-mono text-xs font-bold" style={{ color: v.puntaje >= 6 ? '#1E8E5A' : v.puntaje >= 4 ? '#9A6A00' : '#9a948a' }}>{v.puntaje}pts</span>
       <select value={v.estado} onChange={(e) => cambiarEstado(v.id, e.target.value)} className="rounded border border-neutral-300 bg-white px-1.5 py-1 text-xs font-semibold" style={{ color: COLOR[v.estado] }}>
         {ESTADOS.map((s) => <option key={s} value={s}>{ETIQUETA[s]}</option>)}
@@ -105,6 +108,7 @@ export function Vacantes() {
         <div className="mb-6 flex items-baseline justify-between gap-3">
           <h1 className="text-2xl font-extrabold tracking-tight" style={{ fontFamily: "'Syne',sans-serif" }}>💼 Vacantes</h1>
           <div className="flex items-center gap-3 text-sm">
+            <Link href="/outbound/vacantes/empresas" className="text-neutral-500 underline">empresas</Link>
             <Link href="/outbound/vacantes/respuestas" className="text-neutral-500 underline">respuestas</Link>
             <Link href="/outbound" className="text-neutral-500 underline">← outbound</Link>
           </div>
@@ -168,6 +172,7 @@ export function Vacantes() {
               </label>
               <input value={fTexto} onChange={(e) => setFTexto(e.target.value)} placeholder="buscar…" className="rounded border border-neutral-300 px-2 py-1.5 text-xs" />
               <label className="flex items-center gap-1 text-xs text-neutral-600"><input type="checkbox" checked={ocultarIngles} onChange={(e) => setOcultarIngles(e.target.checked)} /> ocultar inglés</label>
+              <label className="flex items-center gap-1 text-xs text-neutral-600"><input type="checkbox" checked={soloObjetivo} onChange={(e) => setSoloObjetivo(e.target.checked)} /> solo empresas objetivo</label>
             </div>
 
             {/* Cola de nuevas (digest en la página) */}
