@@ -1,7 +1,7 @@
 import { getSupabaseAdmin } from './supabaseAdmin'
 import { slugify } from './aplicaciones'
 import { elegirBrazo, type Brazo } from './bandit'
-import { rellenar, topeRampa } from './outboundSend'
+import { rellenar, topeRampaEn } from './outboundSend'
 export { getSupabaseAdmin } from './supabaseAdmin'
 export { checkRh as checkOutbound } from './interview' // misma contraseña de admin (x-admin-password)
 
@@ -24,7 +24,7 @@ const parseFranja = (t: string): [number, number] => { const [a, b] = (t || '10-
 export async function programarEnvio(sb: NonNullable<ReturnType<typeof getSupabaseAdmin>>, prospectoId: string): Promise<string | null> {
   const { data: cfg } = await sb.from('outbound_config').select('clave,valor')
   const cm = new Map((cfg ?? []).map((r: { clave: string; valor: unknown }) => [r.clave, r.valor]))
-  const tope = topeRampa(String(cm.get('rampa_desde') || new Date().toISOString()))
+  const rampaDesde = String(cm.get('rampa_desde') || new Date().toISOString())
   const noAntes = cm.get('no_antes_de') ? new Date(String(cm.get('no_antes_de'))) : null // no programar antes de esta fecha
   const { data: hArms } = await sb.from('outbound_brazo').select('*').eq('perilla', 'hora').eq('activa', true)
   const franjas = (hArms ?? []) as Brazo[]
@@ -41,6 +41,7 @@ export async function programarEnvio(sb: NonNullable<ReturnType<typeof getSupaba
     const dayStart = new Date(Date.UTC(y, m, dd, 6, 0, 0)).toISOString()
     const dayEnd = new Date(Date.UTC(y, m, dd + 1, 6, 0, 0)).toISOString()
     if (noAntes && new Date(dayStart) < noAntes) continue // respeta la fecha de arranque
+    const tope = topeRampaEn(rampaDesde, dayStart) // tope de ESE día (la rampa sube +1 cada semana)
     const { count } = await sb.from('outbound_prospecto').select('id', { count: 'exact', head: true }).gte('programado_en', dayStart).lt('programado_en', dayEnd)
     if ((count ?? 0) >= tope) continue
     let hora: number
