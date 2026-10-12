@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   const sb = getSupabaseAdmin(); if (!sb) return NextResponse.json({ ok: false, error: 'no config' }, { status: 500 })
 
   const b = await req.json().catch(() => null)
-  const minPuntaje = Number.isFinite(b?.minPuntaje) ? Number(b.minPuntaje) : 3
+  const minPuntaje = Number.isFinite(b?.minPuntaje) ? Number(b.minPuntaje) : 2
   const encontradas = await correrRadar(sb, { minPuntaje, descubrir: 'links' })
 
   const { data: prev } = await sb.from('vacantes').select('clave')

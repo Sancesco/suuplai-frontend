@@ -51,5 +51,15 @@ export async function correrRadar(sb: SB, opts: { minPuntaje?: number; descubrir
   for (const v of agregRank) porClave.set(v.clave || claveDe(v), v)
   for (const v of deEmpresas) porClave.set(v.clave || claveDe(v), v)
 
-  return Array.from(porClave.values()).sort((a, b) => (b.puntaje || 0) - (a.puntaje || 0))
+  const ordenadas = Array.from(porClave.values()).sort((a, b) => (b.puntaje || 0) - (a.puntaje || 0))
+  // 1 por empresa: se queda el puesto mejor rankeado de cada una (el que más sentido hace), para
+  // maximizar la variedad de empresas distintas.
+  const vistas = new Set<string>(); const diversas: Vacante[] = []
+  for (const v of ordenadas) {
+    const k = (v.empresa || '').toLowerCase().trim()
+    if (k && vistas.has(k)) continue
+    if (k) vistas.add(k)
+    diversas.push(v)
+  }
+  return diversas
 }

@@ -15,8 +15,11 @@ export const BUSQUEDAS = [
   'Business Development Manager', 'Partnerships Manager', 'Head of Sales', 'Sales Manager',
   'Ejecutivo de cuentas', 'Ejecutivo de cuentas clave', 'Gerente de cuentas clave',
   'Ejecutivo comercial B2B', 'Ejecutivo de nuevos negocios', 'Ejecutivo de ventas corporativas',
+  'Ejecutivo de ventas', 'Representante comercial', 'Consultor comercial', 'Gerente de cuenta',
   'Gerente de ventas', 'Gerente comercial', 'Jefe de ventas', 'Director comercial',
   'Gerente de desarrollo de negocios', 'Desarrollo de negocios', 'Gerente de alianzas',
+  'Account Manager', 'Sales Manager', 'Business Developer', 'Subdirector comercial',
+  'Coordinador comercial', 'Especialista comercial', 'Gerente de cuentas',
   'Consultor de soluciones', 'Ingeniero de preventa', 'Preventa',
   'Gerente de operaciones comerciales', 'Chief of Staff', 'Revenue Operations', 'Sales Operations',
   'Deployment Strategist', 'Forward Deployed', 'Implementation Manager', 'Solutions Engineer',
@@ -79,9 +82,9 @@ export function detectarAts(link: string): Pick<Vacante, 'ats' | 'ats_token' | '
 }
 
 type JoobleJob = { title?: string; company?: string; location?: string; snippet?: string; salary?: string; link?: string; updated?: string; source?: string }
-async function jooble(q: string, loc: string): Promise<Vacante[]> {
+async function jooble(q: string, loc: string, page = 1): Promise<Vacante[]> {
   const key = process.env.JOOBLE_KEY; if (!key) return []
-  const r = await fetch(`https://jooble.org/api/${key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ keywords: q, location: loc }) })
+  const r = await fetch(`https://jooble.org/api/${key}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ keywords: q, location: loc, page: String(page) }) })
   if (!r.ok) return []
   const d = (await r.json()) as { jobs?: JoobleJob[] }
   return (d.jobs || []).map((j): Vacante => ({
@@ -148,7 +151,8 @@ export const EJEMPLOS: Vacante[] = [
 // Corre solo los agregadores (Jooble + Adzuna) con concurrencia limitada.
 export async function correrAgregadores(): Promise<Vacante[]> {
   if (!HAY_LLAVES()) return EJEMPLOS
-  const tareas = BUSQUEDAS.flatMap((q) => UBICACIONES.flatMap((loc) => [() => jooble(q, loc), () => adzuna(q, loc)]))
+  // 2 páginas de Jooble por término (30 c/u) para traer más volumen y variedad.
+  const tareas = BUSQUEDAS.flatMap((q) => UBICACIONES.flatMap((loc) => [() => jooble(q, loc, 1), () => jooble(q, loc, 2), () => adzuna(q, loc)]))
   const res = await enLotes(tareas, 6)
   return res.flat()
 }

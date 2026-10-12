@@ -23,7 +23,7 @@ export function Vacantes() {
   const [pw, setPw] = useState(''); const [authed, setAuthed] = useState(false); const [err, setErr] = useState('')
   const [rows, setRows] = useState<Vacante[] | null>(null)
   const [buscando, setBuscando] = useState(false); const [aviso, setAviso] = useState('')
-  const [fEstado, setFEstado] = useState(''); const [fMin, setFMin] = useState(0); const [fTexto, setFTexto] = useState(''); const [ocultarIngles, setOcultarIngles] = useState(false); const [soloObjetivo, setSoloObjetivo] = useState(false)
+  const [fEstado, setFEstado] = useState(''); const [fMin, setFMin] = useState(0); const [fTexto, setFTexto] = useState(''); const [ocultarIngles, setOcultarIngles] = useState(true); const [soloObjetivo, setSoloObjetivo] = useState(false)
   const [abrirForm, setAbrirForm] = useState(false)
   const [nv, setNv] = useState({ titulo: '', empresa: '', ubicacion: '', sueldo: '', link: '', descripcion: '' })
 
