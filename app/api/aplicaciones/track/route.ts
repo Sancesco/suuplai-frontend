@@ -51,7 +51,11 @@ export async function POST(req: Request) {
   const { data: ev } = await sb.from('app_events').select('tipo,visitor_id,data').eq('application_id', app.id)
   const rows = (ev ?? []) as { tipo: string; visitor_id: string | null; data: { seconds?: number; geo?: string; ciudad?: string } | null }[]
   const visitors = new Set(rows.filter((r) => r.visitor_id).map((r) => r.visitor_id))
-  const seconds = rows.filter((r) => r.tipo === 'time_on_page').reduce((a, r) => a + Number(r.data?.seconds || 0), 0)
+  // Tiempo de lectura POR VISITANTE (no la suma de todos): "60s+ leyendo" debe ser UNA persona que
+  // acumuló 60s, no varias sumando 15s cada una. Tomamos el máximo entre visitantes.
+  const segPorVisitante = new Map<string, number>()
+  for (const r of rows) if (r.tipo === 'time_on_page') { const k = r.visitor_id || 'anon'; segPorVisitante.set(k, (segPorVisitante.get(k) || 0) + Number(r.data?.seconds || 0)) }
+  const seconds = segPorVisitante.size ? Math.max(...Array.from(segPorVisitante.values())) : 0
   const opensCount = rows.filter((r) => r.tipo === 'open').length
   const cvCount = rows.filter((r) => r.tipo === 'cv_download').length
   const et = `<b>${app.empresa}</b> · ${app.puesto}`
