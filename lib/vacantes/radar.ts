@@ -18,7 +18,7 @@ export const BUSQUEDAS = [
   'Gerente de ventas', 'Gerente comercial', 'Jefe de ventas', 'Director comercial',
   'Gerente de desarrollo de negocios', 'Desarrollo de negocios', 'Gerente de alianzas',
   'Consultor de soluciones', 'Ingeniero de preventa', 'Preventa',
-  'Gerente de operaciones comerciales',
+  'Gerente de operaciones comerciales', 'Chief of Staff', 'Revenue Operations', 'Sales Operations',
   'Deployment Strategist', 'Forward Deployed', 'Implementation Manager', 'Solutions Engineer',
 ]
 // OJO: Jooble devuelve 0 si la ubicación lleva acento ("México"). Va SIN acento ("Mexico").
@@ -32,9 +32,11 @@ const OTRAS = ['guadalajara', 'monterrey', 'zapopan', 'querétaro', 'queretaro',
 const EXCLUIR = ['sdr', 'bdr', 'sales development representative', 'business development representative',
   'trainee', 'becario', 'practicante', 'intern', 'junior', 'jr.', ' jr ', 'asesor de ventas',
   'vendedor comisionista', 'promotor', 'call center', 'telemarketing', 'cajero', 'piso de venta']
-// El puesto DEBE ser comercial/ventas (o rol de despliegue client-facing). Si el título no tiene
-// ninguna de estas señales, se descarta — así no entran ingeniería, soporte, TI, ni banca operativa.
-const SENAL_VENTAS = /account (executive|manager|director)|key account|\bsales\b|\bventas?\b|comercial|business development|desarrollo de negocios|partnership|alianzas|ejecutivo de (cuentas|ventas)|cuentas? clave|solutions? (consultant|engineer|architect)|consultor de soluciones|pre-?vent|pre-?sales|sales engineer|revenue|go-to-market|customer success|gerente comercial|gerente de ventas|director comercial|jefe de ventas|deployment strategist|forward deployed|implementation (manager|consultant|specialist)/i
+// El puesto debe matchear el PERFIL de Santiago (comercial B2B + implementación IA + fintech +
+// chief of staff/ops). Si el título no tiene ninguna de estas señales, se descarta.
+const SENAL_VENTAS = /account (executive|manager|director)|key account|\bsales\b|\bventas?\b|comercial|business development|desarrollo de negocios|partnership|alianzas|ejecutivo de (cuentas|ventas)|cuentas? clave|solutions? (consultant|engineer|architect)|consultor de soluciones|pre-?vent|pre-?sales|sales engineer|revenue|go-?to-?market|customer success|gerente comercial|gerente de ventas|director comercial|jefe de ventas|deployment strategist|forward deployed|implementation (manager|consultant|specialist|lead)|chief of staff|business operations|sales operations|revenue operations|rev ?ops|biz ?ops|operaciones comerciales|estrategia (comercial|y operaciones)|strategy (and|&) operations|onboarding (manager|lead)/i
+// "Alcanzable": fuera lo demasiado senior/corporativo (no realista para su nivel actual).
+const EXCLUIR_SENIOR = /\b(vp|svp|evp|avp)\b|vice ?president|senior director|sr\.? director|managing director|director general|regional director|chief (revenue|executive|operating|financial|technology|commercial|product|marketing|growth) officer|\bc[efotm]o\b|head of (country|latam|mexico)/i
 // Títulos de ingeniería/TI/soporte que nunca queremos (refuerzo del filtro por señal de ventas).
 const EXCLUIR_TITULO = /software (engineer|developer|development)|developer|programad|\bjava\b|python|\.net|front-?end|back-?end|full-?stack|devops|\bsre\b|site reliability|infrastructure|cloud (engineer|architect|migration|platform)|platform engineer|\bqa\b|data (engineer|analytics|scientist)|anal[ií]sta de datos|machine learning|security engineer|\bl[12]\b|support specialist|soporte|helpdesk/i
 const INGLES = ['english', 'inglés avanzado', 'ingles avanzado', 'bilingual', 'bilingüe', 'us market', 'north america']
@@ -111,7 +113,8 @@ export function pasa(v: Vacante): boolean {
   if (u && !enCdmx && !u.includes('méxico') && !u.includes('mexico')) return false
   if (EXCLUIR.some((x) => t.includes(x))) return false
   if (EXCLUIR_TITULO.test(titulo)) return false       // fuera ingeniería/TI/soporte
-  if (!SENAL_VENTAS.test(titulo)) return false         // el puesto DEBE ser de ventas/comercial
+  if (EXCLUIR_SENIOR.test(titulo)) return false        // fuera lo demasiado senior (no alcanzable)
+  if (!SENAL_VENTAS.test(titulo)) return false         // el puesto debe matchear el perfil
   return true
 }
 
