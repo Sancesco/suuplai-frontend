@@ -26,15 +26,21 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   const b = await req.json().catch(() => null)
   if (!b) return NextResponse.json({ ok: false, error: 'body inválido' }, { status: 400 })
 
-  // Generar link de CV rastreado con el nombre de la empresa como base del slug.
+  // Generar link de CV rastreado. Base del slug: empresa, o el puesto si no hay empresa (a veces la
+  // vacante no trae empresa / no se sabe para quién es — igual sirve, el CV es por vacante).
   if (b.generarCv === true) {
     const { data: v } = await sb.from('vacantes').select('empresa,titulo,contacto_nombre,cv_link').eq('id', id).maybeSingle()
     if (!v) return NextResponse.json({ ok: false, error: 'no encontrada' }, { status: 404 })
     if (v.cv_link) return NextResponse.json({ ok: true, cv_link: v.cv_link }) // ya tenía uno
-    const { slug } = await prepararProspecto(sb, { empresa: v.empresa || 'vacante', persona: v.contacto_nombre || null, puesto: v.titulo || null, idioma: 'es' })
-    const cv_link = `${SITE}/aplicaciones/p/${slug}`
-    await sb.from('vacantes').update({ cv_link, actualizada_en: new Date().toISOString() }).eq('id', id)
-    return NextResponse.json({ ok: true, cv_link })
+    try {
+      const base = (v.empresa || v.titulo || 'vacante').toString().slice(0, 40)
+      const { slug } = await prepararProspecto(sb, { empresa: base, persona: v.contacto_nombre || null, puesto: v.titulo || null, idioma: 'es' })
+      const cv_link = `${SITE}/aplicaciones/p/${slug}`
+      await sb.from('vacantes').update({ cv_link, actualizada_en: new Date().toISOString() }).eq('id', id)
+      return NextResponse.json({ ok: true, cv_link })
+    } catch (e) {
+      return NextResponse.json({ ok: false, error: 'no se pudo generar el link: ' + (e instanceof Error ? e.message : 'error') }, { status: 500 })
+    }
   }
 
   const patch: Record<string, unknown> = { actualizada_en: new Date().toISOString() }

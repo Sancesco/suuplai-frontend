@@ -72,7 +72,15 @@ export function Detalle({ id }: { id: string }) {
   const setEstado = (estado: string) => { setV((x) => x ? { ...x, estado } : x); fetch(`/api/vacantes/${id}`, { method: 'PATCH', headers, body: JSON.stringify({ estado }) }) }
   const copiar = async (t: string, tag: string) => { try { await navigator.clipboard.writeText(t); setCopiado(tag); setTimeout(() => setCopiado(''), 1500) } catch { /* noop */ } }
   const abrirVacante = () => { if (v?.link) { window.open(v.link, '_blank', 'noopener'); setPreguntaEnvio(true) } }
-  const generarCv = async () => { const r = await fetch(`/api/vacantes/${id}`, { method: 'PATCH', headers, body: JSON.stringify({ generarCv: true }) }); const j = await r.json(); if (j.ok && j.cv_link) setCvLink(j.cv_link) }
+  const [cvGen, setCvGen] = useState(false)
+  const generarCv = async () => {
+    setCvGen(true); setErr('')
+    try {
+      const r = await fetch(`/api/vacantes/${id}`, { method: 'PATCH', headers, body: JSON.stringify({ generarCv: true }) })
+      const j = await r.json()
+      if (j.ok && j.cv_link) setCvLink(j.cv_link); else setErr(j.error || 'No se pudo generar el link')
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Error') } finally { setCvGen(false) }
+  }
 
   const mensajeConLink = (v?.mensaje_contacto || '').replace(/\[link\]/g, cvLink || '[genera tu link de CV]')
   const inp = 'w-full rounded-lg border border-neutral-900 bg-white px-3 py-2 text-sm outline-none'
@@ -191,8 +199,9 @@ export function Detalle({ id }: { id: string }) {
           <div className="mt-2 flex flex-wrap items-center gap-2">
             {cvLink
               ? <span className="flex items-center gap-1.5 text-xs text-emerald-700"><a href={cvLink} target="_blank" rel="noreferrer" className="underline">{cvLink.replace('https://www.', '')}</a><button onClick={() => copiar(cvLink, 'cv')} className="rounded border border-neutral-300 px-1.5 py-0.5 text-[10px]">{copiado === 'cv' ? '✓' : 'copiar'}</button></span>
-              : <button onClick={generarCv} className="rounded-lg border border-neutral-900 px-3 py-1.5 text-xs font-bold">Generar link de CV rastreable</button>}
+              : <button onClick={generarCv} disabled={cvGen} className="rounded-lg border border-neutral-900 px-3 py-1.5 text-xs font-bold disabled:opacity-50">{cvGen ? 'Generando…' : 'Generar link de CV rastreable'}</button>}
           </div>
+          {err && <p className="mt-1 text-xs text-red-700">⚠ {err}</p>}
           {v.mensaje_contacto && (
             <div className="mt-3 rounded-lg bg-neutral-50 p-2">
               <div className="mb-1 flex items-center justify-between gap-2">
