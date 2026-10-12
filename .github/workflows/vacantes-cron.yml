@@ -1,0 +1,20 @@
+name: vacantes-cron
+
+# Corre el radar de vacantes una vez al día y manda el top por Telegram.
+# (Reemplaza el cron de Vercel: Hobby topa en 2 crons y ya están usados.)
+on:
+  schedule:
+    - cron: '0 14 * * 1-5' # 8:00 CDMX (UTC-6), lun-vie
+  workflow_dispatch: {}      # permite dispararlo a mano desde la pestaña Actions
+
+jobs:
+  radar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Disparar /api/cron/vacantes
+        run: |
+          code=$(curl -sS -o /tmp/out.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            "https://www.suuplai.com.mx/api/cron/vacantes")
+          echo "HTTP $code"; cat /tmp/out.json; echo
+          test "$code" = "200"

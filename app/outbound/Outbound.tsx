@@ -218,6 +218,7 @@ export function Outbound() {
             <div className="mb-4 flex flex-wrap gap-2">
               <button onClick={abrirIntel} className="rounded-lg border border-neutral-900 bg-white px-3 py-1.5 text-sm font-bold">🧠 {showIntel ? 'Ocultar inteligencia' : 'Inteligencia'}</button>
               <Link href="/outbound/agenda" className="rounded-lg border border-neutral-900 bg-white px-3 py-1.5 text-sm font-bold">📅 Agenda de envíos →</Link>
+              <Link href="/outbound/vacantes" className="rounded-lg border border-neutral-900 bg-white px-3 py-1.5 text-sm font-bold">💼 Vacantes →</Link>
             </div>
             {showIntel && (
               <div className="mb-5 rounded-2xl border-2 border-neutral-900 bg-white p-4">
