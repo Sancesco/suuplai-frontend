@@ -43,8 +43,11 @@ export async function POST(req: Request) {
   const pausa = cm.get('pausa_global') === true || cm.get('pausa_global') === 'true'
 
   const vars = { nombre: primerNombre(p.persona), empresa: p.empresa, gancho: p.gancho || '', slug: p.slug || 'SLUG' }
-  const asunto = rellenar(tpl.asunto, vars)
-  const cuerpo = rellenar(tpl.cuerpo, vars)
+  // Correo a la medida por prospecto: si tiene cuerpo_custom, el toque 1 usa ESE (igual que el cron).
+  const pc = p as Prospecto & { asunto_custom?: string | null; cuerpo_custom?: string | null }
+  const usaCustom = !!pc.cuerpo_custom
+  const asunto = usaCustom ? rellenar(pc.asunto_custom || tpl.asunto, vars) : rellenar(tpl.asunto, vars)
+  const cuerpo = usaCustom ? rellenar(pc.cuerpo_custom!, vars) : rellenar(tpl.cuerpo, vars)
 
   // Estimación de cuándo sale (solo si está en cola)
   let cuando: string | null = null
