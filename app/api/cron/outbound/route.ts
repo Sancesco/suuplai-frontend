@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 type SB = NonNullable<ReturnType<typeof getSupabaseAdmin>>
 
 type Envio ={ id: string; toque: number; enviado_en: string; gmail_thread_id: string | null; gmail_message_id: string | null; asunto_final: string | null; rebotado: boolean; respondido: boolean }
-type Prospecto = { id: string; empresa: string; persona: string | null; email: string | null; slug: string | null; estado: string; gancho?: string | null; brazo_hora?: string | null }
+type Prospecto = { id: string; empresa: string; persona: string | null; email: string | null; slug: string | null; estado: string; gancho?: string | null; brazo_hora?: string | null; asunto_custom?: string | null; cuerpo_custom?: string | null }
 
 async function cfgMap(sb: SB) {
   const { data } = await sb.from('outbound_config').select('clave,valor')
@@ -43,10 +43,17 @@ export async function GET(req: Request) {
 
   const enviarToque = async (p: Prospecto, toque: number, prev: Envio | null) => {
     const vars = { nombre: primerNombre(p.persona), empresa: p.empresa, gancho: p.gancho || '', slug: p.slug || '' }
-    const cuerpo = toque === 1 ? rellenar(tpl.cuerpo, vars) : rellenar(toque === 2 ? tpl.recordatorio_1 : tpl.recordatorio_2, vars)
-    // Toque 1: el bandit elige el asunto; toques 2/3: respuesta en el mismo hilo.
-    const pick = toque === 1 ? await elegirAsunto(sb, vars) : { brazoId: null, asunto: null }
-    const asunto = toque === 1 ? (pick.asunto || rellenar(tpl.asunto, vars)) : `Re: ${prev?.asunto_final || rellenar(tpl.asunto, vars)}`
+    // Override por prospecto (correo a la medida): si tiene cuerpo_custom, el toque 1 usa ESE cuerpo
+    // y su propio asunto (sin bandit). Los recordatorios 2/3 siguen con la plantilla, en el hilo.
+    const usaCustom = toque === 1 && !!p.cuerpo_custom
+    const cuerpo = usaCustom
+      ? rellenar(p.cuerpo_custom!, vars)
+      : toque === 1 ? rellenar(tpl.cuerpo, vars) : rellenar(toque === 2 ? tpl.recordatorio_1 : tpl.recordatorio_2, vars)
+    // Toque 1 normal: el bandit elige el asunto. Custom: su propio asunto. Toques 2/3: hilo.
+    const pick = (toque === 1 && !usaCustom) ? await elegirAsunto(sb, vars) : { brazoId: null, asunto: null }
+    const asunto = toque === 1
+      ? (usaCustom ? rellenar(p.asunto_custom || tpl.asunto, vars) : (pick.asunto || rellenar(tpl.asunto, vars)))
+      : `Re: ${prev?.asunto_final || rellenar(tpl.asunto, vars)}`
     const r = await enviarCorreo(sb, {
       from: cfg.from_email, fromNombre: cfg.from_nombre, to: p.email!, subject: asunto, text: cuerpo,
       threadId: prev?.gmail_thread_id || null, inReplyTo: prev?.gmail_message_id || null, references: prev?.gmail_message_id || null,
