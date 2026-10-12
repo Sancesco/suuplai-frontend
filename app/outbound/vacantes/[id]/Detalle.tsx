@@ -9,7 +9,7 @@ interface Pregunta { label: string; required?: boolean; auto?: boolean; type?: s
 interface Vacante {
   id: string; titulo: string; empresa: string | null; ubicacion: string | null; sueldo: string | null
   link: string | null; puntaje: number; descripcion: string | null; estado: string; fuente: string | null
-  ats: string | null; preguntas: Pregunta[] | null
+  ats: string | null; preguntas: Pregunta[] | null; fit: number | null; fit_razon: string | null
   respuestas: { base?: Base; custom?: Custom[] } | null; carta: string | null; mensaje_contacto: string | null
   contacto_nombre: string | null; contacto_linkedin: string | null; contacto_email: string | null
   cv_link: string | null; notas: string | null
@@ -126,10 +126,12 @@ export function Detalle({ id }: { id: string }) {
               <p className="text-sm text-neutral-600">{v.empresa || '—'} · {v.ubicacion || '—'}{v.sueldo ? ` · ${v.sueldo}` : ''}</p>
               {v.ats && <span className="mt-1 inline-block rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold text-purple-800">{v.ats}</span>}
             </div>
-            <span className="shrink-0 font-mono text-sm font-bold" style={{ color: v.puntaje >= 6 ? '#1E8E5A' : '#9A6A00' }}>{v.puntaje}pts</span>
+            {typeof v.fit === 'number' && <span className="shrink-0 rounded px-2 py-1 font-mono text-sm font-bold text-white" style={{ background: v.fit >= 7 ? '#1E8E5A' : v.fit >= 5 ? '#9A6A00' : '#b0aaa0' }}>fit {v.fit}/10</span>}
           </div>
+          {v.fit_razon && <p className="mt-2 text-sm italic text-neutral-600">“{v.fit_razon}”</p>}
           <div className="mt-3 flex flex-wrap gap-2">
             <button onClick={abrirVacante} disabled={!v.link} className="rounded-lg border-2 border-neutral-900 bg-white px-4 py-2 text-sm font-bold disabled:opacity-40">↗ Abrir vacante</button>
+            <a href={`https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(`${v.titulo} ${v.empresa || ''}`)}`} target="_blank" rel="noreferrer" className="self-center rounded-lg border border-neutral-300 px-3 py-2 text-xs font-bold">🔎 LinkedIn</a>
             <button onClick={preparar} disabled={preparando} className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-bold text-lime-300 disabled:opacity-50">{preparando ? 'Preparando…' : '✨ Preparar aplicación'}</button>
             <select value={v.estado} onChange={(e) => setEstado(e.target.value)} className="self-center rounded-lg border border-neutral-900 bg-white px-2 py-2 text-sm font-semibold">
               {ESTADOS.map(([val, lab]) => <option key={val} value={val}>{lab}</option>)}

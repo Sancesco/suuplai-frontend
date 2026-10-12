@@ -7,6 +7,7 @@ interface Vacante {
   id: string; titulo: string; empresa: string | null; ubicacion: string | null; sueldo: string | null
   link: string | null; fuente: string | null; puntaje: number; ingles: boolean; estado: string
   fecha_publicada: string | null; creada_en: string; ats: string | null; preguntas: unknown | null
+  fit: number | null; fit_razon: string | null
 }
 
 const ESTADOS = ['nueva', 'interesa', 'preparada', 'aplicada', 'contacto_enviado', 'entrevista', 'descartada']
@@ -87,14 +88,17 @@ export function Vacantes() {
 
   const Fila = (v: Vacante) => (
     <div key={v.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-neutral-200 px-3 py-2.5 text-sm first:border-t-0">
-      <Link href={`/outbound/vacantes/${v.id}`} className="min-w-[200px] flex-1 font-semibold hover:underline">{v.titulo}</Link>
-      <span className="w-28 truncate text-neutral-600">{v.empresa || '—'}</span>
-      <span className="w-28 truncate text-xs text-neutral-500">{v.ubicacion || '—'}</span>
-      <span className="w-24 font-mono text-xs text-neutral-500">{v.sueldo || '—'}</span>
-      {v.ingles && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">🇬🇧</span>}
-      {v.ats && <span className="rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-semibold text-purple-800">{v.ats}</span>}
-      {v.preguntas ? <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-800">preguntas ✓</span> : null}
-      <span className="w-10 text-right font-mono text-xs font-bold" style={{ color: v.puntaje >= 6 ? '#1E8E5A' : v.puntaje >= 4 ? '#9A6A00' : '#9a948a' }}>{v.puntaje}pts</span>
+      {typeof v.fit === 'number' && <span className="w-9 shrink-0 rounded text-center font-mono text-sm font-bold text-white" style={{ background: v.fit >= 7 ? '#1E8E5A' : v.fit >= 5 ? '#9A6A00' : '#b0aaa0' }}>{v.fit}</span>}
+      <div className="min-w-[200px] flex-1">
+        <Link href={`/outbound/vacantes/${v.id}`} className="font-semibold hover:underline">{v.titulo}</Link>
+        <div className="flex flex-wrap items-center gap-1.5 text-xs text-neutral-500">
+          <span className="truncate">{v.empresa || '—'} · {v.ubicacion || '—'}{v.sueldo ? ` · ${v.sueldo}` : ''}</span>
+          {v.ingles && <span className="rounded bg-amber-100 px-1 text-[10px] font-semibold text-amber-800">🇬🇧</span>}
+          {v.ats && <span className="rounded bg-purple-100 px-1 text-[10px] font-semibold text-purple-800">{v.ats}</span>}
+          {v.preguntas ? <span className="rounded bg-emerald-100 px-1 text-[10px] font-semibold text-emerald-800">preguntas ✓</span> : null}
+        </div>
+        {v.fit_razon && <div className="text-xs italic text-neutral-500">{v.fit_razon}</div>}
+      </div>
       <select value={v.estado} onChange={(e) => cambiarEstado(v.id, e.target.value)} className="rounded border border-neutral-300 bg-white px-1.5 py-1 text-xs font-semibold" style={{ color: COLOR[v.estado] }}>
         {ESTADOS.map((s) => <option key={s} value={s}>{ETIQUETA[s]}</option>)}
       </select>

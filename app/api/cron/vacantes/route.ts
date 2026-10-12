@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 import { HAY_LLAVES } from '@/lib/vacantes/radar'
 import { correrRadar } from '@/lib/vacantes/correr'
 import { leerPreguntasGreenhouse, enLotes } from '@/lib/vacantes/ats'
+import { calificarVarias } from '@/lib/vacantes/fit'
 import { sendTelegram } from '@/lib/telegram'
 
 export const runtime = 'nodejs'
@@ -36,6 +37,10 @@ export async function GET(req: Request) {
       const preguntas = await leerPreguntasGreenhouse(v.ats_token!, v.ats_job_id!)
       if (preguntas.length) await sb.from('vacantes').update({ preguntas }).eq('clave', v.clave)
     }), 4)
+
+    // Fit con IA para las nuevas.
+    const fits = await calificarVarias(nuevas.slice(0, 15).map((v) => ({ clave: v.clave!, titulo: v.titulo, empresa: v.empresa, ubicacion: v.ubicacion, descripcion: v.descripcion })), 4)
+    await Promise.all(fits.map((f) => sb.from('vacantes').update({ fit: f.fit, fit_razon: f.razon }).eq('clave', f.clave)))
 
     const rows = (ins ?? []) as { id: string; titulo: string; empresa: string | null; puntaje: number; ingles: boolean; ats: string | null }[]
     const top = rows.sort((a, b) => (b.ats ? 1 : 0) - (a.ats ? 1 : 0) || (b.puntaje ?? 0) - (a.puntaje ?? 0)).slice(0, 10)

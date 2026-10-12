@@ -10,7 +10,7 @@ export const fetchCache = 'force-no-store'
 export async function GET(req: Request) {
   if (!checkOutbound(req)) return NextResponse.json({ ok: false, error: 'no autorizado' }, { status: 401 })
   const sb = getSupabaseAdmin(); if (!sb) return NextResponse.json({ ok: false, error: 'no config' }, { status: 500 })
-  const { data } = await sb.from('vacantes').select('*').order('puntaje', { ascending: false }).order('fecha_publicada', { ascending: false, nullsFirst: false })
+  const { data } = await sb.from('vacantes').select('*').order('fit', { ascending: false, nullsFirst: false }).order('puntaje', { ascending: false }).order('fecha_publicada', { ascending: false, nullsFirst: false })
   return NextResponse.json({ ok: true, vacantes: data ?? [] })
 }
 

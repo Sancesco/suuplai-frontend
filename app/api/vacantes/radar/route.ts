@@ -3,6 +3,7 @@ import { getSupabaseAdmin, checkOutbound } from '@/lib/outbound'
 import { HAY_LLAVES } from '@/lib/vacantes/radar'
 import { correrRadar } from '@/lib/vacantes/correr'
 import { leerPreguntasGreenhouse, enLotes } from '@/lib/vacantes/ats'
+import { calificarVarias } from '@/lib/vacantes/fit'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -38,6 +39,10 @@ export async function POST(req: Request) {
       const preguntas = await leerPreguntasGreenhouse(v.ats_token!, v.ats_job_id!)
       if (preguntas.length) await sb.from('vacantes').update({ preguntas }).eq('clave', v.clave)
     }), 4)
+
+    // Calificación de fit con IA (match real al CV) — reemplaza el ranking por palabras.
+    const fits = await calificarVarias(nuevas.slice(0, 15).map((v) => ({ clave: v.clave!, titulo: v.titulo, empresa: v.empresa, ubicacion: v.ubicacion, descripcion: v.descripcion })), 4)
+    await Promise.all(fits.map((f) => sb.from('vacantes').update({ fit: f.fit, fit_razon: f.razon }).eq('clave', f.clave)))
   }
   return NextResponse.json({ ok: true, nuevas: nuevas.length, total: encontradas.length, ejemplo: !HAY_LLAVES() })
 }
