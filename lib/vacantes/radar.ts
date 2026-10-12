@@ -21,7 +21,9 @@ export const BUSQUEDAS = [
   'Strategy Operations', 'Business Operations', 'Estrategia y operaciones',
   'Gerente de operaciones comerciales', 'Chief of Staff',
 ]
-const UBICACIONES = ['Ciudad de México', 'México']
+// Una sola ubicación para ahorrar llamadas (Jooble free ~500/día): el filtro pasa() ya se encarga
+// de quedarse con CDMX / remoto / LATAM, así que "México" cubre todo sin duplicar la búsqueda.
+const UBICACIONES = ['México']
 
 const CDMX = ['ciudad de méxico', 'ciudad de mexico', 'cdmx', 'mexico city', 'remoto', 'remote', 'home office']
 const OTRAS = ['guadalajara', 'monterrey', 'zapopan', 'querétaro', 'queretaro', 'puebla', 'león', 'mérida',
