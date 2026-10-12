@@ -9,13 +9,7 @@ export const dynamic = 'force-dynamic'
 
 type SB = NonNullable<ReturnType<typeof getSupabaseAdmin>>
 
-// Hora objetivo (8..16 CDMX) estable y variada por (prospecto, toque): los recordatorios
-// no salen todos a la misma hora. Determinista → no cambia entre corridas.
-function horaObjetivo(seed: string): number {
-  let h = 0; for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0
-  return 8 + (h % 9)
-}
-type Envio = { id: string; toque: number; enviado_en: string; gmail_thread_id: string | null; gmail_message_id: string | null; asunto_final: string | null; rebotado: boolean; respondido: boolean }
+type Envio ={ id: string; toque: number; enviado_en: string; gmail_thread_id: string | null; gmail_message_id: string | null; asunto_final: string | null; rebotado: boolean; respondido: boolean }
 type Prospecto = { id: string; empresa: string; persona: string | null; email: string | null; slug: string | null; estado: string; gancho?: string | null; brazo_hora?: string | null }
 
 async function cfgMap(sb: SB) {
@@ -77,11 +71,11 @@ export async function GET(req: Request) {
     } catch { /* si falla la lectura, no bloquea */ }
     if (!habil) continue
     const dias = diasHabilesEntre(new Date(last.enviado_en), now)
-    const curH = new Date(now.getTime() - 6 * 3600000).getUTCHours() // hora CDMX
     try {
-      // Cada recordatorio sale a su propia hora (variada por prospecto) el día que toca.
-      if (last.toque === 1 && dias >= 5 && curH >= horaObjetivo(p.id + 't2')) { await enviarToque(p, 2, last); log.recordatorios++ }
-      else if (last.toque === 2 && dias >= 7 && curH >= horaObjetivo(p.id + 't3')) { await enviarToque(p, 3, last); log.recordatorios++ }
+      // El cron corre 1 vez/día (9am): el recordatorio sale el día que cumple sus días hábiles,
+      // sin gate de hora (si no, una hora objetivo > 9am nunca se alcanzaría).
+      if (last.toque === 1 && dias >= 5) { await enviarToque(p, 2, last); log.recordatorios++ }
+      else if (last.toque === 2 && dias >= 7) { await enviarToque(p, 3, last); log.recordatorios++ }
       else if (last.toque === 3 && dias >= 7) { await sb.from('outbound_prospecto').update({ estado: 'cerrado' }).eq('id', p.id); log.cerrados++ }
     } catch { /* un fallo no detiene el resto */ }
   }
@@ -90,13 +84,22 @@ export async function GET(req: Request) {
   const { data: sinProg } = await sb.from('outbound_prospecto').select('id').eq('estado', 'listo').eq('pausado', false).is('programado_en', null).limit(20)
   for (const p of (sinProg ?? []) as { id: string }[]) { try { await programarEnvio(sb, p.id) } catch { break /* sin Fase 4 todavía */ } }
 
-  // ── 2b) Cola: manda los 'listo' cuya hora programada ya llegó (o sin programar, respaldo) ──
+  // ── 2b) Cola: el cron corre 1 vez/día (9am CDMX), así que manda TODO el lote de hoy de una vez
+  //     (hasta el tope de la rampa de ese día), sin importar la hora intradía programada. Si una
+  //     corrida anterior ya mandó algunos hoy, solo completa lo que falta para el tope. ──
   const antesDeArranque = cfg.no_antes_de && now < cfg.no_antes_de
   if (habil && !antesDeArranque) {
-    const nowIso = now.toISOString()
-    const { data: cola } = await sb.from('outbound_prospecto').select('*').eq('estado', 'listo').eq('pausado', false).not('email', 'is', null)
-      .or(`programado_en.lte.${nowIso},programado_en.is.null`).order('programado_en', { ascending: true, nullsFirst: true }).limit(10)
-    for (const p of (cola ?? []) as Prospecto[]) { try { await enviarToque(p, 1, null); log.nuevos++ } catch { /* sigue */ } }
+    const cdmx = new Date(now.getTime() - 6 * 3600000)
+    const iniHoy = new Date(Date.UTC(cdmx.getUTCFullYear(), cdmx.getUTCMonth(), cdmx.getUTCDate(), 6, 0, 0)).toISOString()
+    const finHoy = new Date(Date.UTC(cdmx.getUTCFullYear(), cdmx.getUTCMonth(), cdmx.getUTCDate() + 1, 6, 0, 0)).toISOString()
+    const topeHoy = topeRampa(cfg.rampa_desde)
+    const { count: yaHoy } = await sb.from('outbound_envio').select('id', { count: 'exact', head: true }).eq('toque', 1).gte('enviado_en', iniHoy)
+    const restante = Math.max(0, topeHoy - (yaHoy ?? 0))
+    if (restante > 0) {
+      const { data: cola } = await sb.from('outbound_prospecto').select('*').eq('estado', 'listo').eq('pausado', false).not('email', 'is', null)
+        .or(`programado_en.lte.${finHoy},programado_en.is.null`).order('programado_en', { ascending: true, nullsFirst: true }).limit(restante)
+      for (const p of (cola ?? []) as Prospecto[]) { try { await enviarToque(p, 1, null); log.nuevos++ } catch { /* sigue */ } }
+    }
   }
 
   // ── 3) Madurar: a los 7 días, aprende qué asunto funcionó (señal = clic) ──
