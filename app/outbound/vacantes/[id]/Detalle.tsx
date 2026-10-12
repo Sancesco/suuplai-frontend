@@ -15,6 +15,10 @@ interface Vacante {
   cv_link: string | null; notas: string | null
 }
 
+const ESTADOS: [string, string][] = [
+  ['nueva', 'Nueva'], ['interesa', 'Me interesa'], ['preparada', 'Preparada'], ['aplicada', 'Aplicada'],
+  ['contacto_enviado', 'Contacto enviado'], ['entrevista', 'Entrevista'], ['descartada', 'Descartada'],
+]
 const BASE_CAMPOS: { k: keyof Base; label: string }[] = [
   { k: 'sueldo', label: 'Expectativa salarial' }, { k: 'anios_ventas', label: 'Años en ventas' },
   { k: 'ingles', label: 'Inglés' }, { k: 'disponibilidad', label: 'Disponibilidad' },
@@ -69,7 +73,13 @@ export function Detalle({ id }: { id: string }) {
   const guardarTextos = () => { fetch(`/api/vacantes/${id}`, { method: 'PATCH', headers, body: JSON.stringify({ respuestas: { base, custom }, carta }) }) }
   const guardarContacto = () => { fetch(`/api/vacantes/${id}`, { method: 'PATCH', headers, body: JSON.stringify({ contacto_nombre: contacto.nombre, contacto_linkedin: contacto.linkedin, contacto_email: contacto.email }) }) }
   const guardarNotas = () => { fetch(`/api/vacantes/${id}`, { method: 'PATCH', headers, body: JSON.stringify({ notas }) }) }
-  const setEstado = (estado: string) => { setV((x) => x ? { ...x, estado } : x); fetch(`/api/vacantes/${id}`, { method: 'PATCH', headers, body: JSON.stringify({ estado }) }) }
+  const setEstado = async (estado: string) => {
+    setV((x) => x ? { ...x, estado } : x); setErr('')
+    try {
+      const r = await fetch(`/api/vacantes/${id}`, { method: 'PATCH', headers, body: JSON.stringify({ estado }) })
+      const j = await r.json(); if (!r.ok || !j.ok) setErr(j.error || 'No se pudo cambiar el estado')
+    } catch (e) { setErr(e instanceof Error ? e.message : 'Error al cambiar estado') }
+  }
   const copiar = async (t: string, tag: string) => { try { await navigator.clipboard.writeText(t); setCopiado(tag); setTimeout(() => setCopiado(''), 1500) } catch { /* noop */ } }
   const abrirVacante = () => { if (v?.link) { window.open(v.link, '_blank', 'noopener'); setPreguntaEnvio(true) } }
   const [cvGen, setCvGen] = useState(false)
@@ -121,7 +131,9 @@ export function Detalle({ id }: { id: string }) {
           <div className="mt-3 flex flex-wrap gap-2">
             <button onClick={abrirVacante} disabled={!v.link} className="rounded-lg border-2 border-neutral-900 bg-white px-4 py-2 text-sm font-bold disabled:opacity-40">↗ Abrir vacante</button>
             <button onClick={preparar} disabled={preparando} className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-bold text-lime-300 disabled:opacity-50">{preparando ? 'Preparando…' : '✨ Preparar aplicación'}</button>
-            <span className="self-center rounded px-2 py-1 text-xs font-semibold text-neutral-500">{v.estado}</span>
+            <select value={v.estado} onChange={(e) => setEstado(e.target.value)} className="self-center rounded-lg border border-neutral-900 bg-white px-2 py-2 text-sm font-semibold">
+              {ESTADOS.map(([val, lab]) => <option key={val} value={val}>{lab}</option>)}
+            </select>
           </div>
           {notaIngles && <p className="mt-2 rounded bg-amber-50 px-2 py-1 text-xs text-amber-800">🇬🇧 {notaIngles}</p>}
         </div>
