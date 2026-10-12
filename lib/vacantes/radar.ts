@@ -18,8 +18,7 @@ export const BUSQUEDAS = [
   'Gerente de ventas', 'Gerente comercial', 'Jefe de ventas', 'Director comercial',
   'Gerente de desarrollo de negocios', 'Desarrollo de negocios', 'Gerente de alianzas',
   'Consultor de soluciones', 'Ingeniero de preventa', 'Preventa',
-  'Strategy Operations', 'Business Operations', 'Estrategia y operaciones',
-  'Gerente de operaciones comerciales', 'Chief of Staff',
+  'Gerente de operaciones comerciales',
   'Deployment Strategist', 'Forward Deployed', 'Implementation Manager', 'Solutions Engineer',
 ]
 // OJO: Jooble devuelve 0 si la ubicación lleva acento ("México"). Va SIN acento ("Mexico").
@@ -33,6 +32,11 @@ const OTRAS = ['guadalajara', 'monterrey', 'zapopan', 'querétaro', 'queretaro',
 const EXCLUIR = ['sdr', 'bdr', 'sales development representative', 'business development representative',
   'trainee', 'becario', 'practicante', 'intern', 'junior', 'jr.', ' jr ', 'asesor de ventas',
   'vendedor comisionista', 'promotor', 'call center', 'telemarketing', 'cajero', 'piso de venta']
+// El puesto DEBE ser comercial/ventas (o rol de despliegue client-facing). Si el título no tiene
+// ninguna de estas señales, se descarta — así no entran ingeniería, soporte, TI, ni banca operativa.
+const SENAL_VENTAS = /account (executive|manager|director)|key account|\bsales\b|\bventas?\b|comercial|business development|desarrollo de negocios|partnership|alianzas|ejecutivo de (cuentas|ventas)|cuentas? clave|solutions? (consultant|engineer|architect)|consultor de soluciones|pre-?vent|pre-?sales|sales engineer|revenue|go-to-market|customer success|gerente comercial|gerente de ventas|director comercial|jefe de ventas|deployment strategist|forward deployed|implementation (manager|consultant|specialist)/i
+// Títulos de ingeniería/TI/soporte que nunca queremos (refuerzo del filtro por señal de ventas).
+const EXCLUIR_TITULO = /software (engineer|developer|development)|developer|programad|\bjava\b|python|\.net|front-?end|back-?end|full-?stack|devops|\bsre\b|site reliability|infrastructure|cloud (engineer|architect|migration|platform)|platform engineer|\bqa\b|data (engineer|analytics|scientist)|anal[ií]sta de datos|machine learning|security engineer|\bl[12]\b|support specialist|soporte|helpdesk/i
 const INGLES = ['english', 'inglés avanzado', 'ingles avanzado', 'bilingual', 'bilingüe', 'us market', 'north america']
 const PESOS: [RegExp, number][] = [
   [/\b(ia|ai|inteligencia artificial|genai|llm|agentes?)\b/, 4],
@@ -101,21 +105,30 @@ async function adzuna(q: string, loc: string, dias = 7): Promise<Vacante[]> {
 }
 
 export function pasa(v: Vacante): boolean {
-  const u = low(v.ubicacion), t = ` ${low(v.titulo)} `
+  const u = low(v.ubicacion), titulo = low(v.titulo), t = ` ${titulo} `
   const enCdmx = CDMX.some((k) => u.includes(k))
   if (u && OTRAS.some((c) => u.includes(c)) && !enCdmx) return false
   if (u && !enCdmx && !u.includes('méxico') && !u.includes('mexico')) return false
-  return !EXCLUIR.some((x) => t.includes(x))
+  if (EXCLUIR.some((x) => t.includes(x))) return false
+  if (EXCLUIR_TITULO.test(titulo)) return false       // fuera ingeniería/TI/soporte
+  if (!SENAL_VENTAS.test(titulo)) return false         // el puesto DEBE ser de ventas/comercial
+  return true
 }
 
 export function claveDe(v: Vacante): string {
   return crypto.createHash('md5').update(low(v.titulo + v.empresa).replace(/\W+/g, '')).digest('hex').slice(0, 16)
 }
 
+// Señales de que el puesto está en español (vocabulario comercial en español o acentos).
+const ESPANOL = /[áéíóúñ]|ejecutivo|gerente|ventas|comercial|cuentas|desarrollo de negocios|preventa|\bjefe\b|l[ií]der|alianzas|consultor de soluciones/i
 export function rankear(v: Vacante, bonoEmpresaObjetivo = 0): Vacante {
   const txt = low(`${v.titulo} ${v.empresa} ${v.descripcion}`)
   let p = PESOS.reduce((s, [re, w]) => s + (re.test(txt) ? w : 0), 0) + bonoEmpresaObjetivo
-  const ingles = INGLES.some((s) => txt.includes(s)); if (ingles) p -= 3
+  const espanol = ESPANOL.test(`${v.titulo} ${v.descripcion}`)
+  const requiereIngles = INGLES.some((s) => txt.includes(s))
+  if (espanol) p += 3                 // preferimos español
+  if (requiereIngles) p -= 3
+  const ingles = !espanol || requiereIngles  // marca 🇬🇧 lo que NO es español (para ocultarlo)
   const ats = v.ats ? { ats: v.ats, ats_token: v.ats_token, ats_job_id: v.ats_job_id } : detectarAts(v.link)
   return { ...v, ...ats, puntaje: p, ingles, clave: claveDe(v) }
 }
