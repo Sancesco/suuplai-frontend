@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) return new NextResponse('no autorizado', { status: 401 })
   const sb = getSupabaseAdmin(); if (!sb) return NextResponse.json({ ok: false }, { status: 500 })
 
-  const encontradas = await correrRadar(sb, { minPuntaje: 3, descubrir: true })
+  const encontradas = await correrRadar(sb, { minPuntaje: 3, descubrir: 'full' })
   const { data: prev } = await sb.from('vacantes').select('clave')
   const existentes = new Set((prev ?? []).map((r: { clave: string }) => r.clave))
   const nuevas = encontradas.filter((v) => v.clave && !existentes.has(v.clave))

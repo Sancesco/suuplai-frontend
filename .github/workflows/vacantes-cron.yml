@@ -4,7 +4,7 @@ name: vacantes-cron
 # (Reemplaza el cron de Vercel: Hobby topa en 2 crons y ya están usados.)
 on:
   schedule:
-    - cron: '0 14 * * 1-5' # 8:00 CDMX (UTC-6), lun-vie
+    - cron: '0 */4 * * *'  # cada 4 horas: va encontrando y agregando vacantes solo, todo el día
   workflow_dispatch: {}      # permite dispararlo a mano desde la pestaña Actions
 
 jobs:

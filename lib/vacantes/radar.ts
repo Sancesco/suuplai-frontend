@@ -22,8 +22,9 @@ export const BUSQUEDAS = [
   'Gerente de operaciones comerciales', 'Chief of Staff',
   'Deployment Strategist', 'Forward Deployed', 'Implementation Manager', 'Solutions Engineer',
 ]
-// Una sola ubicación para ahorrar llamadas a Jooble (free ~500/día): pasa() ya filtra CDMX/remoto/LATAM.
-const UBICACIONES = ['México']
+// OJO: Jooble devuelve 0 si la ubicación lleva acento ("México"). Va SIN acento ("Mexico").
+// Una sola ubicación para ahorrar llamadas (Jooble free ~500/día); pasa() filtra CDMX/remoto/LATAM.
+const UBICACIONES = ['Mexico']
 
 export const CDMX = ['ciudad de méxico', 'ciudad de mexico', 'cdmx', 'mexico city', 'remoto', 'remote', 'home office', 'latam', 'latin america']
 const OTRAS = ['guadalajara', 'monterrey', 'zapopan', 'querétaro', 'queretaro', 'puebla', 'león', 'mérida',

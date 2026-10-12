@@ -18,7 +18,7 @@ export async function POST(req: Request) {
 
   const b = await req.json().catch(() => null)
   const minPuntaje = Number.isFinite(b?.minPuntaje) ? Number(b.minPuntaje) : 3
-  const encontradas = await correrRadar(sb, { minPuntaje, descubrir: true })
+  const encontradas = await correrRadar(sb, { minPuntaje, descubrir: 'links' })
 
   const { data: prev } = await sb.from('vacantes').select('clave')
   const existentes = new Set((prev ?? []).map((r: { clave: string }) => r.clave))

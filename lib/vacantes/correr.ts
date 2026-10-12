@@ -29,14 +29,17 @@ async function revisarEmpresas(sb: SB, minPuntaje: number): Promise<Vacante[]> {
 }
 
 // Orquestador: agregadores → descubrimiento → empresas ATS → dedup (gana ATS) → filtro.
-export async function correrRadar(sb: SB, opts: { minPuntaje?: number; descubrir?: boolean } = {}): Promise<Vacante[]> {
+// descubrir: 'none' (solo lo que ya hay), 'links' (rápido, para el botón), 'full' (cron diario).
+export async function correrRadar(sb: SB, opts: { minPuntaje?: number; descubrir?: 'none' | 'links' | 'full' } = {}): Promise<Vacante[]> {
   const minPuntaje = opts.minPuntaje ?? 3
+  const modo = opts.descubrir ?? 'none'
 
   const agregadores = await correrAgregadores()
-  if (opts.descubrir) {
+  if (modo !== 'none') {
     try {
-      await descubrirDesdeLinks(sb, agregadores)
-      await descubrirPorNombre(sb, agregadores.map((v) => v.empresa).filter(Boolean))
+      // Vía 1 (resolver links) siempre, acotada. Vía 2 (sondeo por nombre) solo en el cron.
+      await descubrirDesdeLinks(sb, agregadores, modo === 'full' ? 30 : 12)
+      if (modo === 'full') await descubrirPorNombre(sb, agregadores.map((v) => v.empresa).filter(Boolean), 8)
     } catch { /* el descubrimiento nunca tumba el radar */ }
   }
   const deEmpresas = await revisarEmpresas(sb, minPuntaje)

@@ -32,8 +32,8 @@ async function urlFinal(url: string, saltos = 3): Promise<string> {
   return u
 }
 
-export async function descubrirDesdeLinks(sb: SB, vacantes: Vacante[]): Promise<number> {
-  const candidatos = vacantes.filter((v) => v.link && !detectarAts(v.link).ats).slice(0, 40)
+export async function descubrirDesdeLinks(sb: SB, vacantes: Vacante[], limite = 40): Promise<number> {
+  const candidatos = vacantes.filter((v) => v.link && !detectarAts(v.link).ats).slice(0, limite)
   let altas = 0
   const tareas = candidatos.map((v) => async () => {
     const final = await urlFinal(v.link)
@@ -56,18 +56,18 @@ export function slugsDe(nombre: string): string[] {
   return Array.from(new Set([juntas, guion, primera].filter((s) => s.length >= 3 && s.length <= 40)))
 }
 
-export async function descubrirPorNombre(sb: SB, nombres: string[]): Promise<number> {
-  // nombres nuevos (no sondeados)
+export async function descubrirPorNombre(sb: SB, nombres: string[], limite = 8): Promise<number> {
+  // nombres nuevos (no sondeados). Se sondean pocos por corrida: la tabla crece con los días.
   const limpios = Array.from(new Set(nombres.map((n) => (n || '').trim()).filter((n) => n.length >= 3))).slice(0, 200)
   if (!limpios.length) return 0
   const { data: vistos } = await sb.from('empresas_vistas').select('nombre').in('nombre', limpios)
   const yaVistos = new Set((vistos ?? []).map((r: { nombre: string }) => r.nombre))
-  const nuevos = limpios.filter((n) => !yaVistos.has(n)).slice(0, 60)
+  const nuevos = limpios.filter((n) => !yaVistos.has(n)).slice(0, limite)
   if (!nuevos.length) return 0
 
   let altas = 0
   const tareas = nuevos.map((nombre) => async () => {
-    for (const slug of slugsDe(nombre)) {
+    for (const slug of slugsDe(nombre).slice(0, 2)) { // solo los 2 slugs más probables
       for (const ats of ATS_LIST) {
         if (await existeEnAts(ats, slug)) { await altaEmpresa(sb, { nombre, ats, token: slug, origen: 'sondeo' }); altas++; return }
       }
