@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
+import { topeRampaEn } from '@/lib/outboundSend'
 
 interface Mov { fecha: string; tipo: string }
 interface Row { id: string; empresa: string; persona: string | null; estado: string; movimientos?: Mov[] }
@@ -28,14 +29,17 @@ const tipoDe = (t: string | null): 1 | 2 | 3 => t === 'Recordatorio 2' ? 2 : t =
 
 export function Agenda() {
   const [pw, setPw] = useState(''); const [authed, setAuthed] = useState(false); const [err, setErr] = useState('')
-  const [rows, setRows] = useState<Row[] | null>(null); const [tope, setTope] = useState(5)
+  const [rows, setRows] = useState<Row[] | null>(null)
+  const [rampaDesde, setRampaDesde] = useState<string>(new Date().toISOString())
+  // Tope diario que aplica en la semana de una fecha (escalón en lunes, = al del cron).
+  const topeDe = (iso: string) => topeRampaEn(rampaDesde, iso)
 
   const load = useCallback(async (p?: string) => {
     const pass = p ?? pw; setErr('')
     try {
       const r = await fetch('/api/outbound/prospectos', { headers: { 'x-admin-password': pass } })
       const j = await r.json(); if (!r.ok || !j.ok) throw new Error(j.error || 'Error')
-      setRows(j.prospectos as Row[]); setTope(j.tope || 5); setAuthed(true)
+      setRows(j.prospectos as Row[]); if (j.rampaDesde) setRampaDesde(String(j.rampaDesde)); setAuthed(true)
       try { localStorage.setItem('outbound_auth', JSON.stringify({ pw: pass, exp: Date.now() + 30 * 86400000 })) } catch { /* noop */ }
     } catch (e) { setErr(e instanceof Error ? e.message : 'Error'); setAuthed(false) }
   }, [pw]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -74,7 +78,7 @@ export function Agenda() {
             {/* Resumen por semana */}
             <div className="mb-5 flex flex-col gap-2">
               {Array.from(semanas.entries()).map(([s, w]) => {
-                const cupoSemana = tope * 5 // 5 días hábiles
+                const cupoSemana = topeDe(`${s}T18:00:00Z`) * 5 // tope de ESA semana × 5 días hábiles
                 const pct = Math.min(100, Math.round((w.c1 / cupoSemana) * 100))
                 const [y, m, d] = s.split('-').map(Number); const lunes = new Date(Date.UTC(y, m - 1, d, 12))
                 const label = `Semana del ${lunes.toLocaleDateString('es-MX', { day: 'numeric', month: 'long', timeZone: 'UTC' })}`
@@ -113,11 +117,12 @@ export function Agenda() {
               {Array.from(dias.entries()).map(([k, arr]) => {
                 const c1 = arr.filter((r) => tipoDe(r.tipo) === 1).length
                 const recs = arr.length - c1
+                const topeDia = topeDe(`${k}T18:00:00Z`)
                 return (
                   <div key={k} className="rounded-xl border border-neutral-900 bg-white p-3">
                     <div className="mb-2 flex items-center justify-between">
                       <b className="text-[13px] capitalize">{etiquetaDia(k)}</b>
-                      <span className="font-mono text-[11px] text-neutral-500">{c1}/{tope} primeros{recs ? ` · ${recs} recordatorio${recs > 1 ? 's' : ''}` : ''}{c1 >= tope ? ' · ✅' : ''}</span>
+                      <span className="font-mono text-[11px] text-neutral-500">{c1}/{topeDia} primeros{recs ? ` · ${recs} recordatorio${recs > 1 ? 's' : ''}` : ''}{c1 >= topeDia ? ' · ✅' : ''}</span>
                     </div>
                     <div className="flex flex-col gap-1">
                       {arr.map((r) => { const t = tipoDe(r.tipo); return (

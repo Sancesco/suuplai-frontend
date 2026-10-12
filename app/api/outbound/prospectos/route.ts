@@ -96,8 +96,9 @@ export async function GET(req: Request) {
   })
   const gmail = await gmailConectado(sb)
   const { data: cfgR } = await sb.from('outbound_config').select('valor').eq('clave', 'rampa_desde').maybeSingle()
-  const tope = topeRampa(cfgR?.valor ? String(cfgR.valor) : new Date().toISOString())
-  return NextResponse.json({ ok: true, prospectos: out, gmail, tope })
+  const rampaDesde = cfgR?.valor ? String(cfgR.valor) : new Date().toISOString()
+  const tope = topeRampa(rampaDesde)
+  return NextResponse.json({ ok: true, prospectos: out, gmail, tope, rampaDesde })
 }
 
 // Crea prospectos (bloque o uno) y les prepara el link de CV + /r. Dedup por correo.
