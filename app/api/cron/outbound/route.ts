@@ -84,20 +84,20 @@ export async function GET(req: Request) {
   const { data: sinProg } = await sb.from('outbound_prospecto').select('id').eq('estado', 'listo').eq('pausado', false).is('programado_en', null).limit(20)
   for (const p of (sinProg ?? []) as { id: string }[]) { try { await programarEnvio(sb, p.id) } catch { break /* sin Fase 4 todavía */ } }
 
-  // ── 2b) Cola: el cron corre 1 vez/día (9am CDMX), así que manda TODO el lote de hoy de una vez
-  //     (hasta el tope de la rampa de ese día), sin importar la hora intradía programada. Si una
-  //     corrida anterior ya mandó algunos hoy, solo completa lo que falta para el tope. ──
+  // ── 2b) Cola: el GitHub Action pinchea esto cada hora (8am-5pm), así cada correo sale cerca de su
+  //     hora programada. Manda solo los 'listo' cuya hora ya llegó, pero con TOPE DIARIO de la rampa
+  //     (descontando lo ya enviado hoy) para que un backlog no dispare un pico. ──
   const antesDeArranque = cfg.no_antes_de && now < cfg.no_antes_de
   if (habil && !antesDeArranque) {
     const cdmx = new Date(now.getTime() - 6 * 3600000)
     const iniHoy = new Date(Date.UTC(cdmx.getUTCFullYear(), cdmx.getUTCMonth(), cdmx.getUTCDate(), 6, 0, 0)).toISOString()
-    const finHoy = new Date(Date.UTC(cdmx.getUTCFullYear(), cdmx.getUTCMonth(), cdmx.getUTCDate() + 1, 6, 0, 0)).toISOString()
     const topeHoy = topeRampa(cfg.rampa_desde)
     const { count: yaHoy } = await sb.from('outbound_envio').select('id', { count: 'exact', head: true }).eq('toque', 1).gte('enviado_en', iniHoy)
     const restante = Math.max(0, topeHoy - (yaHoy ?? 0))
     if (restante > 0) {
+      const nowIso = now.toISOString()
       const { data: cola } = await sb.from('outbound_prospecto').select('*').eq('estado', 'listo').eq('pausado', false).not('email', 'is', null)
-        .or(`programado_en.lte.${finHoy},programado_en.is.null`).order('programado_en', { ascending: true, nullsFirst: true }).limit(restante)
+        .or(`programado_en.lte.${nowIso},programado_en.is.null`).order('programado_en', { ascending: true, nullsFirst: true }).limit(restante)
       for (const p of (cola ?? []) as Prospecto[]) { try { await enviarToque(p, 1, null); log.nuevos++ } catch { /* sigue */ } }
     }
   }
