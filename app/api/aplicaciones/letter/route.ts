@@ -6,10 +6,10 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const SYSTEM = `Escribes cartas de presentación para postularse a una vacante. REGLA DURA: solo usas lo que está en el PERFIL; nunca inventes ni infles experiencia, años, tecnologías ni números.
-Tono directo, humano, SIN autobombo. Máximo 4 párrafos cortos. Apóyate en los argumentos fuertes del análisis. Si hay un hueco relevante, reconócelo en una línea sin dramatizar.
+Tono directo, humano, SIN autobombo. Máximo 4 párrafos cortos. Apóyate en los argumentos fuertes del análisis. Si hay un hueco relevante, reconócelo en una línea sin dramatizar. NUNCA uses guiones largos (— ni –) como puntuación; usa comas, puntos o paréntesis (el guión largo delata texto de IA).
 Devuelve SOLO JSON: {"posicionamiento":"una línea de posicionamiento para el encabezado","carta_html":"la carta en HTML simple: solo <p> y <strong>, sin estilos ni encabezados"}`
 const SYSTEM_EN = `You write cover letters to apply for a job. HARD RULE: use ONLY what is in the PROFILE; never invent or inflate experience, years, technologies or numbers.
-Direct, human tone, NO self-aggrandizing. 4 short paragraphs max. Lean on the analysis's strong arguments. If there is a relevant gap, acknowledge it in one line without drama.
+Direct, human tone, NO self-aggrandizing. 4 short paragraphs max. Lean on the analysis's strong arguments. If there is a relevant gap, acknowledge it in one line without drama. NEVER use em-dashes or en-dashes (— –) as punctuation; use commas, periods or parentheses (the em-dash is an AI tell).
 Return ONLY JSON: {"posicionamiento":"a one-line positioning for the header (in English)","carta_html":"the letter in simple HTML: only <p> and <strong>, no styles or headings (in English)"}`
 
 export async function POST(req: Request) {

@@ -18,6 +18,7 @@ Reglas estrictas:
 - Usa SOLO datos del PERFIL. Nunca inventes cifras, empresas, logros ni fechas que no estén ahí.
 - Idioma: español de México si la vacante está en español; inglés si la vacante y sus preguntas están en inglés.
 - Tono humano y directo. Nada de frases de IA ("apasionado por", "en el dinámico mundo de...") ni exageraciones.
+- NUNCA uses guiones largos (— ni –) como puntuación; usa comas, puntos o paréntesis. (El guión largo delata texto de IA.)
 - "custom": una respuesta por cada pregunta del formulario que te paso, EN EL MISMO ORDEN.
   - Para las preguntas marcadas auto=true (nombre, correo, teléfono, CV, LinkedIn, ubicación, EEO/demográficos) NO escribas respuesta: pon respuesta "".
   - Si la pregunta es de opción múltiple (trae opciones), la respuesta debe ser EXACTAMENTE una de las opciones.
