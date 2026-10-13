@@ -83,10 +83,10 @@ export function Detalle({ id }: { id: string }) {
   const copiar = async (t: string, tag: string) => { try { await navigator.clipboard.writeText(t); setCopiado(tag); setTimeout(() => setCopiado(''), 1500) } catch { /* noop */ } }
   const abrirVacante = () => { if (v?.link) { window.open(v.link, '_blank', 'noopener'); setPreguntaEnvio(true) } }
   const [cvGen, setCvGen] = useState(false)
-  const generarCv = async () => {
+  const generarCv = async (idioma: 'es' | 'en' = 'es') => {
     setCvGen(true); setErr('')
     try {
-      const r = await fetch(`/api/vacantes/${id}`, { method: 'PATCH', headers, body: JSON.stringify({ generarCv: true }) })
+      const r = await fetch(`/api/vacantes/${id}`, { method: 'PATCH', headers, body: JSON.stringify({ generarCv: true, idioma }) })
       const j = await r.json()
       if (j.ok && j.cv_link) setCvLink(j.cv_link); else setErr(j.error || 'No se pudo generar el link')
     } catch (e) { setErr(e instanceof Error ? e.message : 'Error') } finally { setCvGen(false) }
@@ -210,10 +210,14 @@ export function Detalle({ id }: { id: string }) {
             <input value={contacto.linkedin} onChange={(e) => setContacto({ ...contacto, linkedin: e.target.value })} onBlur={guardarContacto} placeholder="LinkedIn URL" className={inp} />
             <input value={contacto.email} onChange={(e) => setContacto({ ...contacto, email: e.target.value })} onBlur={guardarContacto} placeholder="Correo" className={inp} />
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            {cvLink
-              ? <span className="flex items-center gap-1.5 text-xs text-emerald-700"><a href={cvLink} target="_blank" rel="noreferrer" className="underline">{cvLink.replace('https://www.', '')}</a><button onClick={() => copiar(cvLink, 'cv')} className="rounded border border-neutral-300 px-1.5 py-0.5 text-[10px]">{copiado === 'cv' ? '✓' : 'copiar'}</button></span>
-              : <button onClick={generarCv} disabled={cvGen} className="rounded-lg border border-neutral-900 px-3 py-1.5 text-xs font-bold disabled:opacity-50">{cvGen ? 'Generando…' : 'Generar link de CV rastreable'}</button>}
+          <div className="mt-2 flex flex-col gap-2">
+            {cvLink && <span className="flex items-center gap-1.5 text-xs text-emerald-700"><a href={cvLink} target="_blank" rel="noreferrer" className="underline">{cvLink.replace('https://www.', '')}</a><button onClick={() => copiar(cvLink, 'cv')} className="rounded border border-neutral-300 px-1.5 py-0.5 text-[10px]">{copiado === 'cv' ? '✓' : 'copiar'}</button></span>}
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs text-neutral-500">Generar link de CV rastreable:</span>
+              <button onClick={() => generarCv('es')} disabled={cvGen} className="rounded-lg border border-neutral-900 px-3 py-1.5 text-xs font-bold disabled:opacity-50">🇲🇽 Español</button>
+              <button onClick={() => generarCv('en')} disabled={cvGen} className="rounded-lg border border-neutral-900 px-3 py-1.5 text-xs font-bold disabled:opacity-50">🇬🇧 Inglés</button>
+              {cvGen && <span className="text-xs text-neutral-400">generando…</span>}
+            </div>
           </div>
           {err && <p className="mt-1 text-xs text-red-700">⚠ {err}</p>}
           {v.mensaje_contacto && (
