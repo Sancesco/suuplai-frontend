@@ -68,14 +68,17 @@ export async function GET(req: Request) {
     const { data: evs } = await sb.from('outbound_envio').select('*').eq('prospecto_id', p.id).order('toque', { ascending: true })
     const envios = (evs ?? []) as Envio[]
     const last = envios[envios.length - 1]; const first = envios[0]
-    if (!last?.gmail_thread_id) continue
-    // detectar respuesta / rebote leyendo el hilo
-    try {
-      const msgs = await leerHilo(sb, last.gmail_thread_id, miEmail)
-      if (msgs.some((m) => m.esRebote)) { await sb.from('outbound_prospecto').update({ estado: 'reboto' }).eq('id', p.id); await sb.from('outbound_envio').update({ rebotado: true }).eq('prospecto_id', p.id); log.reboto++; continue }
-      const firstMs = first ? new Date(first.enviado_en).getTime() : 0
-      if (msgs.some((m) => !m.fromMe && m.internalDate > firstMs)) { await sb.from('outbound_prospecto').update({ estado: 'respondio' }).eq('id', p.id); await sb.from('outbound_envio').update({ respondido: true }).eq('prospecto_id', p.id); log.respondio++; continue }
-    } catch { /* si falla la lectura, no bloquea */ }
+    if (!last) continue
+    // Detectar respuesta / rebote SOLO si hay hilo de Gmail. Los correos que el usuario mandó a mano
+    // no tienen hilo: igual se les manda recordatorio (como correo nuevo, no respuesta en hilo).
+    if (last.gmail_thread_id) {
+      try {
+        const msgs = await leerHilo(sb, last.gmail_thread_id, miEmail)
+        if (msgs.some((m) => m.esRebote)) { await sb.from('outbound_prospecto').update({ estado: 'reboto' }).eq('id', p.id); await sb.from('outbound_envio').update({ rebotado: true }).eq('prospecto_id', p.id); log.reboto++; continue }
+        const firstMs = first ? new Date(first.enviado_en).getTime() : 0
+        if (msgs.some((m) => !m.fromMe && m.internalDate > firstMs)) { await sb.from('outbound_prospecto').update({ estado: 'respondio' }).eq('id', p.id); await sb.from('outbound_envio').update({ respondido: true }).eq('prospecto_id', p.id); log.respondio++; continue }
+      } catch { /* si falla la lectura, no bloquea */ }
+    }
     if (!habil) continue
     const dias = diasHabilesEntre(new Date(last.enviado_en), now)
     // Guard anti-duplicado: ¿ya existe un envío de ese toque? (evita dobles si chocan dos crons)
