@@ -22,6 +22,16 @@ export async function POST(req: Request) {
   if (!checkOutbound(req)) return NextResponse.json({ ok: false, error: 'no autorizado' }, { status: 401 })
   const sb = getSupabaseAdmin(); if (!sb) return NextResponse.json({ ok: false, error: 'no config' }, { status: 500 })
 
+  const body = await req.json().catch(() => null)
+  // Modo APLICAR: inserta un asunto que el usuario aprobó explícitamente (esto SÍ cambia la campaña).
+  if (body?.aplicar?.texto) {
+    const { count } = await sb.from('outbound_brazo').select('id', { count: 'exact', head: true }).eq('perilla', 'asunto').eq('es_control', false)
+    if ((count ?? 0) >= 6) return NextResponse.json({ ok: false, error: 'Ya hay muchos asuntos en prueba; deja que maduren antes de agregar más.' }, { status: 400 })
+    const p = body.aplicar
+    await sb.from('outbound_brazo').insert({ perilla: 'asunto', texto: String(p.texto).trim(), hipotesis: String(p.hipotesis ?? '').trim() || null, fundamento: String(p.fundamento ?? '').trim() || null, es_control: false, activa: true })
+    return NextResponse.json({ ok: true, aplicado: true })
+  }
+
   const { data: brRaw } = await sb.from('outbound_brazo').select('*').eq('perilla', 'asunto')
   const brazos = (brRaw ?? []) as Brazo[]
   if (brazos.filter((b) => b.es_control === false).length >= 6) return NextResponse.json({ ok: false, error: 'Ya hay muchos asuntos en prueba; deja que maduren antes de agregar más.' }, { status: 400 })
@@ -43,10 +53,8 @@ export async function POST(req: Request) {
     const j = parseJSON(raw) as { propuestas?: { texto: string; hipotesis?: string; fundamento?: string }[] }
     const props = (Array.isArray(j.propuestas) ? j.propuestas : []).filter((p) => p?.texto && String(p.texto).trim()).slice(0, 2)
     if (!props.length) return NextResponse.json({ ok: false, error: 'la IA no propuso asuntos' }, { status: 502 })
-    for (const p of props) {
-      await sb.from('outbound_brazo').insert({ perilla: 'asunto', texto: String(p.texto).trim(), hipotesis: String(p.hipotesis ?? '').trim() || null, fundamento: String(p.fundamento ?? '').trim() || null, es_control: false, activa: true })
-    }
-    return NextResponse.json({ ok: true, creados: props.length, propuestas: props })
+    // Solo ANÁLISIS: devuelve las propuestas, NO las aplica. El usuario decide con "aplicar".
+    return NextResponse.json({ ok: true, propuestas: props })
   } catch (e) {
     const m = e instanceof Error ? e.message : ''
     return NextResponse.json({ ok: false, error: /429|rate|limit|quota/i.test(m) ? 'IA saturada, intenta en 1 min.' : 'No se pudieron generar hipótesis.', detail: m.slice(0, 200) }, { status: 502 })

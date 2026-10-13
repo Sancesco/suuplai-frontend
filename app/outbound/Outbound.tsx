@@ -156,12 +156,18 @@ export function Outbound() {
   const abrirEdit = (r: Row) => setEditProsp({ id: r.id, empresa: r.empresa, persona: r.persona || '', puesto: r.puesto || '', email: r.email || '' })
   const guardarEdit = async () => { if (!editProsp) return; const { id, ...f } = editProsp; await patchPros(id, f); setEditProsp(null) }
   const [intel, setIntel] = useState<Intel | null>(null); const [showIntel, setShowIntel] = useState(false); const [genHip, setGenHip] = useState(false)
+  const [propuestas, setPropuestas] = useState<{ texto: string; hipotesis?: string; fundamento?: string }[]>([])
   const loadReporte = async () => { try { const r = await fetch('/api/outbound/reporte', { headers: hdr }); const j = await r.json(); if (j.ok) setIntel(j) } catch { /* noop */ } }
   const abrirIntel = () => { const v = !showIntel; setShowIntel(v); if (v) loadReporte() }
+  // Solo ANÁLISIS: pide propuestas a la IA, NO cambia la campaña. Tú decides con "Aplicar".
   const generarHipotesis = async () => {
     setGenHip(true); setMsg('🧠 El agente está leyendo el desempeño…')
-    try { const r = await fetch('/api/outbound/hipotesis', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: '{}' }); const j = await r.json(); setMsg(j.ok ? `✨ ${j.creados} asunto(s) nuevo(s) a prueba` : '⚠ ' + (j.error || 'Error')); loadReporte() }
+    try { const r = await fetch('/api/outbound/hipotesis', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: '{}' }); const j = await r.json(); if (j.ok) { setPropuestas(j.propuestas || []); setMsg('💡 Propuestas listas (no se aplicaron — tú decides)') } else setMsg('⚠ ' + (j.error || 'Error')) }
     catch { setMsg('⚠ Error') } finally { setGenHip(false) }
+  }
+  const aplicarPropuesta = async (p: { texto: string; hipotesis?: string; fundamento?: string }) => {
+    const r = await fetch('/api/outbound/hipotesis', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ aplicar: p }) })
+    const j = await r.json(); if (j.ok) { setPropuestas((ps) => ps.filter((x) => x.texto !== p.texto)); setMsg('✓ Asunto agregado a prueba'); loadReporte() } else setMsg('⚠ ' + (j.error || 'Error'))
   }
   const verPreview = async (id: string) => {
     setCargandoPrev(id)
@@ -224,8 +230,25 @@ export function Outbound() {
               <div className="mb-5 rounded-2xl border-2 border-neutral-900 bg-white p-4">
                 <div className="mb-3 flex items-center justify-between">
                   <b style={{ fontFamily: "'Syne',sans-serif" }}>🧠 Inteligencia · el cerebro que aprende</b>
-                  <button onClick={generarHipotesis} disabled={genHip} className="rounded-lg bg-neutral-900 px-3 py-1.5 text-xs font-bold text-lime-300 disabled:opacity-50">{genHip ? 'Pensando…' : '✨ Generar hipótesis (agente)'}</button>
+                  <button onClick={generarHipotesis} disabled={genHip} className="rounded-lg bg-neutral-900 px-3 py-1.5 text-xs font-bold text-lime-300 disabled:opacity-50">{genHip ? 'Pensando…' : '💡 Analizar y proponer (no aplica)'}</button>
                 </div>
+                {propuestas.length > 0 && (
+                  <div className="mb-3 rounded-xl border border-dashed border-neutral-400 bg-neutral-50 p-3">
+                    <p className="mb-2 text-xs font-bold text-neutral-500">Propuestas del agente — <b>no se aplicaron</b>. Aplica solo si quieres meterlas a prueba (reparten tu data entre más asuntos).</p>
+                    <div className="flex flex-col gap-2">
+                      {propuestas.map((p, i) => (
+                        <div key={i} className="flex items-start justify-between gap-2 rounded-lg bg-white p-2 text-sm">
+                          <div>
+                            <b>“{p.texto}”</b>
+                            {p.hipotesis && <div className="text-xs text-neutral-500">Hipótesis: {p.hipotesis}</div>}
+                            {p.fundamento && <div className="text-xs text-neutral-400">Porque: {p.fundamento}</div>}
+                          </div>
+                          <button onClick={() => aplicarPropuesta(p)} className="shrink-0 rounded-lg border border-neutral-900 px-2.5 py-1 text-xs font-bold">Aplicar</button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {!intel ? <p className="text-sm text-neutral-500">Cargando…</p> : (
                   <>
                     {(() => {
