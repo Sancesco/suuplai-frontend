@@ -78,11 +78,13 @@ export async function GET(req: Request) {
     } catch { /* si falla la lectura, no bloquea */ }
     if (!habil) continue
     const dias = diasHabilesEntre(new Date(last.enviado_en), now)
+    // Guard anti-duplicado: ¿ya existe un envío de ese toque? (evita dobles si chocan dos crons)
+    const yaTiene = async (toque: number) => { const { count } = await sb.from('outbound_envio').select('id', { count: 'exact', head: true }).eq('prospecto_id', p.id).eq('toque', toque); return (count ?? 0) > 0 }
     try {
       // El cron corre 1 vez/día (9am): el recordatorio sale el día que cumple sus días hábiles,
       // sin gate de hora (si no, una hora objetivo > 9am nunca se alcanzaría).
-      if (last.toque === 1 && dias >= 5) { await enviarToque(p, 2, last); log.recordatorios++ }
-      else if (last.toque === 2 && dias >= 7) { await enviarToque(p, 3, last); log.recordatorios++ }
+      if (last.toque === 1 && dias >= 5) { if (!(await yaTiene(2))) { await enviarToque(p, 2, last); log.recordatorios++ } }
+      else if (last.toque === 2 && dias >= 7) { if (!(await yaTiene(3))) { await enviarToque(p, 3, last); log.recordatorios++ } }
       else if (last.toque === 3 && dias >= 7) { await sb.from('outbound_prospecto').update({ estado: 'cerrado' }).eq('id', p.id); log.cerrados++ }
     } catch { /* un fallo no detiene el resto */ }
   }
@@ -106,7 +108,15 @@ export async function GET(req: Request) {
     if (restante > 0) {
       const { data: cola } = await sb.from('outbound_prospecto').select('*').eq('estado', 'listo').eq('pausado', false).not('email', 'is', null)
         .or(`programado_en.lte.${finHoy},programado_en.is.null`).order('programado_en', { ascending: true, nullsFirst: true }).limit(restante)
-      for (const p of (cola ?? []) as Prospecto[]) { try { await enviarToque(p, 1, null); log.nuevos++ } catch { /* sigue */ } }
+      for (const p of (cola ?? []) as Prospecto[]) {
+        try {
+          // Claim ATÓMICO: solo manda si logra pasar el prospecto de 'listo' a 'en_secuencia'.
+          // Si dos crons corren a la vez (Vercel + cron-job.org), solo UNO gana el update → cero duplicados.
+          const { data: tomado } = await sb.from('outbound_prospecto').update({ estado: 'en_secuencia' }).eq('id', p.id).eq('estado', 'listo').select('id')
+          if (!tomado || !tomado.length) continue
+          await enviarToque(p, 1, null); log.nuevos++
+        } catch { /* sigue */ }
+      }
     }
   }
 
