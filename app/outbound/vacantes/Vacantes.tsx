@@ -66,6 +66,7 @@ export function Vacantes() {
   }
 
   const lista = (rows || []).filter((v) => {
+    if (v.estado === 'descartada' && fEstado !== 'descartada') return false // "no me interesa" → desaparece (salvo si filtras por descartadas)
     if (fEstado && v.estado !== fEstado) return false
     if ((v.puntaje || 0) < fMin) return false
     if (ocultarIngles && v.ingles && v.estado === 'nueva') return false // solo esconde inglés en triage; las que ya trabajaste siempre se ven
@@ -103,6 +104,7 @@ export function Vacantes() {
         {ESTADOS.map((s) => <option key={s} value={s}>{ETIQUETA[s]}</option>)}
       </select>
       <Link href={`/outbound/vacantes/${v.id}`} className="rounded bg-neutral-900 px-2.5 py-1 text-xs font-bold text-lime-300">Aplicar →</Link>
+      <button onClick={() => cambiarEstado(v.id, 'descartada')} title="No me interesa" className="rounded border border-neutral-300 px-2 py-1 text-xs text-neutral-400 hover:border-red-400 hover:text-red-600">✕</button>
     </div>
   )
 
