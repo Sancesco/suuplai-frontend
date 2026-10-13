@@ -4,7 +4,7 @@ name: outbound-cron
 # cron por hora de Vercel Pro). Los correos salen repartidos a distintas horas del día.
 on:
   schedule:
-    - cron: '*/30 14-23 * * 1-5' # cada 30 min 8am-5pm CDMX (UTC-6), lun-vie (más intentos = más confiable)
+    - cron: '30 15 * * 1-5' # 9:30am CDMX (UTC-6), lun-vie — SOLO respaldo por si el cron de Vercel (9am) se atrasó
   workflow_dispatch: {}        # permite dispararlo a mano desde la pestaña Actions
 
 jobs:
