@@ -165,6 +165,14 @@ export function Outbound() {
     try { const r = await fetch('/api/outbound/hipotesis', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: '{}' }); const j = await r.json(); if (j.ok) { setPropuestas(j.propuestas || []); setMsg('💡 Propuestas listas (no se aplicaron — tú decides)') } else setMsg('⚠ ' + (j.error || 'Error')) }
     catch { setMsg('⚠ Error') } finally { setGenHip(false) }
   }
+  const exportarCsv = async () => {
+    try {
+      const r = await fetch('/api/outbound/export', { headers: hdr })
+      if (!r.ok) { setMsg('⚠ No se pudo exportar'); return }
+      const blob = await r.blob(); const u = URL.createObjectURL(blob)
+      const a = document.createElement('a'); a.href = u; a.download = 'outbound-analisis.csv'; a.click(); URL.revokeObjectURL(u)
+    } catch { setMsg('⚠ Error al exportar') }
+  }
   const aplicarPropuesta = async (p: { texto: string; hipotesis?: string; fundamento?: string }) => {
     const r = await fetch('/api/outbound/hipotesis', { method: 'POST', headers: { ...hdr, 'Content-Type': 'application/json' }, body: JSON.stringify({ aplicar: p }) })
     const j = await r.json(); if (j.ok) { setPropuestas((ps) => ps.filter((x) => x.texto !== p.texto)); setMsg('✓ Asunto agregado a prueba'); loadReporte() } else setMsg('⚠ ' + (j.error || 'Error'))
@@ -225,6 +233,7 @@ export function Outbound() {
               <button onClick={abrirIntel} className="rounded-lg border border-neutral-900 bg-white px-3 py-1.5 text-sm font-bold">🧠 {showIntel ? 'Ocultar inteligencia' : 'Inteligencia'}</button>
               <Link href="/outbound/agenda" className="rounded-lg border border-neutral-900 bg-white px-3 py-1.5 text-sm font-bold">📅 Agenda de envíos →</Link>
               <Link href="/outbound/vacantes" className="rounded-lg border border-neutral-900 bg-white px-3 py-1.5 text-sm font-bold">💼 Vacantes →</Link>
+              <button onClick={exportarCsv} className="rounded-lg border border-neutral-900 bg-white px-3 py-1.5 text-sm font-bold">⬇ Exportar CSV</button>
             </div>
             {showIntel && (
               <div className="mb-5 rounded-2xl border-2 border-neutral-900 bg-white p-4">
