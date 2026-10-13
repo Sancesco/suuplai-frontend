@@ -3,8 +3,18 @@ import { getSupabaseAdmin } from '@/lib/supabaseAdmin'
 import { HAY_LLAVES } from '@/lib/vacantes/radar'
 import { correrRadar } from '@/lib/vacantes/correr'
 import { leerPreguntasGreenhouse, enLotes } from '@/lib/vacantes/ats'
-import { calificarVarias } from '@/lib/vacantes/fit'
+import { calificarVarias, contextoPreferencias } from '@/lib/vacantes/fit'
 import { sendTelegram } from '@/lib/telegram'
+
+type SB2 = NonNullable<ReturnType<typeof getSupabaseAdmin>>
+// Lee lo que el usuario rechazó / le interesó, para que la IA aprenda y califique mejor.
+async function prefsAprendidas(sb: SB2): Promise<string> {
+  const [rech, gust] = await Promise.all([
+    sb.from('vacantes').select('titulo').eq('estado', 'descartada').order('actualizada_en', { ascending: false }).limit(25),
+    sb.from('vacantes').select('titulo').in('estado', ['interesa', 'aplicada', 'contacto_enviado', 'entrevista']).order('actualizada_en', { ascending: false }).limit(15),
+  ])
+  return contextoPreferencias((rech.data ?? []).map((v: { titulo: string }) => v.titulo), (gust.data ?? []).map((v: { titulo: string }) => v.titulo))
+}
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -19,6 +29,7 @@ export async function GET(req: Request) {
   if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) return new NextResponse('no autorizado', { status: 401 })
   const sb = getSupabaseAdmin(); if (!sb) return NextResponse.json({ ok: false }, { status: 500 })
 
+  const pref = await prefsAprendidas(sb)
   const encontradas = await correrRadar(sb, { minPuntaje: 2, descubrir: 'full' })
   const { data: prev } = await sb.from('vacantes').select('clave')
   const existentes = new Set((prev ?? []).map((r: { clave: string }) => r.clave))
@@ -38,9 +49,9 @@ export async function GET(req: Request) {
       if (preguntas.length) await sb.from('vacantes').update({ preguntas }).eq('clave', v.clave)
     }), 4)
 
-    // Fit con IA para las nuevas.
-    const fits = await calificarVarias(nuevas.slice(0, 15).map((v) => ({ clave: v.clave!, titulo: v.titulo, empresa: v.empresa, ubicacion: v.ubicacion, descripcion: v.descripcion })), 4)
-    await Promise.all(fits.map((f) => sb.from('vacantes').update({ fit: f.fit, fit_razon: f.razon }).eq('clave', f.clave)))
+    // Fit con IA para las nuevas (con preferencias aprendidas + sueldo estimado si falta).
+    const fits = await calificarVarias(nuevas.slice(0, 15).map((v) => ({ clave: v.clave!, titulo: v.titulo, empresa: v.empresa, ubicacion: v.ubicacion, descripcion: v.descripcion, sueldo: v.sueldo })), 4, pref)
+    await Promise.all(fits.map((f) => sb.from('vacantes').update({ fit: f.fit, fit_razon: f.razon, ...(!f.sueldo && f.sueldoEst ? { sueldo: `~${f.sueldoEst} (est.)` } : {}) }).eq('clave', f.clave)))
 
     const rows = (ins ?? []) as { id: string; titulo: string; empresa: string | null; puntaje: number; ingles: boolean; ats: string | null }[]
     const top = rows.sort((a, b) => (b.ats ? 1 : 0) - (a.ats ? 1 : 0) || (b.puntaje ?? 0) - (a.puntaje ?? 0)).slice(0, 10)
@@ -52,7 +63,7 @@ export async function GET(req: Request) {
   // Catch-up: califica un lote de vacantes viejas que aún no tienen fit (poco a poco cada corrida).
   const { data: pend } = await sb.from('vacantes').select('id,titulo,empresa,ubicacion,descripcion,sueldo').is('fit', null).neq('estado', 'descartada').limit(15)
   if (pend && pend.length) {
-    const fits2 = await calificarVarias(pend.map((v) => ({ id: v.id, titulo: v.titulo, empresa: v.empresa, ubicacion: v.ubicacion, descripcion: v.descripcion, sueldo: v.sueldo })), 4)
+    const fits2 = await calificarVarias(pend.map((v) => ({ id: v.id, titulo: v.titulo, empresa: v.empresa, ubicacion: v.ubicacion, descripcion: v.descripcion, sueldo: v.sueldo })), 4, pref)
     await Promise.all(fits2.map((f) => sb.from('vacantes').update({ fit: f.fit, fit_razon: f.razon, ...(!f.sueldo && f.sueldoEst ? { sueldo: `~${f.sueldoEst} (est.)` } : {}) }).eq('id', f.id)))
   }
 

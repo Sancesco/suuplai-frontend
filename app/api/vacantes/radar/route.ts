@@ -3,7 +3,7 @@ import { getSupabaseAdmin, checkOutbound } from '@/lib/outbound'
 import { HAY_LLAVES } from '@/lib/vacantes/radar'
 import { correrRadar } from '@/lib/vacantes/correr'
 import { leerPreguntasGreenhouse, enLotes } from '@/lib/vacantes/ats'
-import { calificarVarias } from '@/lib/vacantes/fit'
+import { calificarVarias, contextoPreferencias } from '@/lib/vacantes/fit'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -40,8 +40,13 @@ export async function POST(req: Request) {
       if (preguntas.length) await sb.from('vacantes').update({ preguntas }).eq('clave', v.clave)
     }), 4)
 
-    // Calificación de fit con IA (match real al CV) — reemplaza el ranking por palabras.
-    const fits = await calificarVarias(nuevas.slice(0, 15).map((v) => ({ clave: v.clave!, titulo: v.titulo, empresa: v.empresa, ubicacion: v.ubicacion, descripcion: v.descripcion, sueldo: v.sueldo })), 4)
+    // Calificación de fit con IA (match real al CV + preferencias aprendidas).
+    const [rech, gust] = await Promise.all([
+      sb.from('vacantes').select('titulo').eq('estado', 'descartada').order('actualizada_en', { ascending: false }).limit(25),
+      sb.from('vacantes').select('titulo').in('estado', ['interesa', 'aplicada', 'contacto_enviado', 'entrevista']).order('actualizada_en', { ascending: false }).limit(15),
+    ])
+    const pref = contextoPreferencias((rech.data ?? []).map((v: { titulo: string }) => v.titulo), (gust.data ?? []).map((v: { titulo: string }) => v.titulo))
+    const fits = await calificarVarias(nuevas.slice(0, 15).map((v) => ({ clave: v.clave!, titulo: v.titulo, empresa: v.empresa, ubicacion: v.ubicacion, descripcion: v.descripcion, sueldo: v.sueldo })), 4, pref)
     await Promise.all(fits.map((f) => sb.from('vacantes').update({ fit: f.fit, fit_razon: f.razon, ...(!f.sueldo && f.sueldoEst ? { sueldo: `~${f.sueldoEst} (est.)` } : {}) }).eq('clave', f.clave)))
   }
   return NextResponse.json({ ok: true, nuevas: nuevas.length, total: encontradas.length, ejemplo: !HAY_LLAVES() })
