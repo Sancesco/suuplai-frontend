@@ -50,10 +50,10 @@ export async function GET(req: Request) {
     }
   }
   // Catch-up: califica un lote de vacantes viejas que aún no tienen fit (poco a poco cada corrida).
-  const { data: pend } = await sb.from('vacantes').select('id,titulo,empresa,ubicacion,descripcion').is('fit', null).neq('estado', 'descartada').limit(15)
+  const { data: pend } = await sb.from('vacantes').select('id,titulo,empresa,ubicacion,descripcion,sueldo').is('fit', null).neq('estado', 'descartada').limit(15)
   if (pend && pend.length) {
-    const fits2 = await calificarVarias(pend.map((v) => ({ id: v.id, titulo: v.titulo, empresa: v.empresa, ubicacion: v.ubicacion, descripcion: v.descripcion })), 4)
-    await Promise.all(fits2.map((f) => sb.from('vacantes').update({ fit: f.fit, fit_razon: f.razon }).eq('id', f.id)))
+    const fits2 = await calificarVarias(pend.map((v) => ({ id: v.id, titulo: v.titulo, empresa: v.empresa, ubicacion: v.ubicacion, descripcion: v.descripcion, sueldo: v.sueldo })), 4)
+    await Promise.all(fits2.map((f) => sb.from('vacantes').update({ fit: f.fit, fit_razon: f.razon, ...(!f.sueldo && f.sueldoEst ? { sueldo: `~${f.sueldoEst} (est.)` } : {}) }).eq('id', f.id)))
   }
 
   return NextResponse.json({ ok: true, nuevas: nuevas.length, total: encontradas.length, ejemplo: !HAY_LLAVES() })

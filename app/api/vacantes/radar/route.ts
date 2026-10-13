@@ -41,8 +41,8 @@ export async function POST(req: Request) {
     }), 4)
 
     // Calificación de fit con IA (match real al CV) — reemplaza el ranking por palabras.
-    const fits = await calificarVarias(nuevas.slice(0, 15).map((v) => ({ clave: v.clave!, titulo: v.titulo, empresa: v.empresa, ubicacion: v.ubicacion, descripcion: v.descripcion })), 4)
-    await Promise.all(fits.map((f) => sb.from('vacantes').update({ fit: f.fit, fit_razon: f.razon }).eq('clave', f.clave)))
+    const fits = await calificarVarias(nuevas.slice(0, 15).map((v) => ({ clave: v.clave!, titulo: v.titulo, empresa: v.empresa, ubicacion: v.ubicacion, descripcion: v.descripcion, sueldo: v.sueldo })), 4)
+    await Promise.all(fits.map((f) => sb.from('vacantes').update({ fit: f.fit, fit_razon: f.razon, ...(!f.sueldo && f.sueldoEst ? { sueldo: `~${f.sueldoEst} (est.)` } : {}) }).eq('clave', f.clave)))
   }
   return NextResponse.json({ ok: true, nuevas: nuevas.length, total: encontradas.length, ejemplo: !HAY_LLAVES() })
 }
