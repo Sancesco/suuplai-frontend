@@ -74,6 +74,21 @@ section{width:100%}
 .keyform.bad{animation:shake .35s}
 .hint{margin:0;font-size:clamp(1.3rem,3.6vw,1.7rem);font-style:italic;min-height:1.3em;color:var(--ink)}
 
+/* ---------- Tarjeta (gatita) ---------- */
+.postcard{display:flex;justify-content:center}
+.pcard{width:min(420px,100%);background:linear-gradient(180deg,#bcd5ec,#a9c7e4);border:1px solid rgba(0,0,0,.1);
+  box-shadow:0 1px 2px rgba(0,0,0,.08),0 30px 60px -34px rgba(0,0,0,.45);
+  padding:22px 20px 26px;display:flex;flex-direction:column;align-items:center;gap:2px;animation:rise 1s cubic-bezier(.2,.8,.2,1)}
+.kitten{width:min(230px,64%);height:auto;display:block;margin-bottom:-10px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.12))}
+.sign{position:relative;background:#f4ecd6;border:3px solid #2f8a4e;border-radius:3px;padding:14px 26px 16px;
+  box-shadow:0 0 0 3px #f4ecd6,0 0 0 5px #2f8a4e;text-align:center}
+.sign .hb{font-family:"Arial Black",Impact,sans-serif;font-weight:900;color:#e2452a;letter-spacing:.5px;
+  font-size:clamp(1.1rem,4.6vw,1.5rem);text-transform:uppercase;line-height:1}
+.sign .age{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:4px}
+.sign .num{font-family:"Arial Black",Impact,sans-serif;font-weight:900;color:#e2452a;font-size:clamp(3.2rem,17vw,5rem);line-height:.78}
+.sign .yo{font-family:"Arial Black",Impact,sans-serif;font-weight:900;color:#e2452a;text-transform:uppercase;
+  font-size:clamp(1rem,4.2vw,1.35rem);line-height:1;text-align:left}
+
 /* ---------- Carta ---------- */
 .letter{background:var(--paper);padding:clamp(2rem,8vw,4.5rem) clamp(1.5rem,8vw,4.5rem);display:flex;flex-direction:column;gap:1.15rem;
   box-shadow:0 1px 2px rgba(0,0,0,.05),0 30px 60px -34px rgba(0,0,0,.25);animation:rise 1s cubic-bezier(.2,.8,.2,1)}
@@ -130,8 +145,60 @@ section{width:100%}
     </div>
   </section>
 
+  <section class="postcard" id="postcard" hidden>
+    <div class="pcard">
+      <svg class="kitten" viewBox="0 0 240 232" xmlns="http://www.w3.org/2000/svg">
+        <!-- cola -->
+        <path d="M58 176 C18 166 20 118 44 108 C32 140 56 154 74 152 Z" fill="#f3ead3" stroke="#2a2622" stroke-width="3" stroke-linejoin="round"/>
+        <!-- cuerpo -->
+        <ellipse cx="120" cy="168" rx="60" ry="56" fill="#f3ead3" stroke="#2a2622" stroke-width="3.5"/>
+        <!-- patitas -->
+        <ellipse cx="101" cy="214" rx="19" ry="13" fill="#f3ead3" stroke="#2a2622" stroke-width="3"/>
+        <ellipse cx="141" cy="214" rx="19" ry="13" fill="#f3ead3" stroke="#2a2622" stroke-width="3"/>
+        <path d="M101 207 v10 M141 207 v10" stroke="#2a2622" stroke-width="2"/>
+        <!-- orejas -->
+        <path d="M70 56 L60 14 L110 44 Z" fill="#f3ead3" stroke="#2a2622" stroke-width="3.5" stroke-linejoin="round"/>
+        <path d="M170 56 L180 14 L130 44 Z" fill="#b9b4ab" stroke="#2a2622" stroke-width="3.5" stroke-linejoin="round"/>
+        <path d="M74 50 L68 26 L98 44 Z" fill="#e9a9a0"/>
+        <path d="M166 50 L172 26 L142 44 Z" fill="#e9a9a0"/>
+        <!-- cabeza -->
+        <circle cx="120" cy="90" r="57" fill="#f3ead3" stroke="#2a2622" stroke-width="3.5"/>
+        <!-- manchas tabby -->
+        <path d="M94 52 Q120 38 152 54 Q150 74 120 72 Q96 72 94 52 Z" fill="#b9b4ab"/>
+        <path d="M120 42 v26 M105 47 v20 M135 47 v20" stroke="#8f8980" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+        <!-- ojos -->
+        <ellipse cx="100" cy="94" rx="13" ry="16.5" fill="#fff" stroke="#2a2622" stroke-width="2.5"/>
+        <ellipse cx="140" cy="94" rx="13" ry="16.5" fill="#fff" stroke="#2a2622" stroke-width="2.5"/>
+        <circle cx="102" cy="96" r="7.5" fill="#2f5aa8"/>
+        <circle cx="138" cy="96" r="7.5" fill="#2f5aa8"/>
+        <circle cx="102" cy="96" r="3.2" fill="#2a2622"/>
+        <circle cx="138" cy="96" r="3.2" fill="#2a2622"/>
+        <circle cx="104.5" cy="92.5" r="1.8" fill="#fff"/>
+        <circle cx="140.5" cy="92.5" r="1.8" fill="#fff"/>
+        <path d="M86 82 l-7 -4 M91 77 l-5 -5" stroke="#2a2622" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M154 82 l7 -4 M149 77 l5 -5" stroke="#2a2622" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <!-- cachetes -->
+        <ellipse cx="80" cy="112" rx="11" ry="6.5" fill="#e9a9a0" opacity=".75"/>
+        <ellipse cx="160" cy="112" rx="11" ry="6.5" fill="#e9a9a0" opacity=".75"/>
+        <!-- nariz y boca -->
+        <path d="M113 110 h14 l-7 8 z" fill="#e2452a" stroke="#2a2622" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M120 118 v6 M120 124 q-9 7 -15 1 M120 124 q9 7 15 1" fill="none" stroke="#2a2622" stroke-width="2" stroke-linecap="round"/>
+        <!-- bigotes -->
+        <path d="M70 102 h-34 M72 110 h-32 M158 102 h34 M156 110 h32" stroke="#2a2622" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <!-- moñito rojo -->
+        <path d="M120 152 L90 134 L90 172 Z" fill="#e2452a" stroke="#2a2622" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M120 152 L150 134 L150 172 Z" fill="#e2452a" stroke="#2a2622" stroke-width="3" stroke-linejoin="round"/>
+        <circle cx="120" cy="152" r="10" fill="#e2452a" stroke="#2a2622" stroke-width="3"/>
+      </svg>
+      <div class="sign">
+        <div class="hb">Happy Birthday</div>
+        <div class="age"><span class="num">29</span><span class="yo">years<br>old!</span></div>
+      </div>
+    </div>
+  </section>
+
   <article class="letter" id="letter" hidden>
-    <div class="top"><span id="draft">Borrador 001</span><span>CDMX · 15.10.26</span></div>
+    <div class="top"><span>Para Jimena</span><span>CDMX · 15.10.26</span></div>
     <div id="body"></div>
   </article>
 
@@ -151,27 +218,20 @@ section{width:100%}
   var OPEN = Date.parse("2026-10-15T00:00:00-06:00"); // solo para el countdown (visual)
   var BORN = Date.parse("1997-10-15T00:00:00-05:00");
   // Arranques que se escriben y se borran (el "escribo, borro, vuelvo a empezar"). [borrador, texto]
-  var DRAFTS = [
-    [3,  "Tal vez tenga que escribir mil cartas antes de que salga la buena."],
-    [11, "Últimamente he estado buscando trabajo y la verdad"],
-    [19, "Hoy son las 8:27 y aquí sigo, borrando."]
-  ];
-  // salute / s = línea corta / sign / n = párrafo normal
+  // salute / s = línea corta / end = cierre / n = párrafo normal
   var LETTER = [
     ["salute","Jime:"],
     ["n","Llevo días intentando escribirte esta carta. Escribo, borro, se me ocurre algo, me acerco, me alejo y vuelvo a empezar. Hoy son las 8:27 y aquí sigo. A lo mejor tengo que escribir 29 cartas antes de que me salga la buena, una por cada año que cumples."],
     ["n","Ya sé, es solo una carta. Pero es tu cumpleaños y este año mi regalo son palabras. Me encantaría regalarte mil cosas, un viaje, pero por ahora el único viaje que te puedo regalar es por mis pensamientos. Y me gusta saber que con eso te basta, porque sé que no estás conmigo por nada material."],
     ["n","Buscando qué escribirte me di cuenta de que últimamente vivo buscando. Busco trabajo, busco dónde vivir, busco qué sigue. Y buscar cansa: unas cosas te aburren, otras te quedan grandes y piden credenciales que no tienes, y cuando sientes que ya estás cerca, se cae y vuelves a empezar. Igualito que con esta carta."],
-    ["s","(Ya sé lo que piensas: \"otra vez este con su búsqueda de chamba, qué hueva\". Aguanta, aquí viene lo bueno.)"],
-    ["n","La vida es un poco eso, una lista de búsquedas. Unas duran años y otras se resuelven sin que te des cuenta. Y casi nunca notas el día en que dejas de buscar algo: un día volteas y ya no estás buscando, porque ya lo encontraste."],
-    ["n","Hace no tanto estuve en otra búsqueda que se sentía igual. Buscaba algo fuera de mi liga, algo que pedía credenciales que yo no tenía. Esa vez no buscaba trabajo: te buscaba a ti."],
-    ["n","Porque si ser tu novio hubiera sido una vacante, los requisitos habrían sido chamba estable, depa propio y la vida resuelta. Yo no cumplía ni uno. Apliqué igual. Y aquí estoy."],
+    ["s","(Ya sé lo que estás pensando: \"otra vez este con su búsqueda de chamba, qué hueva\". Aguanta, aquí viene lo bueno.)"],
+    ["n","La vida es un poco eso, una lista de búsquedas. Unas duran años y otras se resuelven sin que te des cuenta. Y lo curioso es que casi nunca notas el día en que dejas de buscar algo. Un día volteas y ya no estás buscando, porque ya lo encontraste."],
+    ["n","Hace no tanto estuve en otra búsqueda que se sentía igual. Estaba buscando algo fuera de mi liga, algo que pedía credenciales que yo no tenía. Esa vez no buscaba trabajo, te buscaba a ti."],
+    ["n","Porque si ser tu novio hubiera sido una vacante, los requisitos habrían sido: chamba estable, depa propio y la vida resuelta. Yo no cumplía ni uno. Apliqué igual. Y aquí estoy."],
     ["n","Luego me dices que ya no sabes qué consejo darme. Ya me lo diste sin darte cuenta: lo que vale la pena sí llega, aunque al principio parezca que no. Así que no me preocupa tanto lo que me falta. Si ya encontré lo más difícil, lo demás va a llegar."],
     ["n","Y si algún día te toca a ti estar buscando algo, acuérdate de esta carta: sí llega. Y mientras, lo buscamos juntos."],
-    ["s","Así que sigo buscando trabajo, casa y todo lo demás. A ti ya no."],
-    ["n","Al final no necesité 29 cartas. Solo tuve que ponerme a pensar en ti."],
-    ["n","Feliz cumpleaños, Jimis."],
-    ["sign","Santi"]
+    ["n","Así que sigo buscando trabajo, casa y todo lo demás. A ti ya no."],
+    ["end","Feliz cumpleaños, Jimis."]
   ];
   /* ========================= */
 
@@ -215,9 +275,12 @@ section{width:100%}
     meta.textContent=""; hint.textContent="Para ti.";
     env.classList.add("open");
     setTimeout(function(){
-      $("letter").hidden=false;
-      $("letter").scrollIntoView({behavior: reduce?"auto":"smooth", block:"start"});
-      writeLetter();
+      $("postcard").hidden=false;
+      $("postcard").scrollIntoView({behavior: reduce?"auto":"smooth", block:"start"});
+      setTimeout(function(){
+        $("letter").hidden=false;
+        writeLetter();
+      }, reduce?0:1600);
     },1800);
   }
 
@@ -225,10 +288,10 @@ section{width:100%}
   var skipped=false, caret=document.createElement("span"); caret.className="caret";
   var SKIP={};
   function wait(ms){ return new Promise(function(r,j){ if(skipped) return j(SKIP); setTimeout(function(){ skipped ? j(SKIP) : r(); }, ms); }); }
-  function cls(kind){ return kind==="salute"?"salute":kind==="s"?"short":kind==="sign"?"sign":""; }
+  function cls(kind){ return kind==="salute"?"salute":kind==="s"?"short":(kind==="sign"||kind==="end")?"sign":""; }
   function render(p){ p.textContent=p._t; p.appendChild(caret); }
   function newP(kind){
-    var p=document.createElement(kind==="sign"?"span":"p");
+    var p=document.createElement((kind==="sign"||kind==="end")?"span":"p");
     p.className=cls(kind); p._t=""; $("body").appendChild(p); render(p);
     caret.scrollIntoView({behavior:"smooth", block:"nearest"});
     return p;
@@ -239,39 +302,21 @@ section{width:100%}
   }
   async function type(p, text, base){ for (var i=0;i<text.length;i++){ p._t+=text[i]; render(p); await wait(delay(text[i], base)); } }
   async function back(p, n){ for (var i=0;i<n;i++){ p._t=p._t.slice(0,-1); render(p); await wait(22); } }
-  var draftN=1;
-  async function setDraft(target){
-    var el=$("draft");
-    while (draftN<target){ draftN+=Math.max(1,Math.ceil((target-draftN)/6)); el.textContent="Borrador "+String(Math.min(draftN,target)).padStart(3,"0"); await wait(55); }
-    if (target>=29){ el.textContent="Versión final · 29 de 29"; el.className="final"; }
-  }
   function renderFinal(){
     var body=$("body"); body.innerHTML="";
-    LETTER.forEach(function(l){ var p=document.createElement(l[0]==="sign"?"span":"p"); p.className=cls(l[0]); p.textContent=l[1]; body.appendChild(p); });
-    $("draft").textContent="Versión final · 29 de 29"; $("draft").className="final";
+    LETTER.forEach(function(l){ var p=document.createElement((l[0]==="sign"||l[0]==="end")?"span":"p"); p.className=cls(l[0]); p.textContent=l[1]; body.appendChild(p); });
   }
   async function writeLetter(){
     var sk=$("skip");
     if (reduce){ renderFinal(); return finish(); }
     sk.hidden=false;
     try{
-      var s=newP("salute"); await type(s,"Jime:",80); await wait(800);
-      var p=newP("n");
-      for (var d=0; d<DRAFTS.length; d++){
-        await setDraft(DRAFTS[d][0]);
-        await type(p, DRAFTS[d][1], 46);
-        await wait(1200);
-        await back(p, p._t.length);
-        await wait(500);
-      }
-      await setDraft(29);
-      await type(p, LETTER[1][1], 40); await wait(900);
-      for (var i=2;i<LETTER.length;i++){
+      for (var i=0;i<LETTER.length;i++){
         var kind=LETTER[i][0], text=LETTER[i][1];
         var q=newP(kind);
-        if (kind==="sign"){ await wait(700); await type(q,text,110); continue; }
-        await type(q, text, i<5 ? 48 : 36);
-        await wait(i<5 ? 900 : 520);
+        var base = kind==="salute" ? 80 : (kind==="end" ? 90 : (i<3 ? 46 : 38));
+        await type(q, text, base);
+        await wait(kind==="salute" ? 700 : (kind==="end" ? 300 : 620));
       }
     } catch(e){ if (e!==SKIP) throw e; renderFinal(); }
     finish();
