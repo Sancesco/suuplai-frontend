@@ -28,7 +28,7 @@
 *{box-sizing:border-box}
 html,body{background:var(--ground);color:var(--ink)}
 body{font-family:var(--serif);margin:0;min-height:100vh;padding-inline:16px;padding-block:0;overflow-x:hidden}
-main{max-width:46rem;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:5.5rem;padding-block:clamp(2.5rem,8vh,5rem) 7rem}
+main{max-width:46rem;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:2.6rem;padding-block:clamp(2.5rem,8vh,5rem) 7rem}
 section{width:100%}
 .label{font-family:var(--mono);font-size:.64rem;letter-spacing:.28em;text-transform:uppercase;color:var(--soft)}
 
@@ -74,11 +74,18 @@ section{width:100%}
 .keyform.bad{animation:shake .35s}
 .hint{margin:0;font-size:clamp(1.3rem,3.6vw,1.7rem);font-style:italic;min-height:1.3em;color:var(--ink)}
 
+/* ---------- Vista de lectura ---------- */
+.reading{width:100%;display:flex;flex-direction:column;align-items:center;gap:1.6rem}
+.stage{transition:opacity .6s ease}
+.stage.gone{opacity:0;pointer-events:none}
+
 /* ---------- Tarjeta (gatita) ---------- */
 .postcard{display:flex;justify-content:center}
 .pcard{width:min(420px,100%);background:linear-gradient(180deg,#bcd5ec,#a9c7e4);border:1px solid rgba(0,0,0,.1);
   box-shadow:0 1px 2px rgba(0,0,0,.08),0 30px 60px -34px rgba(0,0,0,.45);
-  padding:22px 20px 26px;display:flex;flex-direction:column;align-items:center;gap:2px;animation:rise 1s cubic-bezier(.2,.8,.2,1)}
+  padding:22px 20px 26px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.postcard.pop .pcard{animation:pop 1.15s cubic-bezier(.2,.85,.25,1) both}
+@keyframes pop{0%{opacity:0;transform:translateY(64px) scale(.5)}58%{opacity:1;transform:translateY(-8px) scale(1.03)}100%{opacity:1;transform:translateY(0) scale(1)}}
 .kitten{width:min(230px,64%);height:auto;display:block;margin-bottom:-10px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.12))}
 .sign{position:relative;background:#f4ecd6;border:3px solid #2f8a4e;border-radius:3px;padding:14px 26px 16px;
   box-shadow:0 0 0 3px #f4ecd6,0 0 0 5px #2f8a4e;text-align:center}
@@ -145,7 +152,8 @@ section{width:100%}
     </div>
   </section>
 
-  <section class="postcard" id="postcard" hidden>
+  <div class="reading" id="reading" hidden>
+  <section class="postcard" id="postcard">
     <div class="pcard">
       <svg class="kitten" viewBox="0 0 240 232" xmlns="http://www.w3.org/2000/svg">
         <!-- cola -->
@@ -202,13 +210,14 @@ section{width:100%}
     <div id="body"></div>
   </article>
 
-  <button class="skip" id="skip" type="button" hidden>Ver la carta completa</button>
-
   <section class="coda" id="coda" hidden>
     <span class="label">En vivo</span>
     <div class="big" id="lifeSec">0</div>
     <p>segundos desde que naciste en Cancún.</p>
   </section>
+  </div>
+
+  <button class="skip" id="skip" type="button" hidden>Ver la carta completa</button>
 </main>
 
 <script>
@@ -273,15 +282,18 @@ section{width:100%}
     clave.blur();
     keyform.hidden=true; count.hidden=true;
     meta.textContent=""; hint.textContent="Para ti.";
-    env.classList.add("open");
+    env.classList.add("open");              // se abre la solapa + sale el papel
+    var stage=document.querySelector(".stage");
     setTimeout(function(){
-      $("postcard").hidden=false;
-      $("postcard").scrollIntoView({behavior: reduce?"auto":"smooth", block:"start"});
+      stage.classList.add("gone");          // el sobre se desvanece
       setTimeout(function(){
-        $("letter").hidden=false;
-        writeLetter();
-      }, reduce?0:1600);
-    },1800);
+        stage.hidden=true;
+        $("reading").hidden=false;
+        $("postcard").classList.add("pop"); // la postal sale/crece
+        $("reading").scrollIntoView({behavior:"auto", block:"start"});
+        setTimeout(function(){ $("letter").hidden=false; writeLetter(); }, reduce?0:1500);
+      }, 650);
+    }, 1700);
   }
 
   /* la carta se escribe sola — y se borra */
