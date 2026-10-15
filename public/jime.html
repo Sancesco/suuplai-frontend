@@ -9,7 +9,7 @@
 <meta property="og:description" content="Una carta. Tienes la clave.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Dancing+Script:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=Patrick+Hand&display=swap">
 <style>
 /* Fondo galería, un sobre ultramarino, countdown en serif enorme; la clave lo abre y la carta se escribe (y se corrige) sola. */
 :root{
@@ -22,7 +22,7 @@
   --blue-deep:#16269c;
   --serif:"Instrument Serif", "Times New Roman", serif;
   --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
-  --hand:"Dancing Script", "Segoe Script", cursive;
+  --hand:"Patrick Hand", "Segoe Print", "Comic Sans MS", cursive;
   color-scheme: light;
 }
 *{box-sizing:border-box}
@@ -103,11 +103,11 @@ section{width:100%}
 .letter .top{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;border-bottom:1px solid var(--ink);padding-bottom:.9rem;margin-bottom:1rem;
   font-family:var(--mono);font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;font-variant-numeric:tabular-nums}
 .letter .top .final{color:var(--blue)}
-.letter p{margin:0;font-family:var(--hand);font-weight:600;font-size:2.1rem;line-height:1.58;max-width:30ch;color:#1b2a5e;letter-spacing:.3px}
-.letter p.salute{font-size:2.6rem;font-weight:700}
-.letter p.short{color:#394a86;font-weight:600}
-.letter .caret{display:inline-block;width:3px;height:.9em;background:var(--blue);margin-left:2px;vertical-align:-.1em;animation:blink 1s steps(1) infinite}
-.letter .sign{font-family:var(--hand);font-weight:700;font-size:3rem;margin-top:1rem;color:var(--blue)}
+.letter p{margin:0;font-family:var(--hand);font-size:1.7rem;line-height:1.5;max-width:40ch;color:#1b2a5e;letter-spacing:.2px}
+.letter p.salute{font-size:2.1rem}
+.letter p.short{color:#394a86}
+.letter .caret{display:inline-block;width:3px;height:1em;background:var(--blue);margin-left:2px;vertical-align:-.12em;animation:blink 1s steps(1) infinite}
+.letter .sign{font-family:var(--hand);font-size:2.2rem;margin-top:1rem;color:var(--blue)}
 
 .skip{position:fixed;z-index:20;right:16px;bottom:calc(16px + env(safe-area-inset-bottom, 0px));
   font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);
