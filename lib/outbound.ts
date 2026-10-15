@@ -74,6 +74,18 @@ export const CV_DEFAULT: Record<'es' | 'en', { url: string; nombre: string }> = 
   en: { url: 'https://umgienrvpnzoaaztkejd.supabase.co/storage/v1/object/public/aplicaciones-cv/3c90249c-b05c-43ee-b133-2c3edf2aa885/1791222653530.pdf', nombre: 'Santiago_Cespedes_CV_EN.pdf' },
 }
 
+// A/B test de CV (solo español): A = comercial/fundador, B = fintech/producto (v6). Se alternan en
+// el outbound para medir cuál convierte mejor (señal = apertura/clic/descarga/respuesta).
+export const CV_AB: { variante: string; url: string; nombre: string }[] = [
+  { variante: 'A', url: 'https://umgienrvpnzoaaztkejd.supabase.co/storage/v1/object/public/aplicaciones-cv/38b17a84-ccc1-448e-a195-d1651045e2eb/cv-2026-10-09.pdf', nombre: 'Cespedes_Santiago_CV_2026.pdf' },
+  { variante: 'B', url: 'https://umgienrvpnzoaaztkejd.supabase.co/storage/v1/object/public/aplicaciones-cv/38b17a84-ccc1-448e-a195-d1651045e2eb/cv-v6-2026-10-14.pdf', nombre: 'Cespedes_Santiago_CV_v6.pdf' },
+]
+// Elige la variante menos usada (mantiene el reparto ~50/50 para el A/B).
+async function elegirCvAB(sb: NonNullable<ReturnType<typeof getSupabaseAdmin>>) {
+  const [a, b] = await Promise.all(CV_AB.map((v) => sb.from('app_applications').select('id', { count: 'exact', head: true }).eq('cv_nombre', v.nombre)))
+  return (b.count ?? 0) < (a.count ?? 0) ? CV_AB[1] : CV_AB[0]
+}
+
 export type Prospecto = {
   id: string; empresa: string; persona: string | null; puesto: string | null; email: string | null
   sitio_web: string | null; linkedin: string | null; sector: string | null; idioma: string
@@ -102,9 +114,11 @@ export async function slugUnico(sb: NonNullable<ReturnType<typeof getSupabaseAdm
 export async function prepararProspecto(
   sb: NonNullable<ReturnType<typeof getSupabaseAdmin>>,
   p: { empresa: string; persona: string | null; puesto: string | null; idioma: 'es' | 'en' },
+  opts: { abTest?: boolean } = {},
 ): Promise<{ slug: string; appId: string }> {
   const slug = await slugUnico(sb, p.empresa || 'prospecto')
-  const cv = CV_DEFAULT[p.idioma] || CV_DEFAULT.es
+  // En el outbound (abTest), para español se alterna el CV A/B; si no, el default.
+  const cv = (opts.abTest && p.idioma === 'es') ? await elegirCvAB(sb) : (CV_DEFAULT[p.idioma] || CV_DEFAULT.es)
   const { data: app, error: ea } = await sb.from('app_applications').insert({
     empresa: p.empresa, puesto: p.puesto || '—', persona: p.persona || null, vacante: '',
     solo_cv: true, idioma: p.idioma, cv_url: cv.url, cv_nombre: cv.nombre, slug, estado: 'enviada',

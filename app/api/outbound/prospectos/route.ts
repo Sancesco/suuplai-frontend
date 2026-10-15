@@ -121,7 +121,7 @@ export async function POST(req: Request) {
       if (dup) { saltados.push(email); continue }
     }
     try {
-      const { slug, appId } = await prepararProspecto(sb, { empresa, persona: String(f?.persona ?? '').trim() || null, puesto: String(f?.puesto ?? '').trim() || null, idioma })
+      const { slug, appId } = await prepararProspecto(sb, { empresa, persona: String(f?.persona ?? '').trim() || null, puesto: String(f?.puesto ?? '').trim() || null, idioma }, { abTest: true })
       const { data: ins, error } = await sb.from('outbound_prospecto').insert({
         empresa, persona: String(f?.persona ?? '').trim() || null, puesto: String(f?.puesto ?? '').trim() || null,
         email: email || null, sitio_web: String(f?.sitio_web ?? '').trim() || null, linkedin: String(f?.linkedin ?? '').trim() || null,
