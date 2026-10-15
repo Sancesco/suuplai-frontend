@@ -5,124 +5,242 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Para Jime</title>
 <meta name="robots" content="noindex,nofollow">
-<meta property="og:title" content="Para Jime 🤍">
-<meta property="og:description" content="Una carta digital. Ábrela.">
+<meta property="og:title" content="Para Jime">
+<meta property="og:description" content="Una carta. Ábrela.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Dancing+Script:wght@600;700&family=Cormorant+Garamond:ital,wght@0,500;1,500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:ital,wght@0,500;0,600;0,700;1,500&family=Courier+Prime:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <style>
   :root{
-    --paper:#f7efe0; --paper2:#f1e6d2; --ink:#5a4636; --ink-soft:#8a7359;
-    --rose:#b76e79; --rose-soft:#d99aa3; --gold:#c0922f; --line:#d8c7ab;
+    --bg:#e7d9ba; --bg2:#dfce aa; --kraft:#e9dcbe; --kraft2:#e0d0ac;
+    --paper:#f6eedb; --paper2:#f0e6cd;
+    --ink:#332e24; --ink2:#6e6047;
+    --navy:#27506a; --green:#54692f; --rust:#bd5633; --mustard:#d49326;
+    --line:#c7b governs; --line:#c6b388; --brown:#9a7550;
   }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
   body{
-    min-height:100%; font-family:'Cormorant Garamond',Georgia,serif; color:var(--ink);
+    min-height:100%; font-family:'Zilla Slab',Georgia,serif; color:var(--ink);
     background:
-      radial-gradient(120% 90% at 50% -10%, #f6e7e4 0%, rgba(246,231,228,0) 55%),
-      linear-gradient(160deg,#f3e2de 0%,#efe6d4 48%,#eadfc7 100%);
+      radial-gradient(rgba(120,100,60,.05) 1px, transparent 1.4px) 0 0/18px 18px,
+      linear-gradient(165deg,#ecdfc1 0%,#e6d7b6 52%,#ddcba4 100%);
     display:flex; align-items:center; justify-content:center;
     padding:clamp(16px,4vw,40px); overflow-x:hidden;
   }
-  /* corazones flotando */
-  .hearts{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
-  .hearts b{position:absolute;bottom:-40px;color:var(--rose-soft);opacity:.0;animation:rise linear infinite;font-size:18px}
-  @keyframes rise{0%{transform:translateY(0) rotate(0);opacity:0}10%{opacity:.5}90%{opacity:.5}100%{transform:translateY(-112vh) rotate(40deg);opacity:0}}
 
-  .scene{position:relative;z-index:1;perspective:1600px;width:min(94vw,430px)}
-  .card{position:relative;width:100%;min-height:min(78vh,620px);transform-style:preserve-3d}
-
-  /* ---- Carta (adentro) ---- */
-  .inside{
-    position:absolute;inset:0;border-radius:14px;
+  /* ---------- Pantalla de clave ---------- */
+  .gate{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;padding:24px;
     background:
-      repeating-linear-gradient(transparent,transparent 37px,rgba(183,110,121,.10) 38px),
-      linear-gradient(180deg,var(--paper),var(--paper2));
-    box-shadow:0 30px 60px -22px rgba(90,70,54,.5), inset 0 0 0 1px rgba(192,146,47,.18);
-    padding:30px 26px 38px; overflow-y:auto; -webkit-overflow-scrolling:touch;
-  }
-  .inside::before{content:"🤍";position:absolute;top:12px;right:16px;font-size:16px;opacity:.6}
-  .for{font-family:'Dancing Script',cursive;color:var(--rose);font-size:26px;margin:2px 0 14px;text-align:center}
-  .letter{font-family:'Caveat',cursive;font-size:clamp(20px,5.4vw,23px);line-height:1.5;color:var(--ink);white-space:pre-wrap}
-  .letter p{margin:0 0 15px}
-  .letter .aside{color:var(--ink-soft);font-style:italic}
-  .letter .end{font-family:'Dancing Script',cursive;color:var(--rose);font-size:clamp(26px,7vw,32px);line-height:1.2;margin-top:6px}
-  .cursor{display:inline-block;width:2px;height:1em;background:var(--rose);margin-left:1px;vertical-align:-2px;animation:blink 1s steps(1) infinite}
+      radial-gradient(rgba(120,100,60,.05) 1px, transparent 1.4px) 0 0/18px 18px,
+      linear-gradient(165deg,#ecdfc1,#e6d7b6 55%,#ddcba4);
+    transition:opacity .7s ease}
+  .gate.hide{opacity:0;pointer-events:none}
+  .sobre{position:relative;width:min(90vw,350px);text-align:center;padding:72px 28px 30px;
+    background:linear-gradient(165deg,#2d5873,#21465c);border:1px solid #173849;border-radius:12px;
+    box-shadow:0 26px 52px -22px rgba(16,36,50,.75), inset 0 0 0 1px rgba(255,255,255,.07)}
+  .sobre .flap2{position:absolute;left:0;top:0;width:100%;height:60px;z-index:1;
+    background:linear-gradient(175deg,#356179,#28506655);background:linear-gradient(175deg,#356179,#285066);
+    clip-path:polygon(0 0,100% 0,50% 100%);transform-origin:top center;
+    filter:drop-shadow(0 3px 4px rgba(16,36,50,.35));
+    transition:transform .95s cubic-bezier(.3,.9,.25,1)}
+  .sobre.go-open .flap2{transform:rotateX(-170deg)}
+  .sobre .seal{position:absolute;left:50%;top:52px;transform:translateX(-50%);z-index:2;width:46px;height:46px;border-radius:50%;
+    background:radial-gradient(circle at 38% 32%,#e3ac47,#c98a24);color:#21465c;
+    display:flex;align-items:center;justify-content:center;font-family:'Zilla Slab';font-weight:700;font-size:21px;
+    box-shadow:0 3px 7px rgba(16,36,50,.45), inset 0 0 0 2px rgba(255,255,255,.22)}
+  .sobre.go-open .seal{opacity:0;transition:opacity .35s}
+  .sobre h2{font-family:'Zilla Slab';font-weight:700;color:#f3ead3;font-size:24px;margin:6px 0 2px;letter-spacing:.3px}
+  .sobre p{font-family:'Courier Prime',monospace;color:#b7cdd8;margin:0 0 18px;font-size:12.5px;line-height:1.5}
+  .sobre input{width:130px;text-align:center;font-family:'Courier Prime',monospace;font-weight:700;font-size:38px;color:#f3ead3;
+    background:transparent;border:none;border-bottom:2.5px solid rgba(243,234,211,.38);outline:none;padding:2px 0 6px;letter-spacing:10px}
+  .sobre input::placeholder{color:rgba(243,234,211,.32)}
+  .sobre input:focus{border-color:#e3ac47}
+  .sobre .go{margin-top:22px;display:block;width:100%;font-family:'Zilla Slab';font-weight:700;letter-spacing:2.5px;
+    text-transform:uppercase;font-size:13px;color:#21465c;background:#e3ac47;border:none;border-radius:8px;padding:13px;cursor:pointer;
+    transition:background .2s}
+  .sobre .go:active{background:#c98a24}
+  .sobre .err{color:#f0b59a;font-family:'Courier Prime',monospace;font-size:12px;height:16px;margin-top:12px;opacity:0;transition:opacity .2s}
+  .sobre.bad{animation:shake .4s}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+
+  /* ---------- Sobre + carta ---------- */
+  .scene{position:relative;z-index:1;perspective:1700px;width:min(92vw,390px)}
+  .card{position:relative;width:100%;aspect-ratio:1/1.36;transform-style:preserve-3d}
+
+  /* carta (atrás) */
+  .letter-card{position:absolute;inset:0;border-radius:11px;overflow:hidden;z-index:1;
+    background:linear-gradient(180deg,var(--paper),var(--paper2));
+    box-shadow:0 26px 54px -24px rgba(70,54,30,.5), inset 0 0 0 1px rgba(255,255,255,.4);
+    display:flex;flex-direction:column;opacity:0;transform:translateY(10px);
+    transition:opacity .7s ease .5s, transform .7s ease .5s}
+  .card.open .letter-card{opacity:1;transform:none}
+  .letter-card::before{content:"";position:absolute;inset:0;border:1px solid var(--line);border-radius:11px;margin:8px;pointer-events:none}
+  .inside{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:26px 24px 34px}
+  .for{font-family:'Zilla Slab';font-weight:700;color:var(--rust);font-size:24px;text-align:center;margin:2px 0 4px;letter-spacing:.3px}
+  .for-sub{font-family:'Courier Prime',monospace;color:var(--ink2);font-size:11px;text-align:center;letter-spacing:3px;text-transform:uppercase;margin-bottom:16px}
+  .letter{font-family:'Courier Prime',monospace;font-size:clamp(13.5px,3.7vw,15px);line-height:1.62;color:var(--ink);white-space:pre-wrap}
+  .letter p{margin:0 0 14px}
+  .letter .aside{color:var(--ink2);font-style:italic}
+  .letter .end{font-family:'Zilla Slab';font-weight:700;color:var(--rust);font-size:clamp(20px,5.6vw,25px);line-height:1.25;margin-top:4px}
+  .cursor{display:inline-block;width:8px;height:1.05em;background:var(--ink);margin-left:1px;vertical-align:-2px;animation:blink 1s steps(1) infinite;opacity:.7}
   @keyframes blink{50%{opacity:0}}
 
-  /* ---- Portada (postal vintage) ---- */
-  .cover{
-    position:absolute;inset:0;border-radius:14px;z-index:3;cursor:pointer;
-    transform-origin:50% 0%;transition:transform 1.35s cubic-bezier(.3,.9,.25,1), opacity .4s ease 1s;
-    background:linear-gradient(150deg,#f8f0df,#efe2c9);
-    box-shadow:0 26px 54px -20px rgba(90,70,54,.55), inset 0 0 0 1px rgba(192,146,47,.25);
-    padding:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
-    backface-visibility:hidden;
-  }
-  .cover .frame{position:absolute;inset:14px;border:1.5px solid var(--line);border-radius:8px}
-  .cover .frame::after{content:"";position:absolute;inset:5px;border:1px dashed rgba(192,146,47,.5);border-radius:5px}
+  /* sobre (encima) */
+  .env{position:absolute;inset:0;z-index:2;border-radius:11px;
+    transition:opacity .6s ease .45s, transform .6s ease .45s}
+  .card.open .env{opacity:0;transform:translateY(30px);pointer-events:none}
+  .env-body{position:absolute;inset:0;border-radius:11px;border:1px solid var(--line);
+    background:linear-gradient(162deg,#ece0c4,#e3d3ac);
+    box-shadow:0 26px 54px -22px rgba(70,54,30,.55), inset 0 0 0 1px rgba(255,255,255,.3)}
+  /* frente decorado */
+  .front{position:absolute;left:0;right:0;top:43%;bottom:0;z-index:3;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:0 22px 20px;text-align:center}
+  .eyebrow{font-family:'Courier Prime',monospace;font-size:10.5px;letter-spacing:4px;text-transform:uppercase;color:var(--ink2)}
+  .bday{font-family:'Zilla Slab';font-weight:700;line-height:.95;color:var(--navy);
+    font-size:clamp(26px,8vw,34px);text-transform:uppercase}
+  .bday em{font-style:normal;color:var(--rust)}
+  .illus{display:flex;align-items:flex-end;justify-content:center;gap:6px;margin:2px 0}
+  .illus svg{display:block}
+  .ground{width:62%;height:0;border-bottom:2px solid var(--ink);opacity:.5;margin-top:-4px}
+  .para{font-family:'Zilla Slab';font-weight:700;font-style:italic;color:var(--rust);font-size:19px;margin-top:2px}
+  .tap{font-family:'Courier Prime',monospace;font-size:10.5px;letter-spacing:3px;text-transform:uppercase;color:var(--mustard);
+    animation:pulse 1.8s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+  /* solapa */
+  .flap{position:absolute;left:0;top:0;width:100%;height:47%;z-index:5;
+    background:linear-gradient(175deg,#e4d4ad,#dcc99d);
+    clip-path:polygon(0 0,100% 0,50% 100%);transform-origin:top center;
+    filter:drop-shadow(0 4px 5px rgba(70,54,30,.2));
+    transition:transform 1.05s cubic-bezier(.3,.9,.25,1), opacity .4s ease .65s}
+  .card.open .flap{transform:rotateX(-172deg);opacity:0;z-index:1}
+  .seal{position:absolute;left:50%;bottom:5%;transform:translateX(-50%);width:50px;height:50px;border-radius:50%;
+    background:radial-gradient(circle at 38% 32%,#2f5d7c,#20455d);color:var(--paper);
+    display:flex;align-items:center;justify-content:center;font-family:'Zilla Slab';font-weight:700;font-size:18px;
+    box-shadow:0 3px 6px rgba(70,54,30,.35), inset 0 0 0 2px rgba(255,255,255,.18)}
   /* timbre */
-  .stamp{position:absolute;top:22px;right:22px;width:52px;height:62px;border-radius:3px;
-    background:linear-gradient(160deg,#e9c3c7,#d99aa3);padding:4px;
-    box-shadow:0 2px 6px rgba(90,70,54,.25);
+  .stamp{position:absolute;top:14px;right:14px;z-index:4;width:46px;height:54px;border-radius:3px;
+    background:linear-gradient(160deg,#e7cf a3,#e2c58f);background:linear-gradient(160deg,#e7cfa3,#dcbd82);
+    padding:3px;box-shadow:0 2px 5px rgba(70,54,30,.22);
     -webkit-mask:radial-gradient(circle at 50% -3px,transparent 3px,#000 3.2px) 0 0/8px 100%,
                  radial-gradient(circle at 50% calc(100% + 3px),transparent 3px,#000 3.2px) 0 100%/8px 100%,
                  radial-gradient(circle at -3px 50%,transparent 3px,#000 3.2px) 0 0/100% 8px,
                  radial-gradient(circle at calc(100% + 3px) 50%,transparent 3px,#000 3.2px) 100% 0/100% 8px;
     -webkit-mask-composite:source-over;mask-composite:add}
   .stamp i{display:flex;width:100%;height:100%;align-items:center;justify-content:center;
-    border:1px solid rgba(255,255,255,.6);border-radius:2px;font-style:normal;font-size:22px}
-  /* matasellos */
-  .postmark{position:absolute;top:30px;right:70px;width:64px;height:64px;border:2px solid rgba(183,110,121,.45);
-    border-radius:50%;color:rgba(183,110,121,.55);font-family:'Cormorant Garamond',serif;
-    display:flex;align-items:center;justify-content:center;font-size:10px;letter-spacing:.5px;transform:rotate(-12deg);text-align:center;line-height:1.1}
-  .cover .eye{font-family:'Cormorant Garamond',serif;letter-spacing:4px;text-transform:uppercase;font-size:12px;color:var(--ink-soft);margin-bottom:10px}
-  .cover h1{font-family:'Dancing Script',cursive;font-weight:700;color:var(--rose);margin:0;
-    font-size:clamp(34px,10vw,46px);line-height:1.05;text-shadow:0 1px 0 rgba(255,255,255,.6)}
-  .cover .sub{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--ink);font-size:clamp(17px,4.6vw,20px);margin-top:8px}
-  .cover .flour{color:var(--gold);font-size:20px;margin-top:14px;letter-spacing:6px}
-  .hint{position:absolute;bottom:20px;left:0;right:0;font-family:'Cormorant Garamond',serif;
-    letter-spacing:3px;text-transform:uppercase;font-size:11px;color:var(--ink-soft);animation:pulse 1.8s ease-in-out infinite}
-  @keyframes pulse{0%,100%{opacity:.45}50%{opacity:.95}}
+    border:1px solid rgba(51,46,36,.4);border-radius:2px}
 
-  .card.open .cover{transform:rotateX(-168deg);opacity:0;pointer-events:none}
-  @media (prefers-reduced-motion:reduce){.cover{transition:opacity .5s} .card.open .cover{transform:none;opacity:0} .hearts{display:none}}
+  .card.open .stamp{opacity:0;transition:opacity .4s}
+
+  @media (prefers-reduced-motion:reduce){
+    .flap,.env,.letter-card{transition:opacity .5s}
+    .card.open .flap{transform:none;opacity:0}
+    .card.open .env{transform:none}
+  }
 </style>
 </head>
 <body>
-<div class="hearts" id="hearts" aria-hidden="true"></div>
 
+<!-- CLAVE -->
+<div class="gate" id="gate">
+  <div class="sobre" id="lock">
+    <div class="flap2"></div>
+    <div class="seal">J</div>
+    <h2>Esta carta es tuya</h2>
+    <p>escribe tu clave para abrirla<br>(los años que cumples hoy)</p>
+    <input id="clave" inputmode="numeric" autocomplete="off" maxlength="3" aria-label="clave" placeholder="··">
+    <button class="go" id="abrir">Abrir sobre</button>
+    <div class="err" id="err">esa no es, intenta otra vez</div>
+  </div>
+</div>
+
+<!-- SOBRE + CARTA -->
 <div class="scene">
   <div class="card" id="card">
-    <div class="inside" id="inside">
-      <div class="for">Para Jime</div>
-      <div class="letter" id="letter"></div>
+
+    <!-- carta -->
+    <div class="letter-card">
+      <div class="inside" id="inside">
+        <div class="for">Para Jime</div>
+        <div class="for-sub">· de Santiago ·</div>
+        <div class="letter" id="letter"></div>
+      </div>
     </div>
 
-    <div class="cover" id="cover" role="button" tabindex="0" aria-label="Abrir la carta">
-      <div class="frame"></div>
-      <div class="stamp"><i>🤍</i></div>
-      <div class="postmark">CDMX<br>· 15 · OCT ·</div>
-      <div class="eye">una carta para ti</div>
-      <h1>Happy Birthday<br>my love</h1>
-      <div class="sub">de Santiago, con todo</div>
-      <div class="flour">✶ ❦ ✶</div>
-      <div class="hint">toca para abrir</div>
+    <!-- sobre -->
+    <div class="env" id="env">
+      <div class="env-body"></div>
+
+      <div class="stamp"><i>
+        <svg width="34" height="40" viewBox="0 0 34 40" fill="none" stroke="#332e24" stroke-width="2" stroke-linejoin="round">
+          <path d="M8 10 L14 18 L5 19 Z" fill="#bd5633"/>
+          <path d="M26 10 L20 18 L29 19 Z" fill="#bd5633"/>
+          <path d="M17 11 C27 13 25 24 17 33 C9 24 7 13 17 11Z" fill="#c76a3f"/>
+          <path d="M17 24 C23 25 22 29 17 33 C12 29 11 25 17 24Z" fill="#f0e6cc"/>
+          <circle cx="13" cy="21" r="1.6" fill="#332e24" stroke="none"/>
+          <circle cx="21" cy="21" r="1.6" fill="#332e24" stroke="none"/>
+        </svg>
+      </i></div>
+
+      <div class="front">
+        <div class="eyebrow">· CDMX · MMXXVI ·</div>
+        <div class="bday">Feliz<br><em>Cumpleaños</em></div>
+
+        <div class="illus">
+          <!-- zorro -->
+          <svg width="56" height="56" viewBox="0 0 90 90" fill="none" stroke="#332e24" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+            <path d="M18 14 L34 40 L10 42 Z" fill="#bd5633"/>
+            <path d="M72 14 L56 40 L80 42 Z" fill="#bd5633"/>
+            <path d="M45 20 C70 24 66 50 45 74 C24 50 20 24 45 20Z" fill="#c76a3f"/>
+            <path d="M45 50 C58 52 56 62 45 74 C34 62 32 52 45 50Z" fill="#f0e6cc"/>
+            <circle cx="35" cy="43" r="2.6" fill="#332e24" stroke="none"/>
+            <circle cx="55" cy="43" r="2.6" fill="#332e24" stroke="none"/>
+            <path d="M41 56 h8 l-4 5 z" fill="#332e24" stroke="none"/>
+          </svg>
+          <!-- pastel -->
+          <svg width="88" height="80" viewBox="0 0 150 130" fill="none" stroke="#332e24" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+            <line x1="60" y1="26" x2="60" y2="42"/>
+            <line x1="75" y1="22" x2="75" y2="42"/>
+            <line x1="90" y1="26" x2="90" y2="42"/>
+            <path d="M60 26 c6 -4 1 -12 0 -15 c-1 3 -6 11 0 15z" fill="#d49326"/>
+            <path d="M75 22 c6 -4 1 -12 0 -15 c-1 3 -6 11 0 15z" fill="#d49326"/>
+            <path d="M90 26 c6 -4 1 -12 0 -15 c-1 3 -6 11 0 15z" fill="#d49326"/>
+            <path d="M48 46 h54 v26 h-54 z" fill="#bd5633"/>
+            <path d="M46 46 q7 -10 14 0 q7 -10 14 0 q7 -10 14 0 q7 -10 12 0" fill="#f5edd6"/>
+            <path d="M30 76 h90 v32 h-90 z" fill="#d49326"/>
+            <path d="M28 76 q8 -11 16 0 q8 -11 16 0 q8 -11 16 0 q8 -11 16 0 q8 -11 14 0" fill="#f5edd6"/>
+            <path d="M18 108 h114"/>
+            <path d="M26 108 q49 13 98 0" fill="#f5edd6"/>
+          </svg>
+          <!-- oso -->
+          <svg width="56" height="56" viewBox="0 0 90 90" fill="none" stroke="#332e24" stroke-width="3" stroke-linejoin="round" stroke-linecap="round">
+            <circle cx="26" cy="27" r="11" fill="#9a7550"/>
+            <circle cx="64" cy="27" r="11" fill="#9a7550"/>
+            <circle cx="26" cy="27" r="4.5" fill="#bd5633" stroke="none"/>
+            <circle cx="64" cy="27" r="4.5" fill="#bd5633" stroke="none"/>
+            <circle cx="45" cy="49" r="26" fill="#9a7550"/>
+            <ellipse cx="45" cy="59" rx="13" ry="10" fill="#efe3c7"/>
+            <circle cx="36" cy="45" r="2.6" fill="#332e24" stroke="none"/>
+            <circle cx="54" cy="45" r="2.6" fill="#332e24" stroke="none"/>
+            <path d="M45 54 l-4 4 h8 z" fill="#332e24" stroke="none"/>
+            <path d="M45 58 v3 M45 61 q-5 3 -8 0 M45 61 q5 3 8 0" stroke-width="2.3"/>
+          </svg>
+        </div>
+        <div class="ground"></div>
+
+        <div class="para">Para Jime</div>
+        <div class="tap">toca para abrir</div>
+      </div>
+
+      <div class="flap" id="flap">
+        <div class="seal">29</div>
+      </div>
     </div>
   </div>
 </div>
 
 <script>
 (function(){
-  // corazones
-  var H=document.getElementById('hearts');
-  for(var i=0;i<14;i++){var b=document.createElement('b');b.textContent='♥';
-    b.style.left=(Math.random()*100)+'%';
-    b.style.fontSize=(12+Math.random()*16)+'px';
-    b.style.animationDuration=(9+Math.random()*9)+'s';
-    b.style.animationDelay=(Math.random()*12)+'s';H.appendChild(b);}
-
   var paras=[
     `Jime:`,
     `Llevo días intentando escribirte esta carta. Escribo, borro, se me ocurre algo, me acerco, me alejo y vuelvo a empezar. Hoy son las 8:27 y aquí sigo. A lo mejor tengo que escribir 29 cartas antes de que me salga la buena, una por cada año que cumples.`,
@@ -139,23 +257,21 @@
     `#Feliz cumpleaños, Jimis.`
   ];
 
-  var card=document.getElementById('card'), cover=document.getElementById('cover'), letter=document.getElementById('letter');
+  var card=document.getElementById('card'), env=document.getElementById('env'), letter=document.getElementById('letter'), inside=document.getElementById('inside');
   var opened=false, typing=false, done=false, reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
 
-  function build(p){ // crea el <p> con clases segun marcador
+  function build(p){
     var cls='', txt=p;
-    if(p[0]==='@'){cls=' class="aside"';txt=p.slice(1);}
-    else if(p[0]==='#'){cls=' class="end"';txt=p.slice(1);}
-    var el=document.createElement('p'); if(cls) el.className=cls.replace(' class="','').replace('"','');
+    if(p[0]==='@'){cls='aside';txt=p.slice(1);}
+    else if(p[0]==='#'){cls='end';txt=p.slice(1);}
+    var el=document.createElement('p'); if(cls) el.className=cls;
     return {el:el,txt:txt};
   }
-
-  function reveal(){ // muestra todo de golpe
+  function reveal(){
     letter.innerHTML='';
     paras.forEach(function(p){var b=build(p);b.el.textContent=b.txt;letter.appendChild(b.el);});
     done=true; typing=false;
   }
-
   function typeAll(){
     typing=true; letter.innerHTML='';
     var cursor=document.createElement('span'); cursor.className='cursor';
@@ -168,29 +284,42 @@
         if(!typing){return;}
         if(ci<s.length){
           b.el.insertBefore(document.createTextNode(s[ci]), cursor);
-          ci++;
-          document.getElementById('inside').scrollTop=999999;
+          ci++; inside.scrollTop=999999;
           var ch=s[ci-1];
-          var d = (ch==='.'||ch===','||ch===':'||ch==='?') ? 120 : (18+Math.random()*34);
+          var d=(ch==='.'||ch===','||ch===':'||ch==='?')?240:(40+Math.random()*48);
           setTimeout(typeChar,d);
-        } else {
-          pi++; setTimeout(nextPara, 440);
-        }
+        } else { pi++; setTimeout(nextPara,560); }
       })();
     }
     nextPara();
   }
-
   function open(){
     if(opened) return; opened=true; card.classList.add('open');
-    var wait = reduce ? 500 : 1200;
-    setTimeout(function(){ if(reduce){reveal();} else {typeAll();} }, wait);
+    var wait=reduce?500:1250;
+    setTimeout(function(){ reduce?reveal():typeAll(); }, wait);
   }
+  env.addEventListener('click', open);
+  env.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' ') open(); });
+  inside.addEventListener('click', function(){ if(opened && typing){ typing=false; reveal(); } });
 
-  cover.addEventListener('click', open);
-  cover.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' ') open(); });
-  // tocar la carta mientras se escribe = mostrar todo
-  document.getElementById('inside').addEventListener('click', function(){ if(opened && typing){ typing=false; reveal(); } });
+  // ---- clave 29 ----
+  var gate=document.getElementById('gate'), lock=document.getElementById('lock'),
+      clave=document.getElementById('clave'), abrir=document.getElementById('abrir'), err=document.getElementById('err');
+  function intentar(){
+    if(clave.value.trim()==='29'){
+      clave.blur();
+      lock.classList.add('go-open');                 // abre la solapa del sobre azul
+      setTimeout(function(){ gate.classList.add('hide'); }, 680);   // luego se desvanece
+      setTimeout(function(){ gate.style.display='none'; }, 1380);   // y pasa a la postal
+    } else {
+      err.style.opacity='1'; lock.classList.remove('bad'); void lock.offsetWidth; lock.classList.add('bad');
+      clave.value=''; clave.focus();
+    }
+  }
+  abrir.addEventListener('click', intentar);
+  clave.addEventListener('keydown', function(e){ if(e.key==='Enter') intentar(); });
+  clave.addEventListener('input', function(){ err.style.opacity='0'; });
+  window.addEventListener('load', function(){ clave.focus(); });
 })();
 </script>
 </body>
