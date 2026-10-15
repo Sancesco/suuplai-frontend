@@ -110,6 +110,12 @@ section{width:100%}
 .letter .caret{display:inline-block;width:2px;height:1em;background:var(--blue);margin-left:2px;vertical-align:-.12em;animation:blink 1s steps(1) infinite}
 .letter .sign{font-family:var(--serif);font-style:italic;font-size:2.1rem;margin-top:1rem;color:var(--blue)}
 
+.saverow{display:flex;justify-content:center;width:100%;margin-top:.4rem}
+.save{font-family:var(--mono);font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--paper);
+  background:var(--blue);border:0;border-radius:5px;padding:1rem 1.5rem;cursor:pointer;transition:background .2s}
+.save:hover{background:var(--blue-deep)}
+.save[disabled]{opacity:.6;cursor:default}
+
 .skip{position:fixed;z-index:20;right:16px;bottom:calc(16px + env(safe-area-inset-bottom, 0px));
   font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);
   background:var(--paper);border:1px solid var(--line);padding:.7rem .9rem;cursor:pointer}
@@ -219,8 +225,12 @@ section{width:100%}
   </section>
   </div>
 
+  <div class="saverow" id="saverow" hidden><button class="save" id="save" type="button">Descargar carta</button></div>
+
   <button class="skip" id="skip" type="button" hidden>Ver la carta completa</button>
 </main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
 <script>
 (function(){
@@ -340,9 +350,28 @@ section{width:100%}
     $("skip").hidden=true;
     caret.remove();
     $("coda").hidden=false;
+    $("saverow").hidden=false;
     (function t(){ $("lifeSec").textContent=fmt.format(Math.floor((Date.now()-BORN)/1000)); setTimeout(t,1000); })();
   }
   $("skip").addEventListener("click", function(){ skipped=true; });
+
+  // Descargar la carta como imagen para guardarla
+  function descargar(){
+    var btn=$("save"), node=$("reading");
+    if (!window.html2canvas){ window.print(); return; } // respaldo: guardar como PDF
+    var txt=btn.textContent; btn.textContent="Generando…"; btn.disabled=true;
+    window.html2canvas(node, {
+      scale: Math.min(2, window.devicePixelRatio||1) + 0.5,
+      backgroundColor: "#eeebe5", useCORS: true,
+      ignoreElements: function(el){ return el.id==="coda"; }
+    }).then(function(canvas){
+      var a=document.createElement("a");
+      a.href=canvas.toDataURL("image/png"); a.download="Carta-para-Jime.png";
+      document.body.appendChild(a); a.click(); a.remove();
+      btn.textContent=txt; btn.disabled=false;
+    }).catch(function(){ btn.textContent=txt; btn.disabled=false; window.print(); });
+  }
+  $("save").addEventListener("click", descargar);
 
   tick();
   setInterval(function(){ if(!opened) tick(); }, 1000);
