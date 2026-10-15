@@ -1,342 +1,197 @@
-<!doctype html><html lang="es"><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="robots" content="noindex,nofollow"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Para Jimis</title>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Para Jime</title>
+<meta name="robots" content="noindex,nofollow">
+<meta property="og:title" content="Para Jime 🤍">
+<meta property="og:description" content="Una carta digital. Ábrela.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Dancing+Script:wght@600;700&family=Cormorant+Garamond:ital,wght@0,500;1,500&display=swap" rel="stylesheet">
 <style>
-/* Layout: gallery-white ground, one ultramarine envelope, huge serif countdown; a spec sheet and daily fragments; on Thursday the letter types itself while a draft counter runs to 100. Single deliberate light look. */
-:root{
-  --ground:#eeebe5;
-  --paper:#f8f6f2;
-  --ink:#141414;
-  --soft:#86827b;
-  --line:#d6d2ca;
-  --blue:#1f35d1;
-  --blue-deep:#16269c;
-  --serif:"Instrument Serif", "Times New Roman", serif;
-  --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
-  color-scheme: light;
-}
-*{box-sizing:border-box}
-html,body{background:var(--ground);color:var(--ink)}
-body{font-family:var(--serif);min-height:100vh;padding-inline:16px;padding-block:0;overflow-x:hidden}
-main{max-width:46rem;margin:0 auto;display:flex;flex-direction:column;align-items:center;gap:5.5rem;padding-block:clamp(2.5rem,8vh,5rem) 7rem}
-section{width:100%}
-.label{font-family:var(--mono);font-size:.64rem;letter-spacing:.28em;text-transform:uppercase;color:var(--soft)}
+  :root{
+    --paper:#f7efe0; --paper2:#f1e6d2; --ink:#5a4636; --ink-soft:#8a7359;
+    --rose:#b76e79; --rose-soft:#d99aa3; --gold:#c0922f; --line:#d8c7ab;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    min-height:100%; font-family:'Cormorant Garamond',Georgia,serif; color:var(--ink);
+    background:
+      radial-gradient(120% 90% at 50% -10%, #f6e7e4 0%, rgba(246,231,228,0) 55%),
+      linear-gradient(160deg,#f3e2de 0%,#efe6d4 48%,#eadfc7 100%);
+    display:flex; align-items:center; justify-content:center;
+    padding:clamp(16px,4vw,40px); overflow-x:hidden;
+  }
+  /* corazones flotando */
+  .hearts{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+  .hearts b{position:absolute;bottom:-40px;color:var(--rose-soft);opacity:.0;animation:rise linear infinite;font-size:18px}
+  @keyframes rise{0%{transform:translateY(0) rotate(0);opacity:0}10%{opacity:.5}90%{opacity:.5}100%{transform:translateY(-112vh) rotate(40deg);opacity:0}}
 
-/* ---------- Stage ---------- */
-.stage{display:flex;flex-direction:column;align-items:center;gap:2.5rem}
-.env{position:relative;width:min(620px,100%);aspect-ratio:1.6;perspective:1600px}
-.env > div{position:absolute;inset:0}
-.back{background:var(--blue-deep);z-index:1;box-shadow:0 1px 2px rgba(20,20,40,.15),0 40px 70px -30px rgba(22,38,156,.55)}
-.sheet{z-index:2;inset:5% 4% 4% 4% !important;background:var(--paper);transition:transform 1.2s cubic-bezier(.2,.8,.2,1) .6s}
-.front{z-index:3;background:var(--blue);clip-path:polygon(0 0,50% 54%,100% 0,100% 100%,0 100%);
-  display:flex;align-items:flex-end;justify-content:space-between;padding:0 6% 6%}
-.front::after{content:"";position:absolute;inset:0;background:
-  linear-gradient(to top right,transparent calc(50% - .5px),rgba(0,0,0,.18) 50%,transparent calc(50% + .5px)) left bottom/50% 46% no-repeat,
-  linear-gradient(to top left,transparent calc(50% - .5px),rgba(0,0,0,.18) 50%,transparent calc(50% + .5px)) right bottom/50% 46% no-repeat}
-.front span{position:relative;z-index:1;font-family:var(--mono);font-size:clamp(.55rem,1.6vw,.68rem);letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.72)}
-.flap{z-index:4;background:linear-gradient(180deg,#2a40e0,var(--blue));clip-path:polygon(0 0,100% 0,50% 58%);transform-origin:top center;
-  transition:transform .8s cubic-bezier(.6,0,.3,1), z-index 0s linear .4s}
+  .scene{position:relative;z-index:1;perspective:1600px;width:min(94vw,430px)}
+  .card{position:relative;width:100%;min-height:min(78vh,620px);transform-style:preserve-3d}
 
-.seal{position:absolute;z-index:6;left:50%;top:58%;transform:translate(-50%,-50%);width:clamp(64px,13vw,88px);aspect-ratio:1;
-  border:0;padding:0;background:none;cursor:pointer;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;transition:opacity .4s}
-.seal .wax{position:absolute;inset:12%;border-radius:50%;background:var(--paper);
-  box-shadow:inset 0 0 0 1px rgba(0,0,0,.06),0 6px 16px rgba(10,20,90,.35);
-  display:grid;place-items:center;font-family:var(--serif);font-style:italic;font-size:clamp(1.6rem,4.4vw,2.3rem);color:var(--blue);transition:transform .15s}
-.seal svg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg)}
-.seal circle{fill:none;stroke-width:2}
-.seal .track{stroke:rgba(255,255,255,.25)}
-.seal .prog{stroke:#fff;stroke-dasharray:283;stroke-dashoffset:283;stroke-linecap:round}
-.seal.holding .wax{transform:scale(.92)}
-.seal.locked .track{stroke:transparent}
-.seal:focus-visible{outline:1px solid #fff;outline-offset:4px;border-radius:50%}
-.env.shake{animation:shake .35s}
-.env.open .flap{transform:rotateX(180deg);z-index:0}
-.env.open .seal{opacity:0;pointer-events:none}
-.env.open .sheet{transform:translateY(-42%)}
+  /* ---- Carta (adentro) ---- */
+  .inside{
+    position:absolute;inset:0;border-radius:14px;
+    background:
+      repeating-linear-gradient(transparent,transparent 37px,rgba(183,110,121,.10) 38px),
+      linear-gradient(180deg,var(--paper),var(--paper2));
+    box-shadow:0 30px 60px -22px rgba(90,70,54,.5), inset 0 0 0 1px rgba(192,146,47,.18);
+    padding:30px 26px 38px; overflow-y:auto; -webkit-overflow-scrolling:touch;
+  }
+  .inside::before{content:"🤍";position:absolute;top:12px;right:16px;font-size:16px;opacity:.6}
+  .for{font-family:'Dancing Script',cursive;color:var(--rose);font-size:26px;margin:2px 0 14px;text-align:center}
+  .letter{font-family:'Caveat',cursive;font-size:clamp(20px,5.4vw,23px);line-height:1.5;color:var(--ink);white-space:pre-wrap}
+  .letter p{margin:0 0 15px}
+  .letter .aside{color:var(--ink-soft);font-style:italic}
+  .letter .end{font-family:'Dancing Script',cursive;color:var(--rose);font-size:clamp(26px,7vw,32px);line-height:1.2;margin-top:6px}
+  .cursor{display:inline-block;width:2px;height:1em;background:var(--rose);margin-left:1px;vertical-align:-2px;animation:blink 1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
 
-.status{display:flex;flex-direction:column;align-items:center;gap:1rem;text-align:center}
-.hint{margin:0;font-size:clamp(1.4rem,4vw,1.8rem);font-style:italic;min-height:1.3em}
-.count{display:flex;align-items:flex-start;gap:clamp(.6rem,3vw,1.6rem);font-variant-numeric:tabular-nums lining-nums}
-.count div{display:flex;flex-direction:column;align-items:center;gap:.2rem}
-.count b{font-weight:400;font-size:clamp(3.4rem,14vw,7rem);line-height:.9;letter-spacing:-.02em}
-.count small{font-family:var(--mono);font-size:.58rem;letter-spacing:.26em;text-transform:uppercase;color:var(--soft)}
+  /* ---- Portada (postal vintage) ---- */
+  .cover{
+    position:absolute;inset:0;border-radius:14px;z-index:3;cursor:pointer;
+    transform-origin:50% 0%;transition:transform 1.35s cubic-bezier(.3,.9,.25,1), opacity .4s ease 1s;
+    background:linear-gradient(150deg,#f8f0df,#efe2c9);
+    box-shadow:0 26px 54px -20px rgba(90,70,54,.55), inset 0 0 0 1px rgba(192,146,47,.25);
+    padding:22px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    backface-visibility:hidden;
+  }
+  .cover .frame{position:absolute;inset:14px;border:1.5px solid var(--line);border-radius:8px}
+  .cover .frame::after{content:"";position:absolute;inset:5px;border:1px dashed rgba(192,146,47,.5);border-radius:5px}
+  /* timbre */
+  .stamp{position:absolute;top:22px;right:22px;width:52px;height:62px;border-radius:3px;
+    background:linear-gradient(160deg,#e9c3c7,#d99aa3);padding:4px;
+    box-shadow:0 2px 6px rgba(90,70,54,.25);
+    -webkit-mask:radial-gradient(circle at 50% -3px,transparent 3px,#000 3.2px) 0 0/8px 100%,
+                 radial-gradient(circle at 50% calc(100% + 3px),transparent 3px,#000 3.2px) 0 100%/8px 100%,
+                 radial-gradient(circle at -3px 50%,transparent 3px,#000 3.2px) 0 0/100% 8px,
+                 radial-gradient(circle at calc(100% + 3px) 50%,transparent 3px,#000 3.2px) 100% 0/100% 8px;
+    -webkit-mask-composite:source-over;mask-composite:add}
+  .stamp i{display:flex;width:100%;height:100%;align-items:center;justify-content:center;
+    border:1px solid rgba(255,255,255,.6);border-radius:2px;font-style:normal;font-size:22px}
+  /* matasellos */
+  .postmark{position:absolute;top:30px;right:70px;width:64px;height:64px;border:2px solid rgba(183,110,121,.45);
+    border-radius:50%;color:rgba(183,110,121,.55);font-family:'Cormorant Garamond',serif;
+    display:flex;align-items:center;justify-content:center;font-size:10px;letter-spacing:.5px;transform:rotate(-12deg);text-align:center;line-height:1.1}
+  .cover .eye{font-family:'Cormorant Garamond',serif;letter-spacing:4px;text-transform:uppercase;font-size:12px;color:var(--ink-soft);margin-bottom:10px}
+  .cover h1{font-family:'Dancing Script',cursive;font-weight:700;color:var(--rose);margin:0;
+    font-size:clamp(34px,10vw,46px);line-height:1.05;text-shadow:0 1px 0 rgba(255,255,255,.6)}
+  .cover .sub{font-family:'Cormorant Garamond',serif;font-style:italic;color:var(--ink);font-size:clamp(17px,4.6vw,20px);margin-top:8px}
+  .cover .flour{color:var(--gold);font-size:20px;margin-top:14px;letter-spacing:6px}
+  .hint{position:absolute;bottom:20px;left:0;right:0;font-family:'Cormorant Garamond',serif;
+    letter-spacing:3px;text-transform:uppercase;font-size:11px;color:var(--ink-soft);animation:pulse 1.8s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.45}50%{opacity:.95}}
 
-/* ---------- Spec sheet ---------- */
-.spec{display:grid;grid-template-columns:repeat(auto-fit,minmax(9.5rem,1fr));border-top:1px solid var(--ink)}
-.spec div{display:flex;flex-direction:column;gap:.45rem;padding:1rem .25rem 1.15rem 0;border-bottom:1px solid var(--line);min-width:0}
-.spec dt{font-family:var(--mono);font-size:.6rem;letter-spacing:.24em;text-transform:uppercase;color:var(--soft)}
-.spec dd{margin:0;font-size:1.4rem;line-height:1.15}
-.spec dd.accent{color:var(--blue);font-style:italic}
-
-/* ---------- Fragments ---------- */
-.frags{display:flex;flex-direction:column;gap:1.5rem}
-.frags h2{margin:0;font-weight:400;font-size:clamp(2.8rem,10vw,5rem);line-height:.95;letter-spacing:-.015em;text-wrap:balance}
-.frags h2 em{color:var(--blue)}
-.frags .lede{margin:0;font-size:1.25rem;color:var(--soft);max-width:40ch}
-.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
-.frag{display:grid;grid-template-columns:5.5rem 1fr;gap:1rem;padding:1.4rem 0;border-top:1px solid var(--line);align-items:baseline}
-.frag:last-child{border-bottom:1px solid var(--line)}
-.frag .day{font-family:var(--mono);font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--soft)}
-.frag .txt{min-width:0;font-size:clamp(1.5rem,4.6vw,2rem);line-height:1.25;font-style:italic}
-.frag.open .day{color:var(--blue)}
-.frag.open .txt{animation:fadein 1.4s ease}
-.frag.locked .txt{font-style:normal;font-family:var(--mono);font-size:.66rem;letter-spacing:.22em;text-transform:uppercase;color:#b3aea6}
-.frag.today .txt::after{content:"";display:inline-block;width:2px;height:.95em;background:var(--blue);margin-left:.18em;vertical-align:-.1em;animation:blink 1s steps(1) infinite}
-
-/* ---------- Letter ---------- */
-.letter{background:var(--paper);padding:clamp(2rem,8vw,4.5rem) clamp(1.5rem,8vw,4.5rem);display:flex;flex-direction:column;gap:1.15rem;
-  box-shadow:0 1px 2px rgba(0,0,0,.05),0 30px 60px -34px rgba(0,0,0,.25);animation:rise 1s cubic-bezier(.2,.8,.2,1)}
-.letter .top{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;border-bottom:1px solid var(--ink);padding-bottom:.9rem;margin-bottom:1rem;
-  font-family:var(--mono);font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;font-variant-numeric:tabular-nums}
-.letter .top .final{color:var(--blue)}
-.letter p{margin:0;font-size:1.34rem;line-height:1.55;max-width:56ch}
-.letter p.salute{font-size:2rem;font-style:italic}
-.letter p.pause{color:var(--soft);letter-spacing:.2em}
-.letter p.short{font-style:italic}
-.letter p.hidden{opacity:0}
-.letter p.show{opacity:1;transition:opacity .9s ease}
-.letter .caret{display:inline-block;width:2px;height:1em;background:var(--blue);margin-left:2px;vertical-align:-.12em;animation:blink 1s steps(1) infinite}
-.letter .sign{font-style:italic;font-size:2rem;margin-top:1rem;color:var(--blue)}
-
-.skip{position:fixed;z-index:20;right:16px;bottom:calc(16px + env(safe-area-inset-bottom, 0px));
-  font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;text-transform:uppercase;color:var(--soft);
-  background:var(--paper);border:1px solid var(--line);padding:.7rem .9rem;cursor:pointer}
-.skip:hover{color:var(--ink);border-color:var(--ink)}
-.skip:focus-visible{outline:1px solid var(--blue);outline-offset:3px}
-
-/* ---------- Coda ---------- */
-.coda{display:flex;flex-direction:column;align-items:center;gap:.6rem;text-align:center}
-.coda .big{font-size:clamp(2.4rem,10vw,4.6rem);line-height:1;font-variant-numeric:tabular-nums lining-nums;letter-spacing:-.01em;overflow-wrap:anywhere}
-.coda p{margin:0;font-size:1.25rem;font-style:italic;color:var(--soft);max-width:34ch}
-
-@keyframes rise{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
-@keyframes fadein{from{opacity:0;filter:blur(5px)}to{opacity:1;filter:none}}
-@keyframes blink{50%{opacity:0}}
-@keyframes shake{25%{transform:translateX(-6px)}50%{transform:translateX(6px)}75%{transform:translateX(-3px)}}
-@media (prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important}}
+  .card.open .cover{transform:rotateX(-168deg);opacity:0;pointer-events:none}
+  @media (prefers-reduced-motion:reduce){.cover{transition:opacity .5s} .card.open .cover{transform:none;opacity:0} .hearts{display:none}}
 </style>
+</head>
+<body>
+<div class="hearts" id="hearts" aria-hidden="true"></div>
 
-<main>
-  <section class="stage">
-    <div class="env" id="env">
-      <div class="back"></div>
-      <div class="sheet" aria-hidden="true"></div>
-      <div class="front"><span>Para: Jimena</span><span>15.10.26</span></div>
-      <div class="flap"></div>
-      <button class="seal locked" id="seal" type="button" aria-label="Sello. Mantén presionado para abrir el 15 de octubre.">
-        <svg viewBox="0 0 100 100" aria-hidden="true"><circle class="track" cx="50" cy="50" r="45"/><circle class="prog" id="prog" cx="50" cy="50" r="45"/></svg>
-        <span class="wax">J</span>
-      </button>
+<div class="scene">
+  <div class="card" id="card">
+    <div class="inside" id="inside">
+      <div class="for">Para Jime</div>
+      <div class="letter" id="letter"></div>
     </div>
-    <div class="status">
-      <p class="hint" id="hint"></p>
-      <div class="count" id="count" aria-live="polite">
-        <div><b id="cd">0</b><small>días</small></div>
-        <div><b id="ch">00</b><small>hrs</small></div>
-        <div><b id="cm">00</b><small>min</small></div>
-        <div><b id="cs">00</b><small>seg</small></div>
-      </div>
-      <p class="label" id="meta">Se abre el jueves 15 · 00:00</p>
+
+    <div class="cover" id="cover" role="button" tabindex="0" aria-label="Abrir la carta">
+      <div class="frame"></div>
+      <div class="stamp"><i>🤍</i></div>
+      <div class="postmark">CDMX<br>· 15 · OCT ·</div>
+      <div class="eye">una carta para ti</div>
+      <h1>Happy Birthday<br>my love</h1>
+      <div class="sub">de Santiago, con todo</div>
+      <div class="flour">✶ ❦ ✶</div>
+      <div class="hint">toca para abrir</div>
     </div>
-  </section>
-
-  <article class="letter" id="letter" hidden>
-    <div class="top"><span id="draft">Borrador 001</span><span>CDMX · 15.10.26</span></div>
-    <div id="body"></div>
-  </article>
-
-  <button class="skip" id="skip" type="button" hidden>Ver la carta completa</button>
-
-  <section class="coda" id="coda" hidden>
-    <span class="label">En vivo</span>
-    <div class="big" id="lifeSec">0</div>
-    <p>segundos desde que naciste en Cancún.</p>
-  </section>
-</main>
+  </div>
+</div>
 
 <script>
 (function(){
-  /* ===== Configuración ===== */
-  var OPEN = Date.parse("2026-10-15T00:00:00-06:00");
-  var BORN = Date.parse("1997-10-15T00:00:00-05:00");
-  // Arranques que se escriben y se borran (salen de borradores reales). [número de borrador, texto]
-  var DRAFTS = [
-    [7,  "Tal vez tenga que escribir 29 cartas antes de encontrar una que me guste."],
-    [23, "Últimamente he estado buscando trabajo y ha sido"],
-    [58, "Te quiero contar algo que he estado pensando estos días."]
+  // corazones
+  var H=document.getElementById('hearts');
+  for(var i=0;i<14;i++){var b=document.createElement('b');b.textContent='♥';
+    b.style.left=(Math.random()*100)+'%';
+    b.style.fontSize=(12+Math.random()*16)+'px';
+    b.style.animationDuration=(9+Math.random()*9)+'s';
+    b.style.animationDelay=(Math.random()*12)+'s';H.appendChild(b);}
+
+  var paras=[
+    `Jime:`,
+    `Llevo días intentando escribirte esta carta. Escribo, borro, se me ocurre algo, me acerco, me alejo y vuelvo a empezar. Hoy son las 8:27 y aquí sigo. A lo mejor tengo que escribir 29 cartas antes de que me salga la buena, una por cada año que cumples.`,
+    `Ya sé, es solo una carta. Pero es tu cumpleaños y este año mi regalo son palabras. Me encantaría regalarte mil cosas, un viaje, pero por ahora el único viaje que te puedo regalar es por mis pensamientos. Y me gusta saber que con eso te basta, porque sé que no estás conmigo por nada material.`,
+    `Buscando qué escribirte me di cuenta de que últimamente vivo buscando. Busco trabajo, busco dónde vivir, busco qué sigue. Y buscar cansa: unas cosas te aburren, otras te quedan grandes y piden credenciales que no tienes, y cuando sientes que ya estás cerca, se cae y vuelves a empezar. Igualito que con esta carta.`,
+    `@(Ya sé lo que estás pensando: "otra vez este con su búsqueda de chamba, qué hueva". Aguanta, aquí viene lo bueno.)`,
+    `La vida es un poco eso, una lista de búsquedas. Unas duran años y otras se resuelven sin que te des cuenta. Y lo curioso es que casi nunca notas el día en que dejas de buscar algo. Un día volteas y ya no estás buscando, porque ya lo encontraste.`,
+    `Hace no tanto estuve en otra búsqueda que se sentía igual. Estaba buscando algo fuera de mi liga, algo que pedía credenciales que yo no tenía. Esa vez no buscaba trabajo, te buscaba a ti.`,
+    `Porque si ser tu novio hubiera sido una vacante, los requisitos habrían sido: chamba estable, depa propio y la vida resuelta. Yo no cumplía ni uno. Apliqué igual. Y aquí estoy.`,
+    `Luego me dices que ya no sabes qué consejo darme. Ya me lo diste sin darte cuenta: lo que vale la pena sí llega, aunque al principio parezca que no. Así que no me preocupa tanto lo que me falta. Si ya encontré lo más difícil, lo demás va a llegar.`,
+    `Y si algún día te toca a ti estar buscando algo, acuérdate de esta carta: sí llega. Y mientras, lo buscamos juntos.`,
+    `Así que sigo buscando trabajo, casa y todo lo demás. A ti ya no.`,
+    `Al final no necesité 29 cartas. Solo tuve que ponerme a pensar en ti.`,
+    `#Feliz cumpleaños, Jimis.`
   ];
-  // salute / t = primera línea / p = pausa / s = línea corta / n = párrafo / sign
-  // tercer valor opcional: [lo que escribe primero, lo que deja] → se corrige en vivo
-  var LETTER = [
-    ["salute","Jime:"],
-    ["t","Feliz cumpleaños. Te escribo esta carta…"],
-    ["p","…"],
-    ["p","…"],
-    ["n","¿Qué dijiste, este wey ya perdió la inspiración? No."],
-    ["s","Bueno, un poquito."],
-    ["n","Llevo un rato intentando escribirte. Empiezo, borro, empiezo otra vez. Tal vez tenga que escribir 100 cartas antes de encontrar la buena. No quiero mandarte algo por mandarlo."],
-    ["n","Y mientras buscaba qué escribirte, me di cuenta de que ando en varias búsquedas."],
-    ["s","Busco esta carta."],
-    ["n","Busco trabajo. Y es cansado. Hay mil opciones: unas te aburren, otras no te ves haciéndolas mucho tiempo, y las que te emocionan piden credenciales que no tienes. A veces da para pensar que no va a llegar."],
-    ["s","Pero hay una búsqueda que ya no tengo que hacer."],
-    ["n","Hubo una época en la que buscaba a alguien: guapa, buena onda, inteligente, chistosa. También cansaba. También idealizaba. También pensaba que no iba a llegar.", ["que me hiciera reír","chistosa"]],
-    ["n","Y llegaste tú. Y fue mejor de lo que imaginaba.", ["esperaba","imaginaba"]],
-    ["n","Si para ser tu novio pidieran credenciales, yo no las cumpliría. Me elegiste igual."],
-    ["n","Ah, y tengo un problema: me aburro rápido. De casi todo. Contigo no."],
-    ["n","Por eso, cuando me canso de buscar, me acuerdo de ti. Las búsquedas cansan, pero llegan. Tú eres la prueba."],
-    ["n","Ya ves, al final sí encontré la carta."],
-    ["n","Feliz cumpleaños, Jime."],
-    ["sign","Santi"]
-  ];
-  /* ========================= */
 
-  var preview = location.hash === "#preview";
-  var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  var $ = function(id){return document.getElementById(id)};
-  var env=$("env"), seal=$("seal"), prog=$("prog"), hint=$("hint"), meta=$("meta"), count=$("count");
-  var pad = function(n){return String(n).padStart(2,"0")};
-  var fmt = new Intl.NumberFormat("es-MX");
-  var opened=false, unlocked=false;
+  var card=document.getElementById('card'), cover=document.getElementById('cover'), letter=document.getElementById('letter');
+  var opened=false, typing=false, done=false, reduce=matchMedia('(prefers-reduced-motion:reduce)').matches;
 
-
-  function tick(){
-    var diff=OPEN-Date.now();
-    if (diff<=0 || preview){ if(!unlocked) unlock(); return; }
-    var t=Math.floor(diff/1000);
-    $("cd").textContent=Math.floor(t/86400);
-    $("ch").textContent=pad(Math.floor(t%86400/3600));
-    $("cm").textContent=pad(Math.floor(t%3600/60));
-    $("cs").textContent=pad(t%60);
-  }
-  function unlock(){
-    unlocked=true;
-    seal.classList.remove("locked");
-    count.hidden=true;
-    hint.textContent="Feliz cumpleaños.";
-    meta.textContent= preview ? "Vista previa · mantén presionado el sello" : "Mantén presionado el sello";
+  function build(p){ // crea el <p> con clases segun marcador
+    var cls='', txt=p;
+    if(p[0]==='@'){cls=' class="aside"';txt=p.slice(1);}
+    else if(p[0]==='#'){cls=' class="end"';txt=p.slice(1);}
+    var el=document.createElement('p'); if(cls) el.className=cls.replace(' class="','').replace('"','');
+    return {el:el,txt:txt};
   }
 
-  /* hold to break */
-  var HOLD=1400, start=0, raf=0, C=283;
-  function frame(now){
-    var p=Math.min((now-start)/HOLD,1);
-    prog.style.strokeDashoffset=C*(1-p);
-    if (p>=1){ endHold(); breakSeal(); return; }
-    raf=requestAnimationFrame(frame);
-  }
-  function beginHold(e){
-    if (opened) return;
-    if (!unlocked){
-      env.classList.remove("shake"); void env.offsetWidth; env.classList.add("shake");
-      hint.textContent=["Paciencia.","El jueves.","Que no."][Math.floor(Math.random()*3)];
-      return;
-    }
-    if (e && e.preventDefault) e.preventDefault();
-    seal.classList.add("holding");
-    start=performance.now();
-    raf=requestAnimationFrame(frame);
-    try{ navigator.vibrate && navigator.vibrate(15) }catch(_){}
-  }
-  function endHold(){
-    cancelAnimationFrame(raf);
-    seal.classList.remove("holding");
-    if (!opened) prog.style.strokeDashoffset=C;
-  }
-  seal.addEventListener("pointerdown", beginHold);
-  ["pointerup","pointerleave","pointercancel"].forEach(function(ev){ seal.addEventListener(ev,endHold); });
-  seal.addEventListener("keydown", function(e){ if((e.key===" "||e.key==="Enter") && !e.repeat){ e.preventDefault(); beginHold(); }});
-  seal.addEventListener("keyup", function(e){ if(e.key===" "||e.key==="Enter") endHold(); });
-  seal.addEventListener("contextmenu", function(e){ e.preventDefault(); });
-
-  function breakSeal(){
-    opened=true;
-    try{ navigator.vibrate && navigator.vibrate([30,40,60]) }catch(_){}
-    env.classList.add("open");
-    hint.textContent="Para ti.";
-    meta.textContent="";
-    setTimeout(function(){
-      $("letter").hidden=false;
-      $("letter").scrollIntoView({behavior: reduce?"auto":"smooth", block:"start"});
-      writeLetter();
-    },1800);
+  function reveal(){ // muestra todo de golpe
+    letter.innerHTML='';
+    paras.forEach(function(p){var b=build(p);b.el.textContent=b.txt;letter.appendChild(b.el);});
+    done=true; typing=false;
   }
 
-  /* the letter writes itself — and erases */
-  var skipped=false, caret=document.createElement("span"); caret.className="caret";
-  var SKIP={};
-  function wait(ms){ return new Promise(function(r,j){ if(skipped) return j(SKIP); setTimeout(function(){ skipped ? j(SKIP) : r(); }, ms); }); }
-  function cls(kind){ return kind==="salute"?"salute":kind==="p"?"pause":kind==="s"?"short":kind==="sign"?"sign":""; }
-  function newP(kind){
-    var p=document.createElement(kind==="sign"?"span":"p");
-    p.className=cls(kind); p._t=""; $("body").appendChild(p); render(p);
-    caret.scrollIntoView({behavior:"smooth", block:"nearest"});
-    return p;
-  }
-  function render(p){ p.textContent=p._t; p.appendChild(caret); }
-  function delay(ch, base){
-    if (ch==="."||ch==="?") return 300; if (ch===","||ch===":") return 140; if (ch==="…") return 520;
-    return base + Math.random()*base;
-  }
-  async function type(p, text, base){ for (var i=0;i<text.length;i++){ p._t+=text[i]; render(p); await wait(delay(text[i], base)); } }
-  async function back(p, n){ for (var i=0;i<n;i++){ p._t=p._t.slice(0,-1); render(p); await wait(16); } }
-  var draftN=1;
-  async function setDraft(target){
-    var el=$("draft");
-    while (draftN<target){ draftN+=Math.max(1,Math.ceil((target-draftN)/6)); el.textContent="Borrador "+String(Math.min(draftN,target)).padStart(3,"0"); await wait(45); }
-    if (target>=100){ el.textContent="Versión final · 100 de 100"; el.className="final"; }
-  }
-  function renderFinal(){
-    var body=$("body"); body.innerHTML="";
-    LETTER.forEach(function(l){ var p=document.createElement(l[0]==="sign"?"span":"p"); p.className=cls(l[0]); p.textContent=l[1]; body.appendChild(p); });
-    $("draft").textContent="Versión final · 100 de 100"; $("draft").className="final";
-  }
-  async function writeLetter(){
-    var sk=$("skip");
-    if (reduce){ renderFinal(); return finish(); }
-    sk.hidden=false;
-    try{
-      var s=newP("salute"); await type(s,"Jime:",60); await wait(700);
-      var p=newP("t");
-      for (var d=0; d<DRAFTS.length; d++){
-        await setDraft(DRAFTS[d][0]);
-        await type(p, DRAFTS[d][1], 38);
-        await wait(1200);
-        await back(p, p._t.length);
-        await wait(500);
-      }
-      await setDraft(100);
-      await type(p, LETTER[1][1], 55); await wait(900);
-      for (var i=2;i<LETTER.length;i++){
-        var kind=LETTER[i][0], text=LETTER[i][1], edit=LETTER[i][2];
-        var q=newP(kind);
-        if (kind==="p"){ await wait(900); await type(q,"…",0); await wait(900); continue; }
-        if (kind==="sign"){ await wait(600); await type(q,text,90); continue; }
-        if (edit){
-          var at=text.indexOf(edit[1]);
-          await type(q, text.slice(0,at)+edit[0], 18);
-          await wait(800); await back(q, edit[0].length); await wait(300);
-          await type(q, text.slice(at), 18);
+  function typeAll(){
+    typing=true; letter.innerHTML='';
+    var cursor=document.createElement('span'); cursor.className='cursor';
+    var pi=0;
+    function nextPara(){
+      if(pi>=paras.length){ if(cursor.parentNode)cursor.remove(); typing=false; done=true; return; }
+      var b=build(paras[pi]); letter.appendChild(b.el); b.el.appendChild(cursor);
+      var ci=0, s=b.txt;
+      (function typeChar(){
+        if(!typing){return;}
+        if(ci<s.length){
+          b.el.insertBefore(document.createTextNode(s[ci]), cursor);
+          ci++;
+          document.getElementById('inside').scrollTop=999999;
+          var ch=s[ci-1];
+          var d = (ch==='.'||ch===','||ch===':'||ch==='?') ? 120 : (18+Math.random()*34);
+          setTimeout(typeChar,d);
         } else {
-          await type(q, text, i<6 ? 40 : 18);
+          pi++; setTimeout(nextPara, 440);
         }
-        await wait(i<6 ? 900 : 450);
-      }
-    } catch(e){ if (e!==SKIP) throw e; renderFinal(); }
-    finish();
+      })();
+    }
+    nextPara();
   }
-  function finish(){
-    $("skip").hidden=true;
-    caret.remove();
-    $("coda").hidden=false;
-    (function t(){ $("lifeSec").textContent=fmt.format(Math.floor((Date.now()-BORN)/1000)); setTimeout(t,1000); })();
-  }
-  $("skip").addEventListener("click", function(){ skipped=true; });
 
-  tick();
-  setInterval(function(){ if(!unlocked) tick(); }, 1000);
+  function open(){
+    if(opened) return; opened=true; card.classList.add('open');
+    var wait = reduce ? 500 : 1200;
+    setTimeout(function(){ if(reduce){reveal();} else {typeAll();} }, wait);
+  }
+
+  cover.addEventListener('click', open);
+  cover.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' ') open(); });
+  // tocar la carta mientras se escribe = mostrar todo
+  document.getElementById('inside').addEventListener('click', function(){ if(opened && typing){ typing=false; reveal(); } });
 })();
 </script>
-
-</body></html>
+</body>
+</html>
