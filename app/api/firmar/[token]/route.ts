@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import {
   getSupabaseAdmin, getSignerByToken, getContractById, getSignersByContract,
-  hashContent, nombreCoincide, enlaceExpirado, logEvent, ipDeReq, SIGN_BUCKET,
+  hashBuffer, nombreCoincide, enlaceExpirado, logEvent, ipDeReq, SIGN_BUCKET, SOURCE_BUCKET,
   type ContractStatus,
 } from '@/lib/contratos'
 
@@ -26,7 +26,7 @@ export async function GET(_req: Request, { params }: { params: { token: string }
   return NextResponse.json({
     ok: true,
     expirado: enlaceExpirado(c),
-    contrato: { title: c.title, content: c.content, status: c.status },
+    contrato: { title: c.title, status: c.status, tienePdf: !!c.source_pdf },
     firmante: { full_name: signer.full_name, role: signer.role, email: signer.email, signed_at: signer.signed_at },
   })
 }
@@ -44,8 +44,11 @@ export async function POST(req: Request, { params }: { params: { token: string }
   if (c.status === 'completed') return NextResponse.json({ ok: false, error: 'el contrato ya está completo' }, { status: 409 })
   if (enlaceExpirado(c)) return NextResponse.json({ ok: false, error: 'el enlace de firma expiró (30 días)' }, { status: 410 })
 
-  // El contenido no debe haber cambiado desde que se calculó el hash.
-  if (hashContent(c.content) !== c.content_hash) return NextResponse.json({ ok: false, error: 'el documento cambió y no se puede firmar; contacta a quien te lo envió' }, { status: 409 })
+  // El documento no debe haber cambiado desde que se calculó el hash (se compara el PDF original).
+  if (!c.source_pdf) return NextResponse.json({ ok: false, error: 'el contrato no tiene documento' }, { status: 409 })
+  const { data: pdfData } = await sb.storage.from(SOURCE_BUCKET).download(c.source_pdf)
+  if (!pdfData) return NextResponse.json({ ok: false, error: 'no se pudo leer el documento' }, { status: 500 })
+  if (hashBuffer(Buffer.from(await pdfData.arrayBuffer())) !== c.content_hash) return NextResponse.json({ ok: false, error: 'el documento cambió y no se puede firmar; contacta a quien te lo envió' }, { status: 409 })
 
   const b = await req.json().catch(() => null)
   const fullName = String(b?.full_name ?? '').trim()

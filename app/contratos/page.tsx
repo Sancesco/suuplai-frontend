@@ -28,7 +28,7 @@ export default function ContratosPage() {
 
   // formulario de creación
   const [title, setTitle] = useState('')
-  const [content, setContent] = useState('')
+  const [file, setFile] = useState<File | null>(null)
   const [firmantes, setFirmantes] = useState<FirmanteIn[]>([
     { full_name: 'SANTIAGO CÉSPEDES COBIÁN', email: 'santiago@suups.com.mx', role: 'SUUPLAI' },
     { full_name: '', email: '', role: 'EL PRESTADOR' },
@@ -48,12 +48,17 @@ export default function ContratosPage() {
   }
 
   async function crear() {
+    if (!file) return
     setCreando(true); setError(null)
     try {
-      const res = await fetch('/api/contratos', { method: 'POST', headers: H(), body: JSON.stringify({ title, content, firmantes }) })
+      const fd = new FormData()
+      fd.append('title', title)
+      fd.append('pdf', file)
+      fd.append('firmantes', JSON.stringify(firmantes))
+      const res = await fetch('/api/contratos', { method: 'POST', headers: { 'x-admin-password': pw }, body: fd })
       const json = await res.json()
       if (!res.ok || !json.ok) throw new Error(json.error || 'No se pudo crear')
-      setTitle(''); setContent('')
+      setTitle(''); setFile(null)
       setFirmantes([{ full_name: 'SANTIAGO CÉSPEDES COBIÁN', email: 'santiago@suups.com.mx', role: 'SUUPLAI' }, { full_name: '', email: '', role: 'EL PRESTADOR' }])
       setView('list'); await load(); setOpen(json.id)
     } catch (e) { setError(e instanceof Error ? e.message : 'Error') } finally { setCreando(false) }
@@ -99,10 +104,10 @@ export default function ContratosPage() {
                 <label style={lab}>Título</label>
                 <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Contrato de prestación de servicios · Gonzalo de Guerrero" style={{ ...inp, width: '100%', marginBottom: 16 }} />
 
-                <label style={lab}>Contenido del contrato (pega el texto completo)</label>
-                <textarea value={content} onChange={(e) => setContent(e.target.value)} rows={12}
-                  placeholder="CONTRATO DE PRESTACIÓN DE SERVICIOS…" style={{ ...inp, width: '100%', fontFamily: 'ui-monospace, monospace', fontSize: 13, lineHeight: 1.5, marginBottom: 6, resize: 'vertical' }} />
-                <p style={{ color: C.dim, fontSize: 12, marginBottom: 18 }}>Se calcula un hash SHA-256 del contenido al crear. Después no se puede editar: si hay que cambiar algo, se crea uno nuevo.</p>
+                <label style={lab}>PDF del contrato</label>
+                <input type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} style={{ ...inp, width: '100%', marginBottom: 6 }} />
+                {file && <p style={{ color: C.lime, fontSize: 13, marginBottom: 6 }}>✓ {file.name} ({Math.round(file.size / 1024)} KB)</p>}
+                <p style={{ color: C.dim, fontSize: 12, marginBottom: 18 }}>Se calcula un hash SHA-256 del PDF al crear. Después no se puede editar: si hay que cambiar algo, se crea uno nuevo.</p>
 
                 <label style={lab}>Firmantes</label>
                 {firmantes.map((f, i) => (
@@ -116,7 +121,7 @@ export default function ContratosPage() {
                 <button onClick={() => setFirmantes((fs) => [...fs, { full_name: '', email: '', role: '' }])} style={{ ...ghost, marginTop: 4 }}>+ Agregar firmante</button>
 
                 <div style={{ marginTop: 22 }}>
-                  <button onClick={crear} disabled={creando || !title || content.length < 40} style={{ ...btn, opacity: creando || !title || content.length < 40 ? 0.5 : 1 }}>
+                  <button onClick={crear} disabled={creando || !title || !file} style={{ ...btn, opacity: creando || !title || !file ? 0.5 : 1 }}>
                     {creando ? 'Creando…' : 'Crear contrato'}
                   </button>
                 </div>

@@ -3,14 +3,35 @@
 import { useEffect, useRef, useState } from 'react'
 
 const C = { bg: '#0A0A0F', surf: '#131319', surf2: '#0d0d12', border: '#26262F', text: '#F0EFE8', dim: '#8A8A93', lime: '#E8FF47' }
+const PDFJS = '3.11.174'
 
 type Data = {
   expirado: boolean
-  contrato: { title: string; content: string; status: string }
+  contrato: { title: string; status: string; tienePdf: boolean }
   firmante: { full_name: string; role: string | null; email: string; signed_at: string | null }
 }
-
 type Estado = 'loading' | 'ready' | 'already' | 'done' | 'expired' | 'error'
+
+// Tipos mínimos de pdf.js (sin usar any)
+type PdfViewport = { width: number; height: number }
+type PdfPage = { getViewport(o: { scale: number }): PdfViewport; render(o: { canvasContext: CanvasRenderingContext2D; viewport: PdfViewport; transform?: number[] }): { promise: Promise<void> } }
+type PdfDoc = { numPages: number; getPage(n: number): Promise<PdfPage> }
+type PdfLib = { GlobalWorkerOptions: { workerSrc: string }; getDocument(src: string): { promise: Promise<PdfDoc> } }
+
+function cargarPdfJs(): Promise<PdfLib> {
+  return new Promise((resolve, reject) => {
+    const w = window as unknown as { pdfjsLib?: PdfLib }
+    if (w.pdfjsLib) return resolve(w.pdfjsLib)
+    const prev = document.getElementById('pdfjs-script') as HTMLScriptElement | null
+    if (prev) { prev.addEventListener('load', () => w.pdfjsLib ? resolve(w.pdfjsLib) : reject(new Error('pdf.js'))); return }
+    const s = document.createElement('script')
+    s.id = 'pdfjs-script'
+    s.src = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS}/pdf.min.js`
+    s.onload = () => w.pdfjsLib ? resolve(w.pdfjsLib) : reject(new Error('pdf.js'))
+    s.onerror = () => reject(new Error('no se pudo cargar el visor de PDF'))
+    document.head.appendChild(s)
+  })
+}
 
 export function Firmar({ token }: { token: string }) {
   const [estado, setEstado] = useState<Estado>('loading')
@@ -21,12 +42,16 @@ export function Firmar({ token }: { token: string }) {
   const [enviando, setEnviando] = useState(false)
   const [completo, setCompleto] = useState(false)
 
+  const [pdfCargando, setPdfCargando] = useState(true)
+  const [pdfErr, setPdfErr] = useState<string | null>(null)
+  const visorRef = useRef<HTMLDivElement | null>(null)
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const ctxRef = useRef<CanvasRenderingContext2D | null>(null)
   const drawing = useRef(false)
   const [hasInk, setHasInk] = useState(false)
 
-  // Carga el contrato
+  // Carga los datos del contrato
   useEffect(() => {
     let vivo = true
     ;(async () => {
@@ -44,14 +69,48 @@ export function Firmar({ token }: { token: string }) {
     return () => { vivo = false }
   }, [token])
 
-  // Inicializa el canvas de firma cuando se muestra el formulario
+  // Renderiza el PDF con pdf.js
+  useEffect(() => {
+    if (estado !== 'ready' || !data?.contrato.tienePdf) return
+    let cancel = false
+    setPdfCargando(true); setPdfErr(null)
+    ;(async () => {
+      try {
+        const lib = await cargarPdfJs()
+        lib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${PDFJS}/pdf.worker.min.js`
+        const doc = await lib.getDocument(`/api/firmar/${token}/pdf`).promise
+        if (cancel) return
+        const cont = visorRef.current; if (!cont) return
+        cont.innerHTML = ''
+        const ancho = cont.clientWidth || 600
+        const outputScale = window.devicePixelRatio || 1
+        for (let p = 1; p <= doc.numPages; p++) {
+          const page = await doc.getPage(p)
+          if (cancel) return
+          const base = page.getViewport({ scale: 1 })
+          const vp = page.getViewport({ scale: ancho / base.width })
+          const canvas = document.createElement('canvas')
+          canvas.width = Math.floor(vp.width * outputScale)
+          canvas.height = Math.floor(vp.height * outputScale)
+          canvas.style.width = '100%'; canvas.style.height = 'auto'
+          canvas.style.display = 'block'; canvas.style.marginBottom = '10px'; canvas.style.borderRadius = '6px'; canvas.style.background = '#fff'
+          const ctx = canvas.getContext('2d'); if (!ctx) continue
+          cont.appendChild(canvas)
+          await page.render({ canvasContext: ctx, viewport: vp, transform: outputScale !== 1 ? [outputScale, 0, 0, outputScale, 0, 0] : undefined }).promise
+        }
+        if (!cancel) setPdfCargando(false)
+      } catch (e) { if (!cancel) { setPdfErr(e instanceof Error ? e.message : 'Error al mostrar el PDF'); setPdfCargando(false) } }
+    })()
+    return () => { cancel = true }
+  }, [estado, data, token])
+
+  // Inicializa el canvas de firma
   useEffect(() => {
     if (estado !== 'ready') return
     const cv = canvasRef.current; if (!cv) return
     const dpr = window.devicePixelRatio || 1
     const rect = cv.getBoundingClientRect()
-    cv.width = Math.round(rect.width * dpr)
-    cv.height = Math.round(rect.height * dpr)
+    cv.width = Math.round(rect.width * dpr); cv.height = Math.round(rect.height * dpr)
     const ctx = cv.getContext('2d'); if (!ctx) return
     ctx.scale(dpr, dpr)
     ctx.lineWidth = 2.4; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = C.text
@@ -111,11 +170,9 @@ export function Firmar({ token }: { token: string }) {
         {estado === 'error' && (
           <div style={panel}><h1 style={h1}>No se pudo abrir</h1><p style={{ color: C.dim }}>{error || 'El enlace no es válido.'}</p></div>
         )}
-
         {estado === 'expired' && (
           <div style={panel}><h1 style={h1}>Enlace expirado</h1><p style={{ color: C.dim }}>Este enlace de firma ya venció (30 días). Pide uno nuevo a quien te lo envió.</p></div>
         )}
-
         {estado === 'already' && data && (
           <div style={panel}>
             <div style={{ fontSize: 40, marginBottom: 8 }}>✓</div>
@@ -124,7 +181,6 @@ export function Firmar({ token }: { token: string }) {
             <p style={{ color: C.dim, fontSize: 13, marginTop: 8 }}>No necesitas hacer nada más. Recibirás el PDF final por correo cuando ambas partes hayan firmado.</p>
           </div>
         )}
-
         {estado === 'done' && (
           <div style={panel}>
             <div style={{ fontSize: 48, marginBottom: 8 }}>✓</div>
@@ -144,17 +200,27 @@ export function Firmar({ token }: { token: string }) {
               PARA: {data.firmante.full_name}{data.firmante.role ? ` · ${data.firmante.role}` : ''}
             </div>
 
-            <div style={doc}>{data.contrato.content}</div>
+            <label style={label}>Documento</label>
+            <div style={visor}>
+              <div ref={visorRef} />
+              {pdfCargando && !pdfErr && <p style={{ color: C.dim, fontSize: 13, textAlign: 'center', padding: 20 }}>Cargando documento…</p>}
+              {pdfErr && (
+                <p style={{ color: C.dim, fontSize: 13, textAlign: 'center', padding: 20 }}>
+                  No se pudo mostrar el PDF aquí. <a href={`/api/firmar/${token}/pdf`} target="_blank" rel="noreferrer" style={{ color: C.lime }}>Ábrelo en una pestaña →</a>
+                </p>
+              )}
+            </div>
+            <div style={{ textAlign: 'right', marginTop: 6 }}>
+              <a href={`/api/firmar/${token}/pdf`} target="_blank" rel="noreferrer" style={{ color: C.dim, fontSize: 12 }}>Abrir el PDF en pantalla completa ↗</a>
+            </div>
 
             <div style={{ height: 28 }} />
 
             <label style={label}>Tu firma</label>
             <div style={{ position: 'relative' }}>
-              <canvas
-                ref={canvasRef}
+              <canvas ref={canvasRef}
                 style={{ width: '100%', height: 180, background: C.surf2, border: `1px solid ${C.border}`, borderRadius: 12, touchAction: 'none', display: 'block', cursor: 'crosshair' }}
-                onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerLeave={up} onPointerCancel={up}
-              />
+                onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerLeave={up} onPointerCancel={up} />
               {!hasInk && <span style={{ position: 'absolute', left: 16, top: 16, color: C.dim, fontSize: 13, pointerEvents: 'none' }}>Dibuja tu firma con el dedo o el mouse</span>}
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
@@ -192,7 +258,7 @@ const container: React.CSSProperties = { maxWidth: 680, margin: '0 auto' }
 const mono: React.CSSProperties = { fontFamily: 'Space Mono, ui-monospace, monospace', fontSize: 11, textTransform: 'uppercase' }
 const h1: React.CSSProperties = { fontFamily: 'Syne, system-ui, sans-serif', fontWeight: 800, fontSize: 'clamp(22px, 5vw, 30px)', lineHeight: 1.1, margin: '0 0 6px' }
 const panel: React.CSSProperties = { background: C.surf, border: `1px solid ${C.border}`, borderRadius: 16, padding: 32, textAlign: 'center' }
-const doc: React.CSSProperties = { background: C.surf, border: `1px solid ${C.border}`, borderRadius: 14, padding: 'clamp(18px, 4vw, 28px)', maxHeight: '52vh', overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontSize: 14.5, lineHeight: 1.65, color: C.text, WebkitOverflowScrolling: 'touch' }
+const visor: React.CSSProperties = { background: C.surf2, border: `1px solid ${C.border}`, borderRadius: 14, padding: 10, maxHeight: '58vh', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }
 const label: React.CSSProperties = { display: 'block', fontFamily: 'Space Mono, monospace', fontSize: 11, letterSpacing: '0.12em', textTransform: 'uppercase', color: C.dim, marginBottom: 8 }
 const input: React.CSSProperties = { width: '100%', background: C.surf, border: `1px solid ${C.border}`, borderRadius: 10, padding: '13px 15px', color: C.text, fontSize: 16, outline: 'none', fontFamily: 'DM Sans, system-ui, sans-serif' }
 const primary: React.CSSProperties = { width: '100%', background: C.lime, color: C.bg, border: 'none', borderRadius: 999, padding: '15px', fontWeight: 700, fontSize: 15, fontFamily: 'Syne, system-ui, sans-serif' }

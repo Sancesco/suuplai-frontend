@@ -9,14 +9,16 @@ export { getSupabaseAdmin, checkAdmin, randToken }
 
 export type SB = NonNullable<ReturnType<typeof getSupabaseAdmin>>
 
-export const SIGN_BUCKET = 'contract-signatures'
-export const PDF_BUCKET = 'contract-pdfs'
+export const SOURCE_BUCKET = 'contract-source'   // PDF original subido
+export const SIGN_BUCKET = 'contract-signatures' // PNG de cada firma
+export const PDF_BUCKET = 'contract-pdfs'        // PDF final firmado
 export const LINK_TTL_DIAS = 30 // el enlace de firma expira a los 30 días
 
 export type ContractStatus = 'draft' | 'sent' | 'partially_signed' | 'completed' | 'voided'
 
 export type Contract = {
-  id: string; title: string; content: string; content_hash: string
+  id: string; title: string; content: string | null; content_hash: string
+  source_pdf: string | null // ruta del PDF original en SOURCE_BUCKET
   status: ContractStatus; created_at: string; completed_at: string | null; pdf_url: string | null
 }
 
@@ -32,9 +34,12 @@ export type ContractEvent = {
 }
 
 // Hash del documento que se firma. Se calcula al crear y se vuelve a verificar antes de
-// cada firma: si el content cambió, la firma se bloquea.
+// cada firma: si el documento cambió, la firma se bloquea.
 export function hashContent(content: string): string {
   return createHash('sha256').update(content, 'utf8').digest('hex')
+}
+export function hashBuffer(buf: Buffer): string {
+  return createHash('sha256').update(buf).digest('hex')
 }
 
 // Compara el nombre tecleado contra el del firmante: trim + espacios colapsados + sin
