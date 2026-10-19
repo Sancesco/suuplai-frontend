@@ -5,10 +5,12 @@ import { useEffect, useRef, useState } from 'react'
 const C = { bg: '#0A0A0F', surf: '#131319', surf2: '#0d0d12', border: '#26262F', text: '#F0EFE8', dim: '#8A8A93', lime: '#E8FF47' }
 const PDFJS = '3.11.174'
 
+type Parte = { full_name: string; role: string | null; signed_at: string | null; yo: boolean }
 type Data = {
   expirado: boolean
   contrato: { title: string; status: string; tienePdf: boolean }
   firmante: { full_name: string; role: string | null; email: string; signed_at: string | null }
+  partes: Parte[]
 }
 type Estado = 'loading' | 'ready' | 'already' | 'done' | 'expired' | 'error'
 
@@ -140,10 +142,22 @@ export function Firmar({ token }: { token: string }) {
     setHasInk(false)
   }
 
-  const puedeFirmar = !!nombre.trim() && consent && hasInk && !enviando
+  // Verifica si hay trazo mirando los píxeles reales del recuadro (robusto, sin depender de estado).
+  function hayFirma(): boolean {
+    const cv = canvasRef.current, ctx = ctxRef.current
+    if (!cv || !ctx) return false
+    try {
+      const { data } = ctx.getImageData(0, 0, cv.width, cv.height)
+      for (let i = 3; i < data.length; i += 4) if (data[i] !== 0) return true
+      return false
+    } catch { return true } // si no se puede leer, no bloqueamos
+  }
 
   async function firmar() {
-    if (!puedeFirmar || !canvasRef.current) return
+    if (enviando || !canvasRef.current) return
+    if (!nombre.trim()) { setError('Escribe tu nombre completo.'); return }
+    if (!consent) { setError('Marca la casilla de consentimiento.'); return }
+    if (!hayFirma()) { setError('Dibuja tu firma en el recuadro antes de firmar.'); return }
     setEnviando(true); setError(null)
     try {
       const signature_png = canvasRef.current.toDataURL('image/png')
@@ -196,8 +210,17 @@ export function Firmar({ token }: { token: string }) {
         {estado === 'ready' && data && (
           <>
             <h1 style={h1}>{data.contrato.title}</h1>
-            <div style={{ ...mono, color: C.dim, fontSize: 12, marginBottom: 18 }}>
+            <div style={{ ...mono, color: C.dim, fontSize: 12, marginBottom: 12 }}>
               PARA: {data.firmante.full_name}{data.firmante.role ? ` · ${data.firmante.role}` : ''}
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, background: C.surf, border: `1px solid ${C.border}`, borderRadius: 10, padding: '12px 14px', marginBottom: 18 }}>
+              {data.partes.map((p, i) => (
+                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 13 }}>
+                  <span>{p.full_name}{p.role ? ` · ${p.role}` : ''}{p.yo ? ' (tú)' : ''}</span>
+                  <span style={{ color: p.signed_at ? C.lime : C.dim, fontFamily: 'Space Mono, monospace', fontSize: 11, whiteSpace: 'nowrap' }}>{p.signed_at ? '✓ firmó' : 'pendiente'}</span>
+                </div>
+              ))}
             </div>
 
             <label style={label}>Documento</label>
@@ -229,7 +252,7 @@ export function Firmar({ token }: { token: string }) {
 
             <div style={{ height: 20 }} />
             <label style={label}>Escribe tu nombre completo, tal como aparece en el contrato</label>
-            <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder={data.firmante.full_name} style={input} />
+            <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Escríbelo aquí…" style={input} />
 
             <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 20, cursor: 'pointer' }}>
               <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 3, width: 18, height: 18, accentColor: C.lime, flexShrink: 0 }} />
@@ -240,7 +263,7 @@ export function Firmar({ token }: { token: string }) {
 
             {error && <p style={{ color: '#ff6b6b', marginTop: 14, fontSize: 14 }}>⚠ {error}</p>}
 
-            <button onClick={firmar} disabled={!puedeFirmar} style={{ ...primary, opacity: puedeFirmar ? 1 : 0.45, cursor: puedeFirmar ? 'pointer' : 'default', marginTop: 20 }}>
+            <button onClick={firmar} disabled={enviando} style={{ ...primary, opacity: enviando ? 0.6 : 1, cursor: enviando ? 'default' : 'pointer', marginTop: 20 }}>
               {enviando ? 'Firmando…' : 'Firmar contrato'}
             </button>
             <p style={{ color: C.dim, fontSize: 11, marginTop: 12, fontFamily: 'Space Mono, monospace' }}>

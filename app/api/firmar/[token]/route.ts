@@ -23,11 +23,13 @@ export async function GET(_req: Request, { params }: { params: { token: string }
     if (!yaVio) await logEvent(sb, c.id, 'viewed', { signerId: signer.id })
   }
 
+  const todos = await getSignersByContract(sb, c.id)
   return NextResponse.json({
     ok: true,
     expirado: enlaceExpirado(c),
     contrato: { title: c.title, status: c.status, tienePdf: !!c.source_pdf },
     firmante: { full_name: signer.full_name, role: signer.role, email: signer.email, signed_at: signer.signed_at },
+    partes: todos.map((s) => ({ full_name: s.full_name, role: s.role, signed_at: s.signed_at, yo: s.id === signer.id })),
   })
 }
 
