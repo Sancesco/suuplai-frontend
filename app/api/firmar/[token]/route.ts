@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import {
   getSupabaseAdmin, getSignerByToken, getContractById, getSignersByContract,
   hashContent, nombreCoincide, enlaceExpirado, logEvent, ipDeReq, SIGN_BUCKET,
+  type ContractStatus,
 } from '@/lib/contratos'
 
 export const runtime = 'nodejs'
@@ -73,7 +74,7 @@ export async function POST(req: Request, { params }: { params: { token: string }
   // ¿Ya firmaron todos? Entonces el contrato queda completo.
   const firmantes = await getSignersByContract(sb, c.id)
   const faltan = firmantes.filter((s) => s.id !== signer.id && !s.signed_at).length
-  let estado = c.status
+  let estado: ContractStatus = c.status
   if (faltan === 0) {
     estado = 'completed'
     await sb.from('contracts').update({ status: 'completed', completed_at: signedAt }).eq('id', c.id)
