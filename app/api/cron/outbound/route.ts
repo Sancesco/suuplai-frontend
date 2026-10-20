@@ -34,6 +34,38 @@ export async function GET(req: Request) {
   if (!gm.conectado) return NextResponse.json({ ok: true, nota: 'gmail no conectado' })
   const miEmail = gm.email || ''
   const cfg = await cfgMap(sb)
+
+  // "Mío" = la cuenta conectada, la dirección remitente, o CUALQUIER correo de mi dominio.
+  // Así mis propios recordatorios (paso 2/3) nunca se cuentan como respuesta del prospecto.
+  const dominioDe = (e: string) => { const m = String(e || '').toLowerCase().match(/@([^>\s]+)/); return m ? m[1] : '' }
+  const misDominios = [dominioDe(miEmail), dominioDe(cfg.from_email)].filter(Boolean)
+  const mios = [miEmail, cfg.from_email].map((s) => String(s || '').toLowerCase()).filter(Boolean)
+  const esMio = (from: string) => { const f = String(from || '').toLowerCase(); const d = dominioDe(f); return (!!d && misDominios.includes(d)) || mios.some((me) => f.includes(me)) }
+
+  // Reverificación (una sola vez, con ?reverificar=1): desmarca los "respondió" que en realidad
+  // eran mis propios correos del dominio y no una respuesta real del prospecto.
+  if (new URL(req.url).searchParams.get('reverificar') === '1') {
+    const { data: resp } = await sb.from('outbound_prospecto').select('*').eq('estado', 'respondio')
+    let revertidos = 0, mantenidos = 0, sinHilo = 0
+    for (const p of (resp ?? []) as Prospecto[]) {
+      const { data: evs } = await sb.from('outbound_envio').select('*').eq('prospecto_id', p.id).order('toque', { ascending: true })
+      const envios = (evs ?? []) as Envio[]
+      const last = envios[envios.length - 1]; const first = envios[0]
+      if (!last?.gmail_thread_id) { sinHilo++; continue } // sin hilo no puedo verificar; lo dejo como está
+      try {
+        const msgs = await leerHilo(sb, last.gmail_thread_id, miEmail)
+        const firstMs = first ? new Date(first.enviado_en).getTime() : 0
+        const hayReply = msgs.some((m) => !esMio(m.from) && !m.esRebote && m.internalDate > firstMs)
+        if (!hayReply) {
+          await sb.from('outbound_prospecto').update({ estado: 'en_secuencia' }).eq('id', p.id)
+          await sb.from('outbound_envio').update({ respondido: false }).eq('prospecto_id', p.id)
+          revertidos++
+        } else mantenidos++
+      } catch { mantenidos++ }
+    }
+    return NextResponse.json({ ok: true, reverificado: true, revertidos, mantenidos, sinHilo })
+  }
+
   const { data: tpl } = await sb.from('outbound_plantilla').select('*').eq('activa', true).order('version', { ascending: false }).limit(1).maybeSingle()
   if (!tpl) return NextResponse.json({ ok: true, nota: 'sin plantilla' })
 
@@ -76,7 +108,7 @@ export async function GET(req: Request) {
         const msgs = await leerHilo(sb, last.gmail_thread_id, miEmail)
         if (msgs.some((m) => m.esRebote)) { await sb.from('outbound_prospecto').update({ estado: 'reboto' }).eq('id', p.id); await sb.from('outbound_envio').update({ rebotado: true }).eq('prospecto_id', p.id); log.reboto++; continue }
         const firstMs = first ? new Date(first.enviado_en).getTime() : 0
-        if (msgs.some((m) => !m.fromMe && m.internalDate > firstMs)) { await sb.from('outbound_prospecto').update({ estado: 'respondio' }).eq('id', p.id); await sb.from('outbound_envio').update({ respondido: true }).eq('prospecto_id', p.id); log.respondio++; continue }
+        if (msgs.some((m) => !esMio(m.from) && !m.esRebote && m.internalDate > firstMs)) { await sb.from('outbound_prospecto').update({ estado: 'respondio' }).eq('id', p.id); await sb.from('outbound_envio').update({ respondido: true }).eq('prospecto_id', p.id); log.respondio++; continue }
       } catch { /* si falla la lectura, no bloquea */ }
     }
     if (!habil) continue
